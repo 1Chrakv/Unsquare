@@ -51,6 +51,18 @@ namespace Unsquare.Core.Persistence
             return removed;
         }
 
+        /// <summary>Adds asset names to an entry without touching its usage data (used when restoring).</summary>
+        public bool MergeAssets(string key, IEnumerable<string> assets)
+        {
+            if (!_entries.TryGetValue(key, out var entry))
+                return false;
+            bool changed = false;
+            foreach (var asset in assets)
+                changed |= AddUnique(entry.Assets, asset);
+            IsDirty |= changed;
+            return changed;
+        }
+
         /// <summary>Records which variants the loaded city uses: adds or removes the city per entry.</summary>
         public void MarkUsage(string city, ICollection<string> usedKeys, DateTime nowUtc)
         {
@@ -94,10 +106,12 @@ namespace Unsquare.Core.Persistence
             IsDirty = false;
         }
 
-        private static void AddUnique(List<string> list, string value)
+        private static bool AddUnique(List<string> list, string value)
         {
-            if (!list.Contains(value))
-                list.Add(value);
+            if (list.Contains(value))
+                return false;
+            list.Add(value);
+            return true;
         }
 
         private sealed class Document

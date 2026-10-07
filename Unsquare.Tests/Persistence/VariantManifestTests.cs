@@ -80,6 +80,24 @@ namespace Unsquare.Tests.Persistence
         }
 
         [Test]
+        public void MergeAssets_AddsNamesButKeepsUsage()
+        {
+            using var temp = new TempDirectory();
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V", "UQ_a"), "City", Now);
+            manifest.Save(temp.File("m.json"));
+
+            Assert.That(manifest.MergeAssets("BuildingPrefab/V", new[] { "UQ_a", "UQ_b" }), Is.True);
+            Assert.That(manifest.MergeAssets("BuildingPrefab/V", new[] { "UQ_b" }), Is.False);
+            Assert.That(manifest.MergeAssets("BuildingPrefab/Missing", new[] { "UQ_c" }), Is.False);
+
+            manifest.TryGet("BuildingPrefab/V", out var entry);
+            Assert.That(entry.Assets, Is.EqualTo(new[] { "UQ_a", "UQ_b" }));
+            Assert.That(entry.LastUsedUtc, Is.EqualTo(Now));
+            Assert.That(manifest.IsDirty, Is.True);
+        }
+
+        [Test]
         public void Remove_MarksDirty()
         {
             using var temp = new TempDirectory();
