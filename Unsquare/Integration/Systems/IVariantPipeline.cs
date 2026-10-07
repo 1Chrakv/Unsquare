@@ -14,7 +14,9 @@ namespace Unsquare.Integration.Systems
         event Action<Entity> BuildingChanged;
 
         bool TryDescribe(Entity building, out BuildingDescription description);
-        bool TryGetPending(Entity building, out CageOffsets offsets);
+
+        /// <summary>Offsets of a request still in flight (debouncing or waiting to swap).</summary>
+        bool TryGetRequested(Entity building, out CageOffsets offsets);
         VariantStatus GetStatus(Entity building);
         void Request(Entity building, CageOffsets offsets);
 

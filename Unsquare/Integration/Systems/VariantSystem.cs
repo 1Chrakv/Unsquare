@@ -117,8 +117,14 @@ namespace Unsquare.Integration.Systems
         bool IVariantPipeline.TryDescribe(Entity building, out BuildingDescription description) =>
             TryDescribe(building, out description);
 
-        bool IVariantPipeline.TryGetPending(Entity building, out CageOffsets offsets) =>
-            _debouncer.TryPeek(building, out offsets);
+        bool IVariantPipeline.TryGetRequested(Entity building, out CageOffsets offsets)
+        {
+            if (_debouncer.TryPeek(building, out offsets))
+                return true;
+            bool swapping = _swaps.TryGetValue(building, out var swap);
+            offsets = swapping ? swap.Offsets : null;
+            return swapping;
+        }
 
         VariantStatus IVariantPipeline.GetStatus(Entity building) =>
             _statuses.TryGetValue(building, out var status) ? status : VariantStatus.Idle;
@@ -138,7 +144,7 @@ namespace Unsquare.Integration.Systems
             if (offsets.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
             {
                 _debouncer.Cancel(building); // reverting needs no bake
-                QueueSwap(building, baseEntity, description.BasePrefab);
+                QueueSwap(building, baseEntity, description.BasePrefab, offsets);
             }
             else
             {
@@ -204,7 +210,7 @@ namespace Unsquare.Integration.Systems
             }
             if (TryGetOrCreateVariant(description.BasePrefab, description.Box, offsets, isRestore: false, out var variant) &&
                 _prefabSystem.TryGetEntity(variant, out var variantEntity))
-                QueueSwap(building, variantEntity, description.BasePrefab);
+                QueueSwap(building, variantEntity, description.BasePrefab, offsets);
             else
                 SetStatus(building, VariantStatus.Failed);
         }
@@ -252,9 +258,9 @@ namespace Unsquare.Integration.Systems
             return true;
         }
 
-        private void QueueSwap(Entity building, Entity targetPrefab, ObjectGeometryPrefab basePrefab)
+        private void QueueSwap(Entity building, Entity targetPrefab, ObjectGeometryPrefab basePrefab, CageOffsets offsets)
         {
-            _swaps[building] = new PendingSwap(targetPrefab, basePrefab);
+            _swaps[building] = new PendingSwap(targetPrefab, basePrefab, offsets);
             SetStatus(building, VariantStatus.WaitingForPrefab);
         }
 
@@ -412,14 +418,16 @@ namespace Unsquare.Integration.Systems
 
         private readonly struct PendingSwap
         {
-            public PendingSwap(Entity targetPrefab, ObjectGeometryPrefab basePrefab)
+            public PendingSwap(Entity targetPrefab, ObjectGeometryPrefab basePrefab, CageOffsets offsets)
             {
                 TargetPrefab = targetPrefab;
                 BasePrefab = basePrefab;
+                Offsets = offsets;
             }
 
             public Entity TargetPrefab { get; }
             public ObjectGeometryPrefab BasePrefab { get; }
+            public CageOffsets Offsets { get; }
         }
     }
 }

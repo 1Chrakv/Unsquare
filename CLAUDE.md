@@ -13,6 +13,8 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
+UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
+
 Dependencies only point downwards (Api → Integration → Core). Never reference `Game`, `Colossal.*`, `UnityEngine`
 or `Unity.Entities` from `Core/`; the test project would stop building.
 
