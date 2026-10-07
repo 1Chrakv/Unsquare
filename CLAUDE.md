@@ -9,11 +9,11 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | Path | Contents | Depends on |
 |---|---|---|
 | `Unsquare/Core/` | Pure logic: cage model, deformation math, naming, debouncing, persistence, prune planning | `Unity.Mathematics`, `Newtonsoft.Json` only |
-| `Unsquare/Game/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
-| `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Game |
+| `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
+| `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
-Dependencies only point downwards (Api → Game → Core). Never reference `Game`, `Colossal.*`, `UnityEngine`
+Dependencies only point downwards (Api → Integration → Core). Never reference `Game`, `Colossal.*`, `UnityEngine`
 or `Unity.Entities` from `Core/`; the test project would stop building.
 
 ## Commands

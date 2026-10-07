@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
+using Unsquare.Core.Deformation;
 using Unsquare.Core.Naming;
 
 namespace Unsquare.Tests.Naming
@@ -73,6 +74,20 @@ namespace Unsquare.Tests.Naming
             Assert.That(AssetNaming.IsOwnAssetName(a), Is.True);
             Assert.That(a, Is.Not.EqualTo(b));
             Assert.That(AssetNaming.AssetName("RenderA", key), Is.EqualTo(a));
+        }
+
+        [Test]
+        public void ForSubmesh_DiffersPerPlacementAndIsStable()
+        {
+            string key = DeformKey.Create(Box, Offsets);
+            var left = new SubmeshTransform(new float3(-3, 0, 0), quaternion.identity);
+            var right = new SubmeshTransform(new float3(3, 0, 0), quaternion.identity);
+            var turned = new SubmeshTransform(new float3(-3, 0, 0), quaternion.RotateY(math.PI));
+
+            Assert.That(DeformKey.ForSubmesh(key, left), Is.EqualTo(DeformKey.ForSubmesh(key, left)));
+            Assert.That(DeformKey.ForSubmesh(key, left), Is.Not.EqualTo(DeformKey.ForSubmesh(key, right)));
+            Assert.That(DeformKey.ForSubmesh(key, left), Is.Not.EqualTo(DeformKey.ForSubmesh(key, turned)));
+            Assert.That(DeformKey.ForSubmesh(key, left), Does.StartWith(key + "|at-300,0,0|"));
         }
 
         [TestCase(null)]
