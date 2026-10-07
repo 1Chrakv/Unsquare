@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <LangVersion>9.0</LangVersion>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <ManagedPath>$([System.Environment]::GetEnvironmentVariable('CSII_MANAGEDPATH', 'EnvironmentVariableTarget.User'))</ManagedPath>
+    </PropertyGroup>
+
+    <!--Core is pure C#; compile it directly so tests need neither game DLLs nor the mod post-processor-->
+    <ItemGroup>
+        <Compile Include="..\Unsquare\Core\**\*.cs" LinkBase="Core" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+        <PackageReference Include="NUnit" Version="3.14.0" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="Unity.Mathematics">
+            <HintPath>$(ManagedPath)\Unity.Mathematics.dll</HintPath>
+        </Reference>
+        <Reference Include="Newtonsoft.Json">
+            <HintPath>$(ManagedPath)\Newtonsoft.Json.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+</Project>
