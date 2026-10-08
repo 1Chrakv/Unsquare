@@ -19,6 +19,7 @@ using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;
 using Unsquare.Integration.Entities;
 using Unsquare.Integration.Prefabs;
+using Unsquare.Integration.Prefabs.Attachments;
 
 namespace Unsquare.Integration.Systems
 {
@@ -65,7 +66,8 @@ namespace Unsquare.Integration.Systems
             _resolver = new PrefabResolver(_prefabSystem);
             _store = new GeometryAssetStore();
             _renderBuilder = new RenderVariantBuilder(_store);
-            _factory = new VariantPrefabFactory(_prefabSystem, _renderBuilder);
+            _factory = new VariantPrefabFactory(_prefabSystem, _renderBuilder,
+                new IAttachmentDeformer[] { new SubObjectDeformer() });
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());

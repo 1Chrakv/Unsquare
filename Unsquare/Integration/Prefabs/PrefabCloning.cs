@@ -28,7 +28,7 @@ namespace Unsquare.Integration.Prefabs
             return component;
         }
 
-        /// <summary>Shallow copy that keeps any fields added by future game versions.</summary>
-        public static ObjectMeshInfo Copy(ObjectMeshInfo info) => (ObjectMeshInfo)MemberwiseCloneMethod.Invoke(info, null);
+        /// <summary>Shallow copy of serializable prefab data (e.g. mesh or sub-object infos), incl. future fields.</summary>
+        public static T ShallowCopy<T>(T info) where T : class => (T)MemberwiseCloneMethod.Invoke(info, null);
     }
 }

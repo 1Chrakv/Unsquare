@@ -4,12 +4,13 @@ using Game.Prefabs;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Naming;
+using Unsquare.Integration.Prefabs.Attachments;
 using Object = UnityEngine.Object;
 
 namespace Unsquare.Integration.Prefabs
 {
     /// <summary>
-    /// Clones a building prefab with deformed render meshes and registers it with the PrefabSystem.
+    /// Clones a building prefab with deformed render meshes and attachments (props, …) and registers it.
     /// The clone is hidden from menus, Find It and the zone spawner.
     /// </summary>
     internal sealed class VariantPrefabFactory
@@ -19,18 +20,22 @@ namespace Unsquare.Integration.Prefabs
 
         private readonly PrefabSystem _prefabSystem;
         private readonly RenderVariantBuilder _renderBuilder;
+        private readonly IReadOnlyList<IAttachmentDeformer> _attachmentDeformers;
 
-        public VariantPrefabFactory(PrefabSystem prefabSystem, RenderVariantBuilder renderBuilder)
+        public VariantPrefabFactory(PrefabSystem prefabSystem, RenderVariantBuilder renderBuilder,
+            IReadOnlyList<IAttachmentDeformer> attachmentDeformers)
         {
             _prefabSystem = prefabSystem;
             _renderBuilder = renderBuilder;
+            _attachmentDeformers = attachmentDeformers;
         }
 
         public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box, CageOffsets offsets,
             ISet<string> usedAssets, out ObjectGeometryPrefab variant)
         {
             variant = null;
-            if (!TryDeformMeshes(basePrefab, box, offsets, usedAssets, out var meshes))
+            var deformation = new TrilinearCageDeformation(box, offsets);
+            if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), usedAssets, out var meshes))
                 return false;
 
             ObjectGeometryPrefab clone = null;
@@ -42,6 +47,8 @@ namespace Unsquare.Integration.Prefabs
                 clone.Remove<ObsoleteIdentifiers>(); // would alias the base prefab's old IDs
                 clone.Remove<UIObject>();            // keep it out of build menus
                 HideFromAssetBrowsers(clone, basePrefab);
+                foreach (var attachmentDeformer in _attachmentDeformers)
+                    attachmentDeformer.Apply(clone, basePrefab, deformation);
 
                 if (!_prefabSystem.AddPrefab(clone))
                 {
@@ -61,15 +68,13 @@ namespace Unsquare.Integration.Prefabs
             }
         }
 
-        private bool TryDeformMeshes(ObjectGeometryPrefab basePrefab, CageBox box, CageOffsets offsets,
+        private bool TryDeformMeshes(ObjectGeometryPrefab basePrefab, IDeformation deformation, string deformKey,
             ISet<string> usedAssets, out ObjectMeshInfo[] meshes)
         {
-            var deformation = new TrilinearCageDeformation(box, offsets);
-            string deformKey = DeformKey.Create(box, offsets);
             meshes = new ObjectMeshInfo[basePrefab.m_Meshes.Length];
             for (int i = 0; i < meshes.Length; i++)
             {
-                var info = PrefabCloning.Copy(basePrefab.m_Meshes[i]);
+                var info = PrefabCloning.ShallowCopy(basePrefab.m_Meshes[i]);
                 meshes[i] = info;
                 if (!(info.m_Mesh is RenderPrefab render))
                     continue;
