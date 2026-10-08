@@ -4,6 +4,7 @@ using Game.Modding;
 using Game.Prefabs;
 using Game.SceneFlow;
 using Unsquare.Integration.Systems;
+using Unsquare.UI.Editing;
 
 namespace Unsquare
 {
@@ -20,6 +21,7 @@ namespace Unsquare
 
             // Before PrefabInitializeSystem, so prefabs added by the variant system initialize in the same frame.
             updateSystem.UpdateBefore<VariantSystem, PrefabInitializeSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
         }
 
         public void OnDispose()
