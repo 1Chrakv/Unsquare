@@ -52,6 +52,7 @@ applied, red failed); orange dot = selected handle with building axes X (red), Y
 | 13 | Zone a large area with the base building's zone | No deformed variant ever spawns |
 | 14 | Reset a building, save, set its `LastUsedUtc` in `variants.json` > 14 days back, restart | Housekeeping log: entry pruned, its assets deleted, shared assets kept |
 | 15 | Delete `variants.json`, load a save with deformed buildings | Document what breaks (see `HowTo.md` §13.7) |
+| 16 | On a building with roof props and a storefront: raise the top face, lean it sideways, pull a bottom front corner out | Roof props rise, move and tilt with the roof; the storefront follows its corner and stays on the ground; reset puts all props back |
 
 ## Reporting problems
 

@@ -64,6 +64,30 @@ commit, configuration and build time on load.
 - Prefab names, deform keys, asset names and GUID seeds are **permanent**: change them only with a version bump
   and a migration, otherwise existing saves break.
 
+## Props: rigid placement, full deformation later
+
+- **Now:** sub-objects (props, attached sub-buildings) get rigid poses: `SubObjectDeformer` → `RigidDeformer`
+  (anchor follows the cage, rotation = polar part of the Jacobian). Further building-relative placements plug in
+  as `IAttachmentDeformer`s: effects (`EffectSource`), lot areas (`ObjectSubAreas`), paths (`ObjectSubNets`),
+  lanes (`ObjectSubLanes`).
+- **Why props are not mesh-deformed yet:**
+  - Prop meshes belong to shared prefabs, so bending them needs a baked prop variant per prop, placement and
+    deformation (incl. LODs), and assets multiply.
+  - Saves store every prop instance with its `PrefabRef`; prop variants would need deterministic names and
+    preload restore like building variants.
+  - Placeholder/random, nested, animated and marker props need special cases. Small props look right when rigid.
+- **What full prop deformation would take:**
+  1. Per sub-object, clone its `ObjectPrefab` into a prop variant (deterministic name: prop name + parent variant
+     hash + sub-object index). Bake meshes with `RenderVariantBuilder`, using sub-object pose ∘ prop mesh pose as
+     `SubmeshTransform` (`DeformKey.ForSubmesh` already keys by placement).
+  2. Point the clone's `ObjectSubObjectInfo.m_Object` at the prop variant and keep the original pose.
+  3. Register prop variants before the parent's `AddPrefab`, list them and their assets in the parent's manifest
+     entry, and restore them at preload before the parent.
+  4. Resolve placeholder/random props per candidate (or deterministically), recurse into nested sub-objects, and
+     hide prop variants from menus/asset browsers.
+  5. Bound the cost: fully deform only props over which the deformation is visibly non-rigid (non-linearity
+     metric over the prop bounds); keep rigid placement for the rest.
+
 ## Comments, tests, commits
 
 - Comments: max 2 lines inside code; XML doc summaries max 3 lines. Explain *why*, not *what*.
