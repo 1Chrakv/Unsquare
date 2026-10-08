@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Colossal.Serialization.Entities;
 using Game;
@@ -208,8 +209,16 @@ namespace Unsquare.Integration.Systems
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
-            if (TryGetOrCreateVariant(description.BasePrefab, description.Box, offsets, isRestore: false, out var variant) &&
-                _prefabSystem.TryGetEntity(variant, out var variantEntity))
+            var stopwatch = Stopwatch.StartNew();
+            int createdBefore = _renderBuilder.CreatedAssetCount;
+            bool created = TryGetOrCreateVariant(description.BasePrefab, description.Box, offsets, isRestore: false,
+                out var variant);
+            stopwatch.Stop();
+            // 0 new assets means everything was reused (existing prefab or cached geometry).
+            Mod.Log.Info($"Bake for building {building}: {(created ? variant.name : "failed")}, " +
+                         $"{stopwatch.ElapsedMilliseconds} ms, {_renderBuilder.CreatedAssetCount - createdBefore} new assets");
+
+            if (created && _prefabSystem.TryGetEntity(variant, out var variantEntity))
                 QueueSwap(building, variantEntity, description.BasePrefab, offsets);
             else
                 SetStatus(building, VariantStatus.Failed);

@@ -29,6 +29,9 @@ namespace Unsquare.Integration.Prefabs
         /// <summary>Replaced on every preload; lets restores skip vertex work.</summary>
         public BoundsCache BoundsCache { get; set; } = new();
 
+        /// <summary>Geometry assets written to disk this session; lets callers report reuse.</summary>
+        public int CreatedAssetCount { get; private set; }
+
         /// <summary>Returns the deformed clone or null; adds every asset name it relies on to <paramref name="usedAssets"/>.</summary>
         public RenderPrefab GetOrBuild(RenderPrefab source, in SubmeshTransform transform, IDeformation deformation,
             string deformKey, ISet<string> usedAssets)
@@ -87,7 +90,10 @@ namespace Unsquare.Integration.Prefabs
             if (exists)
                 MeshDeformer.Destroy(meshes); // only needed the bounds
             else
+            {
                 asset = _store.Create(assetName, hash, meshes); // asset owns the meshes now
+                CreatedAssetCount++;
+            }
             BoundsCache.Set(assetName, bounds);
             return asset;
         }
