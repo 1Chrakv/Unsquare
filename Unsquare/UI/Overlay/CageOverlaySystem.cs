@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Colossal.Mathematics;
 using Game;
 using Game.Rendering;
@@ -19,6 +20,7 @@ namespace Unsquare.UI.Overlay
     public partial class CageOverlaySystem : GameSystemBase
     {
         private readonly CageSegment[] _edges = new CageSegment[CageTopology.EdgeCount];
+        private readonly List<CageSegment> _dashes = new();
         private readonly CageOverlayStyle _style = CageOverlayStyle.Default;
         private CageEditorSystem _editor;
         private OverlayRenderSystem _overlayRenderSystem;
@@ -51,13 +53,25 @@ namespace Unsquare.UI.Overlay
             CageWireframe.Fill(box, offsets, _edges);
             foreach (var edge in _edges)
             {
-                var segment = new Line3.Segment(
-                    BuildingSpace.PointToWorld(transform, edge.A), BuildingSpace.PointToWorld(transform, edge.B));
-                if (dashed)
-                    buffer.DrawDashedLine(color, segment, _style.LineWidth, _style.DashLength, _style.GapLength);
-                else
-                    buffer.DrawLine(color, segment, _style.LineWidth, false);
+                if (!dashed)
+                {
+                    DrawLine(buffer, transform, edge, color);
+                    continue;
+                }
+                // The built-in dashed line is a flat ribbon that vanishes when vertical; dash ourselves instead.
+                _dashes.Clear();
+                SegmentDashes.Split(edge, _style.DashLength, _style.GapLength, _dashes);
+                foreach (var dash in _dashes)
+                    DrawLine(buffer, transform, dash, color);
             }
+        }
+
+        // Camera-facing: flat ribbons have no visible width on vertical segments.
+        private void DrawLine(OverlayRenderSystem.Buffer buffer, in Transform transform, CageSegment local, Color color)
+        {
+            var segment = new Line3.Segment(
+                BuildingSpace.PointToWorld(transform, local.A), BuildingSpace.PointToWorld(transform, local.B));
+            buffer.DrawLine(color, segment, _style.LineWidth, true);
         }
 
         private void DrawHandles(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
@@ -83,12 +97,7 @@ namespace Unsquare.UI.Overlay
 
         // Axes are drawn in building space so they show exactly what the move hotkeys do.
         private void DrawAxis(OverlayRenderSystem.Buffer buffer, in Transform transform, float3 origin, float3 axis,
-            Color color)
-        {
-            var segment = new Line3.Segment(
-                BuildingSpace.PointToWorld(transform, origin),
-                BuildingSpace.PointToWorld(transform, origin + axis * _style.AxisLength));
-            buffer.DrawLine(color, segment, _style.LineWidth, false);
-        }
+            Color color) =>
+            DrawLine(buffer, transform, new CageSegment(origin, origin + axis * _style.AxisLength), color);
     }
 }
