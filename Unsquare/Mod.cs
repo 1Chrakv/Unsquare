@@ -7,6 +7,7 @@ using Game.SceneFlow;
 using Unsquare.Integration.Systems;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
+using Unsquare.UI.Overlay;
 
 namespace Unsquare
 {
@@ -33,6 +34,7 @@ namespace Unsquare
             updateSystem.UpdateBefore<VariantSystem, PrefabInitializeSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageHotkeySystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
+            updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.World.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
         }
 
