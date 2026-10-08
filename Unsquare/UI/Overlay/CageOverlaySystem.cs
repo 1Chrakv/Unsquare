@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Colossal.Mathematics;
 using Game;
 using Game.Rendering;
 using Unity.Jobs;
@@ -55,23 +54,25 @@ namespace Unsquare.UI.Overlay
             {
                 if (!dashed)
                 {
-                    DrawLine(buffer, transform, edge, color);
+                    DrawSegment(buffer, transform, edge, color);
                     continue;
                 }
-                // The built-in dashed line is a flat ribbon that vanishes when vertical; dash ourselves instead.
                 _dashes.Clear();
                 SegmentDashes.Split(edge, _style.DashLength, _style.GapLength, _dashes);
                 foreach (var dash in _dashes)
-                    DrawLine(buffer, transform, dash, color);
+                    DrawSegment(buffer, transform, dash, color);
             }
         }
 
-        // Camera-facing: flat ribbons have no visible width on vertical segments.
-        private void DrawLine(OverlayRenderSystem.Buffer buffer, in Transform transform, CageSegment local, Color color)
+        // Overlay lines measure length on the ground plane only, so vertical ones vanish; cylinders work at any slope.
+        private void DrawSegment(OverlayRenderSystem.Buffer buffer, in Transform transform, CageSegment local, Color color)
         {
-            var segment = new Line3.Segment(
-                BuildingSpace.PointToWorld(transform, local.A), BuildingSpace.PointToWorld(transform, local.B));
-            buffer.DrawLine(color, segment, _style.LineWidth, true);
+            float3 a = BuildingSpace.PointToWorld(transform, local.A);
+            float3 b = BuildingSpace.PointToWorld(transform, local.B);
+            if (!SegmentPose.TryCreate(a, b, out var pose))
+                return;
+            buffer.DrawCustomMesh(color, pose.Center, pose.Length, _style.LineRadius,
+                OverlayRenderSystem.CustomMeshType.Cylinder, pose.Rotation);
         }
 
         private void DrawHandles(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
@@ -98,6 +99,6 @@ namespace Unsquare.UI.Overlay
         // Axes are drawn in building space so they show exactly what the move hotkeys do.
         private void DrawAxis(OverlayRenderSystem.Buffer buffer, in Transform transform, float3 origin, float3 axis,
             Color color) =>
-            DrawLine(buffer, transform, new CageSegment(origin, origin + axis * _style.AxisLength), color);
+            DrawSegment(buffer, transform, new CageSegment(origin, origin + axis * _style.AxisLength), color);
     }
 }

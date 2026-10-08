@@ -18,7 +18,8 @@ namespace Unsquare.UI.Overlay
         public Color AxisY { get; } = new(0.2f, 0.9f, 0.2f, 1f);
         public Color AxisZ { get; } = new(0.25f, 0.45f, 1f, 1f);
 
-        public float LineWidth { get; } = 0.2f;
+        /// <summary>Lines are drawn as cylinders; this is their radius.</summary>
+        public float LineRadius { get; } = 0.1f;
         public float DashLength { get; } = 1f;
         public float GapLength { get; } = 0.6f;
         public float HandleDiameter { get; } = 0.8f;

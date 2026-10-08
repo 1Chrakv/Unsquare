@@ -59,6 +59,8 @@ commit, configuration and build time on load.
 - Mesh and prefab APIs are main-thread only; keep hot loops allocation-free (no LINQ, no closures).
 - Wrap each game-API step (clone, AddPrefab, asset I/O, reflection) in try/catch, log, and degrade by not swapping.
 - Use `Mod.Log` (`Colossal.Logging.ILog`) for logging, never `Debug.Log`.
+- `OverlayRenderSystem` lines/curves are ground-plane only (length measured in xz; vertical ones vanish). Draw 3D
+  lines as `CustomMeshType.Cylinder` via `DrawCustomMesh` (see `SegmentPose`).
 - Prefab names, deform keys, asset names and GUID seeds are **permanent**: change them only with a version bump
   and a migration, otherwise existing saves break.
 
