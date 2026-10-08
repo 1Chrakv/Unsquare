@@ -3,9 +3,27 @@
     <PropertyGroup>
         <Configurations>Debug;Release</Configurations>
 
+        <!--Mod version; keep ModVersion in PublishConfiguration.xml equal (checked on build)-->
+        <Version>0.1.0</Version>
+
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
     </PropertyGroup>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+            <_Parameter1>BuildTimeUtc</_Parameter1>
+            <_Parameter2>$([System.DateTime]::UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))</_Parameter2>
+        </AssemblyAttribute>
+    </ItemGroup>
+
+    <Target Name="CheckModVersionInSync" BeforeTargets="BeforeBuild">
+        <XmlPeek XmlInputPath="$(PublishConfigurationPath)" Query="/Publish/ModVersion/@Value">
+            <Output TaskParameter="Result" PropertyName="PublishedModVersion" />
+        </XmlPeek>
+        <Error Condition="'$(PublishedModVersion)' != '$(Version)'"
+               Text="Version mismatch: Unsquare.csproj has $(Version), $(PublishConfigurationPath) has ModVersion $(PublishedModVersion). Bump both together." />
+    </Target>
 
     <!--Imports must be after PropertyGroup block-->
     <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props"/>

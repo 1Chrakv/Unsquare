@@ -4,7 +4,8 @@ How to verify Unsquare in a running city with the hotkeys and the cage overlay (
 
 ## Setup
 
-1. `dotnet build Unsquare.sln` – the mod toolchain deploys the build to the local Mods folder.
+1. **Close the game**, then `dotnet build Unsquare.sln` – the toolchain replaces `Mods\Unsquare` with the build.
+   While the game runs the DLLs are locked: the deploy fails *and* leaves `Mods\Unsquare` half-deleted.
 2. Start the game, open Options → Unsquare and check the key bindings (rebind any that clash).
 3. Follow the log live:
 
@@ -12,6 +13,8 @@ How to verify Unsquare in a running city with the hotkeys and the cage overlay (
    Get-Content -Wait "$env:USERPROFILE\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Unsquare.Mod.log"
    ```
 
+   The first line, e.g. `Unsquare 0.1.0+abc1234 (Debug, built 2026-10-08 20:05:21 UTC) loading`, must show the
+   commit and build time you expect; otherwise the game runs an older build.
 4. Load a city and click a building: the info panel selection is the edit target.
 
 ## Hotkeys (defaults)

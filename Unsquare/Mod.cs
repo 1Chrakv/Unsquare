@@ -19,7 +19,7 @@ namespace Unsquare
 
         public void OnLoad(UpdateSystem updateSystem)
         {
-            Log.Info(nameof(OnLoad));
+            Log.Info($"Unsquare {BuildInfo.Summary} loading");
 
             if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
                 Log.Info($"Current mod asset at {asset.path}");

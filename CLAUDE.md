@@ -29,7 +29,13 @@ dotnet test Unsquare.Tests
 ```
 
 The mod project imports `Mod.props`/`Mod.targets` from `%CSII_TOOLPATH%` (net48, C# 9). Game DLLs are resolved
-from `%CSII_MANAGEDPATH%`.
+from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare`; with the game running the deploy fails (locked DLLs).
+
+## Versioning
+
+Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
+`Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). `BuildInfo` logs version,
+commit, configuration and build time on load.
 
 ## C# conventions (C# 9, .NET Framework 4.8)
 
