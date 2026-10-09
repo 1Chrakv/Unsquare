@@ -49,8 +49,10 @@ namespace Unsquare.Integration.Prefabs
                 clone.Remove<ObsoleteIdentifiers>(); // would alias the base prefab's old IDs
                 clone.Remove<UIObject>();            // keep it out of build menus
                 HideFromAssetBrowsers(clone, basePrefab);
+                var counts = new List<string>(_attachmentDeformers.Count);
                 foreach (var attachmentDeformer in _attachmentDeformers)
-                    attachmentDeformer.Apply(clone, basePrefab, context);
+                    counts.Add(attachmentDeformer.Apply(clone, basePrefab, context).ToString());
+                Mod.Log.Info($"Attachments of {variantName} ({scope}): {string.Join(", ", counts)}");
 
                 if (!_prefabSystem.AddPrefab(clone))
                 {

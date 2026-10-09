@@ -67,7 +67,10 @@ namespace Unsquare.Integration.Systems
             _store = new GeometryAssetStore();
             _renderBuilder = new RenderVariantBuilder(_store);
             _factory = new VariantPrefabFactory(_prefabSystem, _renderBuilder,
-                new IAttachmentDeformer[] { new SubObjectDeformer() });
+                new IAttachmentDeformer[]
+                {
+                    new SubObjectDeformer(), new SubAreaDeformer(), new SubLaneDeformer(), new SubNetDeformer(),
+                });
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
