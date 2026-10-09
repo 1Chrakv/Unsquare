@@ -36,7 +36,7 @@ namespace Unsquare.Integration.Prefabs
         {
             variant = null;
             var deformation = new TrilinearCageDeformation(box, offsets);
-            var context = new AttachmentContext(deformation, box, scope);
+            var context = new AttachmentContext(deformation, box, scope, box);
             if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), usedAssets, out var meshes))
                 return false;
 
