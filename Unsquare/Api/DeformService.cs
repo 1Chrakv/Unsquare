@@ -25,10 +25,14 @@ namespace Unsquare.Api
             state = default;
             if (!_pipeline.TryDescribe(building, out var description))
                 return false;
-            var applied = description.AppliedOffsets;
-            bool requested = _pipeline.TryGetRequested(building, out var target);
-            var status = MapStatus(_pipeline.GetStatus(building), applied);
-            state = new CageState(building, description.Box, applied, requested ? target : applied, status);
+            // Until the API exposes scopes, the cage is shown in the scope that is applied (or requested).
+            var applied = description.Applied;
+            var target = _pipeline.TryGetRequested(building, out var requested) ? requested : applied;
+            var scope = description.Effective(target.IsIdentity ? applied.Scope : target.Scope);
+            var appliedOffsets = applied.Scope == scope ? applied.Offsets ?? CageOffsets.Identity : CageOffsets.Identity;
+            var status = MapStatus(_pipeline.GetStatus(building), appliedOffsets);
+            state = new CageState(building, description.BoxFor(scope), appliedOffsets,
+                target.Offsets ?? CageOffsets.Identity, status);
             return true;
         }
 
@@ -39,10 +43,12 @@ namespace Unsquare.Api
             if (!_pipeline.TryDescribe(building, out var description))
                 return DeformRequestResult.NotDeformable;
 
-            var clamped = CageValidator.Clamp(description.Box, offsets);
-            if (CageValidator.Validate(description.Box, clamped) != CageValidity.Valid)
+            var scope = description.Applied.Scope;
+            var box = description.BoxFor(scope);
+            var clamped = CageValidator.Clamp(box, offsets);
+            if (CageValidator.Validate(box, clamped) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
-            _pipeline.Request(building, clamped);
+            _pipeline.Request(building, new CageShape(scope, clamped));
             return clamped.Equals(offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
         }
 
