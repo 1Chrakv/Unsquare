@@ -32,11 +32,11 @@ namespace Unsquare.UI.Editing
         public Entity Target { get; private set; } = Entity.Null;
         public bool HasTarget => Target != Entity.Null;
 
-        /// <summary>Scope for buildings that are not deformed yet; objects without a lot fall back to Building.</summary>
-        public const CageScope DefaultScope = CageScope.Lot;
+        /// <summary>Default scope and nudge sizes; set via <see cref="Configure"/>.</summary>
+        public CageEditOptions Options { get; private set; } = CageEditOptions.Default;
 
         /// <summary>Which cage is edited: the building's mesh bounds or its whole lot.</summary>
-        public CageScope Scope { get; private set; } = DefaultScope;
+        public CageScope Scope { get; private set; } = CageEditOptions.Default.DefaultScope;
         public CageHandleCursor Cursor { get; private set; }
         public NudgeStep Step { get; private set; } = NudgeStep.Default;
         public CageDrag ActiveDrag { get; private set; }
@@ -48,6 +48,17 @@ namespace Unsquare.UI.Editing
             return HasTarget && _service.TryGetCage(Target, Scope, out state);
         }
 
+        /// <summary>
+        /// Applies new options. The step keeps its position (small, medium, large); the default scope is used from
+        /// the next target on.
+        /// </summary>
+        public void Configure(CageEditOptions options)
+        {
+            Options = options ?? throw new ArgumentNullException(nameof(options));
+            Step = Step.WithSizes(options.SmallStep, options.MediumStep, options.LargeStep);
+            Changed?.Invoke();
+        }
+
         public void SetTarget(Entity building)
         {
             if (building == Target)
@@ -56,7 +67,7 @@ namespace Unsquare.UI.Editing
             Target = building;
             LastResult = null;
             // Deformed buildings open in their own scope; undeformed ones in the default (lot) scope.
-            Scope = DefaultScope;
+            Scope = Options.DefaultScope;
             if (HasTarget && _service.TryGetCage(Target, null, out var state) &&
                 !(state.AppliedOffsets.IsIdentity && state.TargetOffsets.IsIdentity))
                 Scope = state.Scope;

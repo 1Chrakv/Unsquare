@@ -9,7 +9,15 @@ namespace Unsquare.UI.Overlay
     /// </summary>
     public sealed class CageOverlayStyle
     {
-        public static CageOverlayStyle Default { get; } = new();
+        public static CageOverlayStyle Default { get; } = new(0.1f, 0.8f, 1.8f, 2f);
+
+        public CageOverlayStyle(float lineRadius, float handleDiameter, float selectedHandleDiameter, float axisLength)
+        {
+            LineRadius = lineRadius;
+            HandleDiameter = handleDiameter;
+            SelectedHandleDiameter = selectedHandleDiameter;
+            AxisLength = axisLength;
+        }
 
         public Color RestBox { get; } = new(1f, 1f, 1f, 0.35f);
         public Color Handle { get; } = new(1f, 1f, 1f, 0.8f);
@@ -22,12 +30,12 @@ namespace Unsquare.UI.Overlay
         public Color LotWarning { get; } = new(1f, 0.2f, 0.8f, 0.9f);
 
         /// <summary>Lines are drawn as cylinders; this is their radius.</summary>
-        public float LineRadius { get; } = 0.1f;
+        public float LineRadius { get; }
         public float DashLength { get; } = 1f;
         public float GapLength { get; } = 0.6f;
-        public float HandleDiameter { get; } = 0.8f;
-        public float SelectedHandleDiameter { get; } = 1.8f;
-        public float AxisLength { get; } = 2f;
+        public float HandleDiameter { get; }
+        public float SelectedHandleDiameter { get; }
+        public float AxisLength { get; }
 
         public Color Cage(DeformStatus status) => status switch
         {

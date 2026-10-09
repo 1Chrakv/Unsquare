@@ -4,6 +4,7 @@ using Game;
 using Game.Modding;
 using Game.Prefabs;
 using Game.SceneFlow;
+using Unsquare.Api;
 using Unsquare.Integration.Systems;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
@@ -16,6 +17,7 @@ namespace Unsquare
         public static readonly ILog Log = LogManager.GetLogger($"{nameof(Unsquare)}.{nameof(Mod)}").SetShowsErrorsInUI(false);
 
         private UnsquareSettings _settings;
+        private SettingsApplier _settingsApplier;
 
         public void OnLoad(UpdateSystem updateSystem)
         {
@@ -35,12 +37,19 @@ namespace Unsquare
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageHotkeySystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
-            updateSystem.World.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
+            var world = updateSystem.World;
+            world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
+            _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world),
+                world.GetOrCreateSystemManaged<CageEditorSystem>().Session,
+                world.GetOrCreateSystemManaged<CageOverlaySystem>());
+            _settingsApplier.Apply();
         }
 
         public void OnDispose()
         {
             Log.Info(nameof(OnDispose));
+            _settingsApplier?.Dispose();
+            _settingsApplier = null;
             if (_settings != null)
             {
                 _settings.UnregisterInOptionsUI();

@@ -6,12 +6,15 @@ using Game.Settings;
 namespace Unsquare.UI.Input
 {
     /// <summary>
-    /// The mod's options page. For now it only holds the cage editing key bindings (all rebindable);
-    /// general options will join it as the UI grows.
+    /// The mod's options page: cage editing key bindings (all rebindable) on the main tab, tunables on the
+    /// advanced tab (see UnsquareSettings.Advanced.cs).
     /// </summary>
     [FileLocation(nameof(Unsquare))]
-    [SettingsUIGroupOrder(HotkeyGroup)]
-    [SettingsUIShowGroupName(HotkeyGroup)]
+    [SettingsUITabOrder(MainTab, AdvancedTab)]
+    [SettingsUIGroupOrder(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
+        PerformanceGroup, ResetGroup)]
+    [SettingsUIShowGroupName(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
+        PerformanceGroup)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindFace, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -28,13 +31,14 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.LogState, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleScope, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
-    public sealed class UnsquareSettings : ModSetting
+    public sealed partial class UnsquareSettings : ModSetting
     {
         public const string MainTab = "Main";
         public const string HotkeyGroup = "Hotkeys";
 
         public UnsquareSettings(IMod mod) : base(mod)
         {
+            SetDefaults();
         }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
@@ -104,6 +108,7 @@ namespace Unsquare.UI.Input
         public override void SetDefaults()
         {
             // Key bindings take their defaults from the attributes above.
+            SetAdvancedDefaults();
         }
     }
 }

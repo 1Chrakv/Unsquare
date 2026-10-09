@@ -20,9 +20,16 @@ namespace Unsquare.UI.Overlay
     {
         private readonly CageSegment[] _edges = new CageSegment[CageTopology.EdgeCount];
         private readonly List<CageSegment> _dashes = new();
-        private readonly CageOverlayStyle _style = CageOverlayStyle.Default;
         private CageEditorSystem _editor;
         private OverlayRenderSystem _overlayRenderSystem;
+        private CageOverlayStyle _style = CageOverlayStyle.Default;
+
+        /// <summary>Colours and sizes; replaced when the options change.</summary>
+        public CageOverlayStyle Style
+        {
+            get => _style;
+            set => _style = value ?? throw new System.ArgumentNullException(nameof(value));
+        }
 
         protected override void OnCreate()
         {
