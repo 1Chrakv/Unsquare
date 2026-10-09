@@ -60,6 +60,7 @@ X (red), Y (green), Z (blue).
 | 19 | Push a lot bottom corner outside the plot | Cage turns magenta, log warns once; the edit still applies |
 | 20 | Save, reload, cold restart with lot- and building-scope variants | Both restore; older building-scope variants keep their names and shapes; lot areas/paths stay deformed |
 | 21 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
+| 22 | Building with a storefront: pull a bottom front corner in (Building and Lot scope) | Storefront turns with the facade and stays parallel to it; props deep inside the lot keep a smooth average turn; roof props near the eaves follow the roof |
 
 ## Reporting problems
 

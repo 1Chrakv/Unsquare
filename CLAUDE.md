@@ -82,8 +82,12 @@ commit, configuration and build time on load.
 
 ## Props: rigid placement, full deformation later
 
-- **Now:** sub-objects (props, attached sub-buildings) get rigid poses via `SubObjectDeformer` → `RigidDeformer`:
-  anchor follows the cage, rotation = polar part of the Jacobian, ground props (`m_ParentMesh == -1`) yaw only.
+- **Now:** sub-objects (props, attached sub-buildings) get rigid poses via `SubObjectDeformer` →
+  `RigidDeformer.Place`: anchor follows the cage, rotation = polar part of the Jacobian, ground props
+  (`m_ParentMesh == -1`) yaw only (`PlacementMode`).
+- **Facade alignment:** within `FaceAlignment.FalloffMeters` (6 m) of a building box face, a prop's rotation
+  blends into that face's rotation, evaluated on the face. Props outside the box align fully; ground props only
+  consider walls, attached props also the roof. The building box is used in both scopes.
 - **Why props are not mesh-deformed yet:**
   - Prop meshes belong to shared prefabs, so bending them needs a baked prop variant per prop, placement and
     deformation (incl. LODs), and assets multiply.
