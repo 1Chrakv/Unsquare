@@ -61,8 +61,9 @@ commit, configuration and build time on load.
 - Use `Mod.Log` (`Colossal.Logging.ILog`) for logging, never `Debug.Log`.
 - `OverlayRenderSystem` lines/curves are ground-plane only (length measured in xz; vertical ones vanish). Draw 3D
   lines as `CustomMeshType.Cylinder` via `DrawCustomMesh` (see `SegmentPose`).
-- Prefab names, deform keys, asset names and GUID seeds are **permanent**: change them only with a version bump
-  and a migration, otherwise existing saves break.
+- Prefab names, deform keys, asset names, GUID seeds and the manifest format are what saves depend on. While in
+  early development, breaking them is allowed (bump `VariantManifest.FormatVersion`), but only after the user
+  confirmed it.
 
 ## Options (advanced settings tab)
 
@@ -74,15 +75,14 @@ commit, configuration and build time on load.
 - Attachment options are read when a variant is created; variant names don't include them, so existing
   variants keep their placement until the next load. Never expose values baked into names or assets.
 
-## Cage scope and lot deformation
+## Lot deformation
 
-- `CageScope.Building` = main mesh bounds (only attachments inside the box deform); `CageScope.Lot` = lot
-  rectangle (`lotSize × 8 m`, ground to roof) and everything on it. Scope is part of the variant name
-  (Building keeps the pre-scope seed) and of `ManifestEntry.Scope`.
-- The editor opens undeformed buildings in Lot scope (option `CageEditOptions.DefaultScope`); deformed ones open in
-  the scope they were deformed in. Objects without a lot fall back to Building.
-- Attachments (`IAttachmentDeformer`, filtered by `AttachmentContext.Affects`) are deformed in the clone's prefab
-  data: props (`ObjectSubObjects`), areas (`ObjectSubAreas`), lanes (`ObjectSubLanes`), nets (`ObjectSubNets`).
+- The cage is always the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
+  (`CageBoxMeasurer.TryMeasureLot`). Prefabs without a lot are not deformable. A building-only cage was removed
+  (0.6.0): it left garden props, ground and paths misplaced.
+- The building's mesh box (`TryMeasureMeshes`) is only used as the facade-alignment box for props.
+- All attachments (`IAttachmentDeformer`, per kind switchable in `AttachmentOptions`) are deformed in the clone's
+  prefab data: props (`ObjectSubObjects`), areas (`ObjectSubAreas`), lanes (`ObjectSubLanes`), nets (`ObjectSubNets`).
 - How the game keeps them, and what that means:
   - **Props and lanes** are rebuilt from the prefab when the building is `Updated`, so the swap is enough.
   - **Areas and nets** are saved entities created once by the placement tool. `LotInstanceSync` (called from
@@ -99,7 +99,7 @@ commit, configuration and build time on load.
   (`m_ParentMesh == -1`) yaw only (`PlacementMode`); attached props use `AttachmentOptions.AttachedPropMode`.
 - **Facade alignment:** within `AttachmentOptions.FacadeReachMeters` (default 6 m, 0 = off) of a building box
   face, a prop's rotation blends into that face's rotation, evaluated on the face. Props outside the box align
-  fully; ground props only consider walls, attached props also the roof. The building box is used in both scopes.
+  fully; ground props only consider walls, attached props also the roof.
 - **Why props are not mesh-deformed yet:**
   - Prop meshes belong to shared prefabs, so bending them needs a baked prop variant per prop, placement and
     deformation (incl. LODs), and assets multiply.

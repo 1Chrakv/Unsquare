@@ -4,7 +4,7 @@
         <Configurations>Debug;Release</Configurations>
 
         <!--Mod version; keep ModVersion in PublishConfiguration.xml equal (checked on build)-->
-        <Version>0.5.0</Version>
+        <Version>0.6.0</Version>
 
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>

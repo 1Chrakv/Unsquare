@@ -16,6 +16,8 @@ How to verify Unsquare in a running city with the hotkeys and the cage overlay (
    The first line, e.g. `Unsquare 0.1.0+abc1234 (Debug, built 2026-10-08 20:05:21 UTC) loading`, must show the
    commit and build time you expect; otherwise the game runs an older build.
 4. Load a city and click a building: the info panel selection is the edit target.
+5. After an update that bumps the manifest format (e.g. to 0.6.0), start a new city: older deformed buildings
+   are discarded (log `Variant manifest has an old format …`).
 
 ## Hotkeys (defaults)
 
@@ -28,7 +30,6 @@ How to verify Unsquare in a running city with the hotkeys and the cage overlay (
 | Move up / down | Alt+PageUp / Alt+PageDown |
 | Cycle step 0.1 / 0.5 / 2 m | Alt+S |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
-| Toggle lot / building cage (lot is the default) | Alt+T |
 | Write cage state to the log | Alt+L |
 
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
@@ -55,19 +56,18 @@ X (red), Y (green), Z (blue).
 | 14 | Reset a building, save, set its `LastUsedUtc` in `variants.json` > 14 days back, restart | Housekeeping log: entry pruned, its assets deleted, shared assets kept |
 | 15 | Delete `variants.json`, load a save with deformed buildings | Document what breaks (see `HowTo.md` §13.7) |
 | 16 | On a building with roof props and a storefront: raise the top face, lean it sideways, pull a bottom front corner out | Roof props rise, move and tilt with the roof; the storefront follows its corner and stays on the ground; reset puts all props back |
-| 17 | House with garden (shed, trees, paving, fences), Alt+T to Building scope: deform the house | Shed, trees, paving and fences stay exactly where they were |
-| 18 | Undeformed house selected: cage opens in Lot scope; skew/taper the lot inside its plot | Cage spans the fence rectangle; `Attachments of …` log lists props/areas/lanes/nets; paving, grass, fences, paths, shed and trees follow; trees stay upright; `Lot sync …` log shows moved areas/net edges |
-| 19 | Push a lot bottom corner outside the plot | Cage turns magenta, log warns once; the edit still applies |
-| 20 | Save, reload, cold restart with lot- and building-scope variants | Both restore; older building-scope variants keep their names and shapes; lot areas/paths stay deformed |
-| 21 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
-| 22 | Building with a storefront: pull a bottom front corner in (Building and Lot scope) | Storefront turns with the facade and stays parallel to it; props deep inside the lot keep a smooth average turn; roof props near the eaves follow the roof |
-| 23 | Options → Unsquare → Advanced | All groups shown with defaults; every change logs `Options: …` once |
-| 24 | Facade alignment reach 0, deform a new building with a storefront | Storefront takes the average turn, not the facade's |
-| 25 | Turn off "Deform ground areas", lot-deform a fresh house | Paving and grass stay rectangular; `Attachments of …` log shows `Areas off` |
-| 26 | Change nudge step sizes, press Alt+S repeatedly | Steps cycle through the new sizes (snapped to 0.1 m) |
-| 27 | Change line thickness / handle sizes / axis length | Overlay updates immediately |
-| 28 | Default cage scope = Building, select an undeformed building | Cage opens in Building scope |
-| 29 | Reset advanced options, restart the game | Defaults restored and kept after the restart |
+| 17 | House with garden (shed, trees, paving, fences): skew/taper the lot inside its plot | Cage spans the fence rectangle; `Attachments of …` log lists props/areas/lanes/nets; paving, grass, fences, paths, shed and trees follow; trees stay upright; `Lot sync …` log shows moved areas/net edges |
+| 18 | Push a lot bottom corner outside the plot | Cage turns magenta, log warns once; the edit still applies |
+| 19 | Save, reload, cold restart | Deformed buildings restore; lot areas/paths stay deformed |
+| 20 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
+| 21 | Building with a storefront: pull a bottom front corner in | Storefront turns with the facade and stays parallel to it; props deep inside the lot keep a smooth average turn; roof props near the eaves follow the roof |
+| 22 | Options → Unsquare → Advanced | All groups shown with defaults; every change logs `Options: …` once |
+| 23 | Facade alignment reach 0, deform a new building with a storefront | Storefront takes the average turn, not the facade's |
+| 24 | Turn off "Deform ground areas", lot-deform a fresh house | Paving and grass stay rectangular; `Attachments of …` log shows `Areas off` |
+| 25 | Change nudge step sizes, press Alt+S repeatedly | Steps cycle through the new sizes (snapped to 0.1 m) |
+| 26 | Change line thickness / handle sizes / axis length | Overlay updates immediately |
+| 27 | Reset advanced options, restart the game | Defaults restored and kept after the restart |
+| 28 | Deform a building, select another one, reselect it and nudge again | The cage shows the current shape; the nudge continues from it (never from undeformed) |
 
 ## Reporting problems
 
