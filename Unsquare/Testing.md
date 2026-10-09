@@ -61,6 +61,13 @@ X (red), Y (green), Z (blue).
 | 20 | Save, reload, cold restart with lot- and building-scope variants | Both restore; older building-scope variants keep their names and shapes; lot areas/paths stay deformed |
 | 21 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
 | 22 | Building with a storefront: pull a bottom front corner in (Building and Lot scope) | Storefront turns with the facade and stays parallel to it; props deep inside the lot keep a smooth average turn; roof props near the eaves follow the roof |
+| 23 | Options → Unsquare → Advanced | All groups shown with defaults; every change logs `Options: …` once |
+| 24 | Facade alignment reach 0, deform a new building with a storefront | Storefront takes the average turn, not the facade's |
+| 25 | Turn off "Deform ground areas", lot-deform a fresh house | Paving and grass stay rectangular; `Attachments of …` log shows `Areas off` |
+| 26 | Change nudge step sizes, press Alt+S repeatedly | Steps cycle through the new sizes (snapped to 0.1 m) |
+| 27 | Change line thickness / handle sizes / axis length | Overlay updates immediately |
+| 28 | Default cage scope = Building, select an undeformed building | Cage opens in Building scope |
+| 29 | Reset advanced options, restart the game | Defaults restored and kept after the restart |
 
 ## Reporting problems
 

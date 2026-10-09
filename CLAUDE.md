@@ -64,12 +64,22 @@ commit, configuration and build time on load.
 - Prefab names, deform keys, asset names and GUID seeds are **permanent**: change them only with a version bump
   and a migration, otherwise existing saves break.
 
+## Options (advanced settings tab)
+
+- Tunables are option objects with a `Default`, not consts: `PipelineOptions` (Core: `CageLimits`,
+  `AttachmentOptions`, rebake delay, pruning, sync tolerances), `CageEditOptions` and `CageOverlayStyle` (UI).
+- Flow: `UnsquareSettings` (Advanced tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
+  `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
+- Slider attributes are the single source of ranges (mapping clamps to them); defaults come from the option types.
+- Attachment options are read when a variant is created; variant names don't include them, so existing
+  variants keep their placement until the next load. Never expose values baked into names or assets.
+
 ## Cage scope and lot deformation
 
 - `CageScope.Building` = main mesh bounds (only attachments inside the box deform); `CageScope.Lot` = lot
   rectangle (`lotSize × 8 m`, ground to roof) and everything on it. Scope is part of the variant name
   (Building keeps the pre-scope seed) and of `ManifestEntry.Scope`.
-- The editor opens undeformed buildings in Lot scope (`CageEditSession.DefaultScope`); deformed ones open in
+- The editor opens undeformed buildings in Lot scope (option `CageEditOptions.DefaultScope`); deformed ones open in
   the scope they were deformed in. Objects without a lot fall back to Building.
 - Attachments (`IAttachmentDeformer`, filtered by `AttachmentContext.Affects`) are deformed in the clone's prefab
   data: props (`ObjectSubObjects`), areas (`ObjectSubAreas`), lanes (`ObjectSubLanes`), nets (`ObjectSubNets`).
@@ -86,10 +96,10 @@ commit, configuration and build time on load.
 
 - **Now:** sub-objects (props, attached sub-buildings) get rigid poses via `SubObjectDeformer` →
   `RigidDeformer.Place`: anchor follows the cage, rotation = polar part of the Jacobian, ground props
-  (`m_ParentMesh == -1`) yaw only (`PlacementMode`).
-- **Facade alignment:** within `FaceAlignment.FalloffMeters` (6 m) of a building box face, a prop's rotation
-  blends into that face's rotation, evaluated on the face. Props outside the box align fully; ground props only
-  consider walls, attached props also the roof. The building box is used in both scopes.
+  (`m_ParentMesh == -1`) yaw only (`PlacementMode`); attached props use `AttachmentOptions.AttachedPropMode`.
+- **Facade alignment:** within `AttachmentOptions.FacadeReachMeters` (default 6 m, 0 = off) of a building box
+  face, a prop's rotation blends into that face's rotation, evaluated on the face. Props outside the box align
+  fully; ground props only consider walls, attached props also the roof. The building box is used in both scopes.
 - **Why props are not mesh-deformed yet:**
   - Prop meshes belong to shared prefabs, so bending them needs a baked prop variant per prop, placement and
     deformation (incl. LODs), and assets multiply.
