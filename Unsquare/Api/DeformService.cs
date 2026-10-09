@@ -47,8 +47,8 @@ namespace Unsquare.Api
 
             var effective = description.Effective(scope);
             var box = description.BoxFor(effective);
-            var clamped = CageValidator.Clamp(box, offsets);
-            if (CageValidator.Validate(box, clamped) != CageValidity.Valid)
+            var clamped = CageValidator.Clamp(box, offsets, CageLimits.Default);
+            if (CageValidator.Validate(box, clamped, CageLimits.Default) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
             _pipeline.Request(building, new CageShape(effective, clamped));
             return clamped.Equals(offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;

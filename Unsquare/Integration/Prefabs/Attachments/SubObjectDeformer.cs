@@ -32,7 +32,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 }
                 var info = PrefabCloning.ShallowCopy(original);
                 var mode = info.m_ParentMesh == GroundParentMesh ? PlacementMode.Upright : PlacementMode.Follow;
-                var pose = RigidDeformer.Place(context.Deformation, context.AlignmentBox,
+                var pose = RigidDeformer.Place(context.Deformation, context.AlignmentBox, context.Options.FacadeReachMeters,
                     new RigidPose(info.m_Position, info.m_Rotation), mode);
                 info.m_Position = pose.Position;
                 info.m_Rotation = pose.Rotation;

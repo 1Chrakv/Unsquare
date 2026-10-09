@@ -252,7 +252,7 @@ namespace Unsquare.Integration.Systems
             }
 
             // Restores skip validation: a save already references the variant, refusing it breaks the building.
-            if (!isRestore && CageValidator.Validate(box, offsets) != CageValidity.Valid)
+            if (!isRestore && CageValidator.Validate(box, offsets, CageLimits.Default) != CageValidity.Valid)
             {
                 Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {shape}");
                 return false;

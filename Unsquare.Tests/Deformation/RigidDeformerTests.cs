@@ -86,7 +86,20 @@ namespace Unsquare.Tests.Deformation
             var deformation = new TrilinearCageDeformation(big, offsets);
             var pose = new RigidPose(new float3(0, 0, 0), quaternion.identity);
 
-            var placed = RigidDeformer.Place(deformation, big, pose, PlacementMode.Upright);
+            var placed = RigidDeformer.Place(deformation, big, FaceAlignment.DefaultReachMeters, pose, PlacementMode.Upright);
+            var interior = RigidDeformer.DeformUpright(deformation, pose);
+
+            Assert.That(math.abs(math.dot(placed.Rotation.value, interior.Rotation.value)), Is.EqualTo(1f).Within(1e-5f));
+        }
+
+        [Test]
+        public void Place_ZeroReach_IgnoresFacade()
+        {
+            var offsets = CageOffsets.Identity.Move(CageHandle.Corner(5), new float3(0, 0, -4));
+            var deformation = new TrilinearCageDeformation(Box, offsets);
+            var pose = new RigidPose(new float3(3, 0, 6), quaternion.identity);
+
+            var placed = RigidDeformer.Place(deformation, Box, 0f, pose, PlacementMode.Upright);
             var interior = RigidDeformer.DeformUpright(deformation, pose);
 
             Assert.That(math.abs(math.dot(placed.Rotation.value, interior.Rotation.value)), Is.EqualTo(1f).Within(1e-5f));
@@ -100,7 +113,7 @@ namespace Unsquare.Tests.Deformation
             var anchor = new float3(3, 0, 6);
             var turned = quaternion.RotateY(0.4f);
 
-            var placed = RigidDeformer.Place(deformation, Box, new RigidPose(anchor, turned), PlacementMode.Upright);
+            var placed = RigidDeformer.Place(deformation, Box, FaceAlignment.DefaultReachMeters, new RigidPose(anchor, turned), PlacementMode.Upright);
             var facade = FaceAlignment.FaceRotation(deformation, Box, anchor, 2, 1, PlacementMode.Upright);
 
             var expected = math.mul(facade, turned);

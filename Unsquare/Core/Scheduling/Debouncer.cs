@@ -12,15 +12,20 @@ namespace Unsquare.Core.Scheduling
         private readonly Dictionary<TKey, (TValue Value, double Due)> _pending;
         private readonly List<TKey> _scratch = new();
 
+        private double _delaySeconds;
+
         public Debouncer(double delaySeconds, IEqualityComparer<TKey> comparer = null)
         {
-            if (delaySeconds < 0)
-                throw new ArgumentOutOfRangeException(nameof(delaySeconds));
             DelaySeconds = delaySeconds;
             _pending = new Dictionary<TKey, (TValue, double)>(comparer ?? EqualityComparer<TKey>.Default);
         }
 
-        public double DelaySeconds { get; }
+        /// <summary>Delay for new requests; already pending ones keep their due time.</summary>
+        public double DelaySeconds
+        {
+            get => _delaySeconds;
+            set => _delaySeconds = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+        }
         public int Count => _pending.Count;
 
         /// <summary>Replaces any pending value for the key and restarts its delay.</summary>

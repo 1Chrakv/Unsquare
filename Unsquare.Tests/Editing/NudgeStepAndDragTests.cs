@@ -18,6 +18,30 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void FromSizes_SnapsToGridAndSorts()
+        {
+            var step = NudgeStep.FromSizes(3.04f, 0.01f, 1.26f);
+            Assert.That(step.Meters, Is.EqualTo(1.3f).Within(1e-5f));
+            Assert.That(step.Next().Meters, Is.EqualTo(3f).Within(1e-5f));
+            Assert.That(step.Next().Next().Meters, Is.EqualTo(CageOffsets.StepMeters).Within(1e-5f));
+        }
+
+        [Test]
+        public void WithSizes_KeepsPosition()
+        {
+            var large = NudgeStep.Default.Next();
+            var resized = large.WithSizes(0.2f, 1f, 5f);
+            Assert.That(resized.Meters, Is.EqualTo(5f).Within(1e-5f));
+            Assert.That(resized.Next().Meters, Is.EqualTo(0.2f).Within(1e-5f));
+        }
+
+        [Test]
+        public void Default_EqualsFromSizesOfDefaults()
+        {
+            Assert.That(NudgeStep.FromSizes(0.1f, 0.5f, 2f), Is.EqualTo(NudgeStep.Default));
+        }
+
+        [Test]
         public void NudgeStep_SizesAreOnTheOffsetGrid()
         {
             var step = NudgeStep.Default;

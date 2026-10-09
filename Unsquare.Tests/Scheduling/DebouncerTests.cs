@@ -68,5 +68,22 @@ namespace Unsquare.Tests.Scheduling
             Assert.That(_debouncer.CollectDue(0.5, _due), Is.EqualTo(1));
             Assert.That(_due[0].Key, Is.EqualTo(1));
         }
+    
+        [Test]
+        public void DelaySeconds_Changed_AffectsOnlyNewRequests()
+        {
+            _debouncer.Request(1, "old", 0.0);
+            _debouncer.DelaySeconds = 2.0;
+            _debouncer.Request(2, "new", 0.0);
+            Assert.That(_debouncer.CollectDue(1.0, _due), Is.EqualTo(1));
+            Assert.That(_due[0].Key, Is.EqualTo(1));
+            Assert.That(_debouncer.CollectDue(2.0, _due), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DelaySeconds_Negative_Throws()
+        {
+            Assert.That(() => _debouncer.DelaySeconds = -1, Throws.InstanceOf<System.ArgumentOutOfRangeException>());
+        }
     }
 }

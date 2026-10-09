@@ -10,13 +10,14 @@ namespace Unsquare.Tests.Deformation
         // 20 m wide (x), 10 m high, 10 m deep; +z is the street-side facade.
         private static readonly CageBox Box = new(new float3(-10, 0, -5), new float3(10, 10, 5));
         private static readonly float3 Up = new(0, 1, 0);
+        private const float Reach = FaceAlignment.DefaultReachMeters;
 
         private static float YawDegrees(quaternion q) => math.degrees(FaceAlignment.YawOf(q));
 
         [Test]
         public void TryFindFace_OutsideFront_IsFrontWithFullWeight()
         {
-            Assert.That(FaceAlignment.TryFindFace(Box, new float3(3, 0, 6), PlacementMode.Upright,
+            Assert.That(FaceAlignment.TryFindFace(Box, new float3(3, 0, 6), PlacementMode.Upright, Reach,
                 out int axis, out int side, out float weight), Is.True);
             Assert.That((axis, side), Is.EqualTo((2, 1)));
             Assert.That(weight, Is.EqualTo(1f));
@@ -26,9 +27,9 @@ namespace Unsquare.Tests.Deformation
         public void TryFindFace_WeightFadesWithDepth()
         {
             var big = new CageBox(new float3(-20, 0, -20), new float3(20, 10, 20));
-            FaceAlignment.TryFindFace(big, new float3(0, 0, 20), PlacementMode.Upright, out _, out _, out float onFace);
-            FaceAlignment.TryFindFace(big, new float3(0, 0, 17), PlacementMode.Upright, out _, out _, out float halfway);
-            bool found = FaceAlignment.TryFindFace(big, new float3(0, 0, 13), PlacementMode.Upright, out _, out _, out float deep);
+            FaceAlignment.TryFindFace(big, new float3(0, 0, 20), PlacementMode.Upright, Reach, out _, out _, out float onFace);
+            FaceAlignment.TryFindFace(big, new float3(0, 0, 17), PlacementMode.Upright, Reach, out _, out _, out float halfway);
+            bool found = FaceAlignment.TryFindFace(big, new float3(0, 0, 13), PlacementMode.Upright, Reach, out _, out _, out float deep);
 
             Assert.That(onFace, Is.EqualTo(1f));
             Assert.That(halfway, Is.GreaterThan(0f).And.LessThan(1f));
@@ -37,11 +38,31 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void TryFindFace_ZeroReach_FindsNoFace()
+        {
+            bool found = FaceAlignment.TryFindFace(Box, new float3(3, 0, 6), PlacementMode.Upright, 0f,
+                out _, out _, out float weight);
+            Assert.That(found, Is.False);
+            Assert.That(weight, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void TryFindFace_LargerReach_KeepsMoreWeight()
+        {
+            var big = new CageBox(new float3(-20, 0, -20), new float3(20, 10, 20));
+            var anchor = new float3(0, 0, 15);
+            FaceAlignment.TryFindFace(big, anchor, PlacementMode.Upright, Reach, out _, out _, out float near);
+            bool found = FaceAlignment.TryFindFace(big, anchor, PlacementMode.Upright, 12f, out _, out _, out float far);
+            Assert.That(found, Is.True);
+            Assert.That(far, Is.GreaterThan(near));
+        }
+
+        [Test]
         public void TryFindFace_UprightIgnoresRoof_FollowPicksIt()
         {
             var roofProp = new float3(0, 10.2f, 0);
-            FaceAlignment.TryFindFace(Box, roofProp, PlacementMode.Upright, out int uprightAxis, out _, out _);
-            FaceAlignment.TryFindFace(Box, roofProp, PlacementMode.Follow, out int followAxis, out int side, out _);
+            FaceAlignment.TryFindFace(Box, roofProp, PlacementMode.Upright, Reach, out int uprightAxis, out _, out _);
+            FaceAlignment.TryFindFace(Box, roofProp, PlacementMode.Follow, Reach, out int followAxis, out int side, out _);
 
             Assert.That(uprightAxis, Is.Not.EqualTo(1));
             Assert.That((followAxis, side), Is.EqualTo((1, 1)));

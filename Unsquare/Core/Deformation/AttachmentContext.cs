@@ -10,12 +10,11 @@ namespace Unsquare.Core.Deformation
     /// </summary>
     public sealed class AttachmentContext
     {
-        /// <summary>Tolerance around the building box, e.g. for props sitting on the roof edge.</summary>
-        public const float BuildingMargin = 0.5f;
-
-        public AttachmentContext(IDeformation deformation, CageBox box, CageScope scope, CageBox alignmentBox)
+        public AttachmentContext(IDeformation deformation, CageBox box, CageScope scope, CageBox alignmentBox,
+            AttachmentOptions options)
         {
             Deformation = deformation ?? throw new ArgumentNullException(nameof(deformation));
+            Options = options ?? throw new ArgumentNullException(nameof(options));
             Box = box;
             Scope = scope;
             AlignmentBox = alignmentBox;
@@ -31,8 +30,10 @@ namespace Unsquare.Core.Deformation
         /// <summary>The building's mesh box in both scopes: its faces are the facades props align to.</summary>
         public CageBox AlignmentBox { get; }
 
+        public AttachmentOptions Options { get; }
+
         public bool Affects(float3 anchor) =>
             Scope == CageScope.Lot ||
-            math.all(anchor >= Box.Min - BuildingMargin & anchor <= Box.Max + BuildingMargin);
+            math.all(anchor >= Box.Min - Options.BuildingMarginMeters & anchor <= Box.Max + Options.BuildingMarginMeters);
     }
 }

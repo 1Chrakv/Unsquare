@@ -6,22 +6,25 @@ namespace Unsquare.Core.Deformation
 {
     /// <summary>
     /// Rotation of the nearest building facade (a face of the building box), so props at a wall turn exactly with
-    /// it instead of with the average deformation. Weight fades from 1 at the face to 0 at <see cref="FalloffMeters"/>.
+    /// it instead of with the average deformation. Weight fades from 1 at the face to 0 at the reach (default <see cref="DefaultReachMeters"/>).
     /// </summary>
     public static class FaceAlignment
     {
-        public const float FalloffMeters = 6f;
+        public const float DefaultReachMeters = 6f;
         private const float MinLength = 1e-5f;
 
         /// <summary>
         /// Nearest candidate face of <paramref name="box"/>: vertical faces only for Upright, all faces for Follow.
-        /// Anchors outside the box get weight 1; false when the anchor is further inside than the falloff.
+        /// Anchors outside the box get weight 1; false when the anchor is further inside than the reach or reach ≤ 0.
         /// </summary>
-        public static bool TryFindFace(CageBox box, float3 anchor, PlacementMode mode,
+        public static bool TryFindFace(CageBox box, float3 anchor, PlacementMode mode, float reachMeters,
             out int axis, out int side, out float weight)
         {
             axis = -1;
             side = 0;
+            weight = 0f;
+            if (!(reachMeters > 0f))
+                return false;
             float nearest = float.MaxValue;
             for (int a = 0; a < 3; a++)
             {
@@ -34,7 +37,7 @@ namespace Unsquare.Core.Deformation
                 if (toMax < nearest)
                     (nearest, axis, side) = (toMax, a, 1);
             }
-            weight = nearest <= 0f ? 1f : 1f - math.smoothstep(0f, FalloffMeters, nearest);
+            weight = nearest <= 0f ? 1f : 1f - math.smoothstep(0f, reachMeters, nearest);
             return weight > 0f;
         }
 
