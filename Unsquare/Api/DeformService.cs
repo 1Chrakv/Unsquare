@@ -20,48 +20,55 @@ namespace Unsquare.Api
 
         public event Action<Entity> CageChanged;
 
-        public bool TryGetCage(Entity building, out CageState state)
+        public bool TryGetCage(Entity building, CageScope? scope, out CageState state)
         {
             state = default;
             if (!_pipeline.TryDescribe(building, out var description))
                 return false;
-            // Until the API exposes scopes, the cage is shown in the scope that is applied (or requested).
+
             var applied = description.Applied;
-            var target = _pipeline.TryGetRequested(building, out var requested) ? requested : applied;
-            var scope = description.Effective(target.IsIdentity ? applied.Scope : target.Scope);
-            var appliedOffsets = applied.Scope == scope ? applied.Offsets ?? CageOffsets.Identity : CageOffsets.Identity;
+            bool requested = _pipeline.TryGetRequested(building, out var request);
+            var current = requested ? request : applied;
+            var view = description.Effective(scope ?? (current.IsIdentity ? applied.Scope : current.Scope));
+
+            var appliedOffsets = OffsetsIn(applied, view);
+            var targetOffsets = requested ? OffsetsIn(request, view) : appliedOffsets;
             var status = MapStatus(_pipeline.GetStatus(building), appliedOffsets);
-            state = new CageState(building, scope, description.BoxFor(scope), appliedOffsets,
-                target.Offsets ?? CageOffsets.Identity, status);
+            state = new CageState(building, view, description.BoxFor(view), appliedOffsets, targetOffsets, status);
             return true;
         }
 
-        public DeformRequestResult SetOffsets(Entity building, CageOffsets offsets)
+        public DeformRequestResult SetOffsets(Entity building, CageScope scope, CageOffsets offsets)
         {
             if (offsets == null)
                 throw new ArgumentNullException(nameof(offsets));
             if (!_pipeline.TryDescribe(building, out var description))
                 return DeformRequestResult.NotDeformable;
 
-            var scope = description.Applied.Scope;
-            var box = description.BoxFor(scope);
+            var effective = description.Effective(scope);
+            var box = description.BoxFor(effective);
             var clamped = CageValidator.Clamp(box, offsets);
             if (CageValidator.Validate(box, clamped) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
-            _pipeline.Request(building, new CageShape(scope, clamped));
+            _pipeline.Request(building, new CageShape(effective, clamped));
             return clamped.Equals(offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
         }
 
-        public DeformRequestResult MoveHandle(Entity building, CageHandle handle, float3 delta)
+        public DeformRequestResult MoveHandle(Entity building, CageScope scope, CageHandle handle, float3 delta)
         {
-            if (!TryGetCage(building, out var state))
+            if (!TryGetCage(building, scope, out var state))
                 return DeformRequestResult.NotDeformable;
-            return SetOffsets(building, state.TargetOffsets.Move(handle, delta));
+            return SetOffsets(building, state.Scope, state.TargetOffsets.Move(handle, delta));
         }
 
-        public DeformRequestResult Reset(Entity building) => SetOffsets(building, CageOffsets.Identity);
+        public DeformRequestResult Reset(Entity building) =>
+            SetOffsets(building, CageScope.Building, CageOffsets.Identity);
 
         public int ResetAll() => _pipeline.ResetAll();
+
+        // A shape only has offsets in its own scope; seen from the other scope the cage is undeformed.
+        private static CageOffsets OffsetsIn(CageShape shape, CageScope scope) =>
+            shape.IsIdentity || shape.Scope != scope ? CageOffsets.Identity : shape.Offsets;
 
         private static DeformStatus MapStatus(VariantStatus status, CageOffsets applied) => status switch
         {

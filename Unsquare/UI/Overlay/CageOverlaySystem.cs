@@ -41,7 +41,8 @@ namespace Unsquare.UI.Overlay
             var buffer = _overlayRenderSystem.GetBuffer(out JobHandle dependencies);
             dependencies.Complete(); // we draw on the main thread
             DrawWireframe(buffer, transform, cage.Box, CageOffsets.Identity, _style.RestBox, dashed: true);
-            DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, _style.Cage(cage.Status), dashed: false);
+            var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
+            DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);
             DrawHandles(buffer, transform, cage, session.Cursor);
             _overlayRenderSystem.AddBufferWriter(default);
         }

@@ -18,6 +18,9 @@ namespace Unsquare.UI.Overlay
         public Color AxisY { get; } = new(0.2f, 0.9f, 0.2f, 1f);
         public Color AxisZ { get; } = new(0.25f, 0.45f, 1f, 1f);
 
+        /// <summary>Lot cage whose ground outline leaves the original lot (allowed, but may overlap neighbours).</summary>
+        public Color LotWarning { get; } = new(1f, 0.2f, 0.8f, 0.9f);
+
         /// <summary>Lines are drawn as cylinders; this is their radius.</summary>
         public float LineRadius { get; } = 0.1f;
         public float DashLength { get; } = 1f;
