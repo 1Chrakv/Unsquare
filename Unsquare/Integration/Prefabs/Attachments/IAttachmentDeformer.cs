@@ -9,7 +9,10 @@ namespace Unsquare.Integration.Prefabs.Attachments
     /// </summary>
     internal interface IAttachmentDeformer
     {
-        /// <summary>Must detach any data it changes from <paramref name="source"/> so the base prefab stays intact.</summary>
-        void Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, IDeformation deformation);
+        /// <summary>
+        /// Deforms what <see cref="AttachmentContext.Affects"/> selects; must detach any data it changes from
+        /// <paramref name="source"/> so the base prefab stays intact.
+        /// </summary>
+        void Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context);
     }
 }

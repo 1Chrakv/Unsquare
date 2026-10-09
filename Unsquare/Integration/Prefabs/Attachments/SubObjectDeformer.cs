@@ -9,7 +9,10 @@ namespace Unsquare.Integration.Prefabs.Attachments
     /// </summary>
     internal sealed class SubObjectDeformer : IAttachmentDeformer
     {
-        public void Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, IDeformation deformation)
+        /// <summary>Sub-objects without a parent mesh stand on the ground (trees, sheds) and snap to terrain.</summary>
+        private const int GroundParentMesh = -1;
+
+        public void Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context)
         {
             var subObjects = PrefabCloning.GetOwnedComponent<ObjectSubObjects>(clone, source);
             if (subObjects == null || subObjects.m_SubObjects == null)
@@ -20,10 +23,16 @@ namespace Unsquare.Integration.Prefabs.Attachments
             for (int i = 0; i < deformed.Length; i++)
             {
                 var original = subObjects.m_SubObjects[i];
-                if (original == null)
+                if (original == null || !context.Affects(original.m_Position))
+                {
+                    deformed[i] = original;
                     continue;
+                }
                 var info = PrefabCloning.ShallowCopy(original);
-                var pose = RigidDeformer.Deform(deformation, new RigidPose(info.m_Position, info.m_Rotation));
+                var pose = new RigidPose(info.m_Position, info.m_Rotation);
+                pose = info.m_ParentMesh == GroundParentMesh
+                    ? RigidDeformer.DeformUpright(context.Deformation, pose)
+                    : RigidDeformer.Deform(context.Deformation, pose);
                 info.m_Position = pose.Position;
                 info.m_Rotation = pose.Rotation;
                 deformed[i] = info;

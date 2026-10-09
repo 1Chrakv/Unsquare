@@ -51,6 +51,34 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void DeformUpright_LeaningCage_StaysUpright()
+        {
+            var offsets = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(4, 0, 0));
+            var deformation = new TrilinearCageDeformation(Box, offsets);
+            var result = RigidDeformer.DeformUpright(deformation, new RigidPose(new float3(0, 5, 0), quaternion.identity));
+
+            Assert.That(Near(math.rotate(result.Rotation, Up), Up), Is.True);
+            Assert.That(Near(result.Position, new float3(2, 5, 0)), Is.True);
+        }
+
+        [Test]
+        public void DeformUpright_RotatedCage_TakesYaw()
+        {
+            // Rotate every corner 30° around Y: the cage turns rigidly, so ground props turn with it.
+            var turn = quaternion.RotateY(math.radians(30f));
+            var meters = new float3[8];
+            for (int i = 0; i < meters.Length; i++)
+                meters[i] = math.rotate(turn, Box.Corner(i)) - Box.Corner(i);
+            var deformation = new TrilinearCageDeformation(Box, CageOffsets.FromMeters(meters));
+
+            var result = RigidDeformer.DeformUpright(deformation, new RigidPose(new float3(0, 5, 0), quaternion.identity));
+
+            float3 forward = math.rotate(result.Rotation, new float3(0, 0, 1));
+            Assert.That(math.degrees(math.atan2(forward.x, forward.z)), Is.EqualTo(30f).Within(1f));
+            Assert.That(Near(math.rotate(result.Rotation, Up), Up), Is.True);
+        }
+
+        [Test]
         public void Deform_ComposesWithExistingRotation()
         {
             var offsets = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(4, 0, 0));

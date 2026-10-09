@@ -30,11 +30,13 @@ namespace Unsquare.Integration.Prefabs
             _attachmentDeformers = attachmentDeformers;
         }
 
-        public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box, CageOffsets offsets,
+        public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box, CageScope scope,
+            CageOffsets offsets,
             ISet<string> usedAssets, out ObjectGeometryPrefab variant)
         {
             variant = null;
             var deformation = new TrilinearCageDeformation(box, offsets);
+            var context = new AttachmentContext(deformation, box, scope);
             if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), usedAssets, out var meshes))
                 return false;
 
@@ -48,7 +50,7 @@ namespace Unsquare.Integration.Prefabs
                 clone.Remove<UIObject>();            // keep it out of build menus
                 HideFromAssetBrowsers(clone, basePrefab);
                 foreach (var attachmentDeformer in _attachmentDeformers)
-                    attachmentDeformer.Apply(clone, basePrefab, deformation);
+                    attachmentDeformer.Apply(clone, basePrefab, context);
 
                 if (!_prefabSystem.AddPrefab(clone))
                 {
