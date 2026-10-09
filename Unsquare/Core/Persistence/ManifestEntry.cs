@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Unsquare.Core.Cage;
 
 namespace Unsquare.Core.Persistence
 {
@@ -13,6 +14,13 @@ namespace Unsquare.Core.Persistence
 
         /// <summary>Corner offsets in grid steps, see <see cref="Cage.CageOffsets.ToArray"/>.</summary>
         public int[] Offsets { get; set; }
+
+        /// <summary><see cref="CageScope"/> by name; null in manifests written before scopes existed.</summary>
+        public string Scope { get; set; }
+
+        [JsonIgnore]
+        public CageScope ParsedScope =>
+            Enum.TryParse(Scope, out CageScope scope) ? scope : CageScope.Building;
 
         public DateTime LastUsedUtc { get; set; }
 

@@ -230,7 +230,7 @@ namespace Unsquare.Integration.Systems
             bool isRestore, out ObjectGeometryPrefab variant)
         {
             string typeName = basePrefab.GetType().Name;
-            string variantName = VariantNaming.VariantName(basePrefab.name, offsets);
+            string variantName = VariantNaming.VariantName(basePrefab.name, CageScope.Building, offsets);
             if (_resolver.TryFind(typeName, variantName, out var existing))
             {
                 variant = existing as ObjectGeometryPrefab;

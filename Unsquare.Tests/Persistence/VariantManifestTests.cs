@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using Unsquare.Core.Cage;
 using Unsquare.Core.Persistence;
 
 namespace Unsquare.Tests.Persistence
@@ -95,6 +96,39 @@ namespace Unsquare.Tests.Persistence
             Assert.That(entry.Assets, Is.EqualTo(new[] { "UQ_a", "UQ_b" }));
             Assert.That(entry.LastUsedUtc, Is.EqualTo(Now));
             Assert.That(manifest.IsDirty, Is.True);
+        }
+
+        [Test]
+        public void Load_EntryWithoutScope_IsBuildingScope()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("old.json");
+            System.IO.File.WriteAllText(path,
+                "{\"Version\":1,\"Entries\":[{\"BaseType\":\"BuildingPrefab\",\"BaseName\":\"B\"," +
+                "\"VariantName\":\"B__uq000000000001\",\"Offsets\":[],\"Assets\":[\"UQ_a\"]}]}");
+
+            VariantManifest.Load(path, out var manifest);
+
+            manifest.TryGet("BuildingPrefab/B__uq000000000001", out var entry);
+            Assert.That(entry.Scope, Is.Null);
+            Assert.That(entry.ParsedScope, Is.EqualTo(CageScope.Building));
+        }
+
+        [Test]
+        public void SaveAndLoad_KeepsLotScope()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("m.json");
+            var manifest = new VariantManifest();
+            var lotEntry = Entry("V", "UQ_a");
+            lotEntry.Scope = nameof(CageScope.Lot);
+            manifest.Register(lotEntry, "City", Now);
+            manifest.Save(path);
+
+            VariantManifest.Load(path, out var loaded);
+
+            loaded.TryGet("BuildingPrefab/V", out var entry);
+            Assert.That(entry.ParsedScope, Is.EqualTo(CageScope.Lot));
         }
 
         [Test]
