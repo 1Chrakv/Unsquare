@@ -31,7 +31,7 @@ namespace Unsquare.Api
             var scope = description.Effective(target.IsIdentity ? applied.Scope : target.Scope);
             var appliedOffsets = applied.Scope == scope ? applied.Offsets ?? CageOffsets.Identity : CageOffsets.Identity;
             var status = MapStatus(_pipeline.GetStatus(building), appliedOffsets);
-            state = new CageState(building, description.BoxFor(scope), appliedOffsets,
+            state = new CageState(building, scope, description.BoxFor(scope), appliedOffsets,
                 target.Offsets ?? CageOffsets.Identity, status);
             return true;
         }

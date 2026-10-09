@@ -14,6 +14,7 @@ namespace Unsquare.UI.Editing
     public sealed class CageEditSession
     {
         private readonly IBuildingDeformService _service;
+        private bool _warnedLeavingLot;
 
         public CageEditSession(IBuildingDeformService service)
         {
@@ -133,8 +134,18 @@ namespace Unsquare.UI.Editing
             LastResult = result;
             if (command != null)
                 Log($"{command} -> {result}");
+            WarnIfLeavingLot();
             Changed?.Invoke();
             return result;
+        }
+
+        // Logs once when the lot outline starts to leave its plot, not on every drag frame.
+        private void WarnIfLeavingLot()
+        {
+            bool exceeds = TryGetCage(out var state) && state.ExceedsLot;
+            if (exceeds && !_warnedLeavingLot)
+                Mod.Log.Warn("[Edit] Lot outline leaves its plot: zone cells and terrain stay rectangular, neighbours may overlap.");
+            _warnedLeavingLot = exceeds;
         }
 
         private static void Log(string message) => Mod.Log.Info($"[Edit] {message}");
