@@ -4,8 +4,8 @@ using Unsquare.Core.Deformation;
 namespace Unsquare.Integration.Prefabs.Attachments
 {
     /// <summary>
-    /// Moves and rotates the building's props (sub-objects) rigidly with the cage. SubObjectSystem places them
-    /// from these building-space poses, so changing the clone's data moves the instances after the swap.
+    /// Moves and rotates the building's props (sub-objects) rigidly with the cage; props near a facade turn with
+    /// it. SubObjectSystem places them from these poses, so changing the clone's data moves the instances.
     /// </summary>
     internal sealed class SubObjectDeformer : IAttachmentDeformer
     {
@@ -31,10 +31,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
                     continue;
                 }
                 var info = PrefabCloning.ShallowCopy(original);
-                var pose = new RigidPose(info.m_Position, info.m_Rotation);
-                pose = info.m_ParentMesh == GroundParentMesh
-                    ? RigidDeformer.DeformUpright(context.Deformation, pose)
-                    : RigidDeformer.Deform(context.Deformation, pose);
+                var mode = info.m_ParentMesh == GroundParentMesh ? PlacementMode.Upright : PlacementMode.Follow;
+                var pose = RigidDeformer.Place(context.Deformation, context.AlignmentBox,
+                    new RigidPose(info.m_Position, info.m_Rotation), mode);
                 info.m_Position = pose.Position;
                 info.m_Rotation = pose.Rotation;
                 deformed[i] = info;

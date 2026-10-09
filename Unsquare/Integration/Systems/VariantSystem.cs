@@ -244,7 +244,8 @@ namespace Unsquare.Integration.Systems
                     _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, shape));
                 return variant != null;
             }
-            if (!TryGetBox(basePrefab, shape.Scope, out var box))
+            if (!TryGetBox(basePrefab, shape.Scope, out var box) ||
+                !TryGetBox(basePrefab, CageScope.Building, out var buildingBox))
             {
                 Mod.Log.Warn($"No {shape.Scope} cage box for {basePrefab.name}.");
                 return false;
@@ -258,7 +259,7 @@ namespace Unsquare.Integration.Systems
             }
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
-            if (!_factory.TryCreate(basePrefab, variantName, box, shape.Scope, offsets, assets, out variant))
+            if (!_factory.TryCreate(basePrefab, variantName, box, shape.Scope, buildingBox, offsets, assets, out variant))
                 return false;
             _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, shape));
 

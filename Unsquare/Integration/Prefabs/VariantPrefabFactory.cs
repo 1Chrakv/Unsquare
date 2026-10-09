@@ -30,13 +30,14 @@ namespace Unsquare.Integration.Prefabs
             _attachmentDeformers = attachmentDeformers;
         }
 
+        /// <param name="buildingBox">The building's mesh box; props align to its faces (facades) in every scope.</param>
         public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box, CageScope scope,
-            CageOffsets offsets,
+            CageBox buildingBox, CageOffsets offsets,
             ISet<string> usedAssets, out ObjectGeometryPrefab variant)
         {
             variant = null;
             var deformation = new TrilinearCageDeformation(box, offsets);
-            var context = new AttachmentContext(deformation, box, scope, box);
+            var context = new AttachmentContext(deformation, box, scope, buildingBox);
             if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), usedAssets, out var meshes))
                 return false;
 
