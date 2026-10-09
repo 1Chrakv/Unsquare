@@ -32,8 +32,11 @@ namespace Unsquare.UI.Editing
         public Entity Target { get; private set; } = Entity.Null;
         public bool HasTarget => Target != Entity.Null;
 
+        /// <summary>Scope for buildings that are not deformed yet; objects without a lot fall back to Building.</summary>
+        public const CageScope DefaultScope = CageScope.Lot;
+
         /// <summary>Which cage is edited: the building's mesh bounds or its whole lot.</summary>
-        public CageScope Scope { get; private set; } = CageScope.Building;
+        public CageScope Scope { get; private set; } = DefaultScope;
         public CageHandleCursor Cursor { get; private set; }
         public NudgeStep Step { get; private set; } = NudgeStep.Default;
         public CageDrag ActiveDrag { get; private set; }
@@ -52,8 +55,11 @@ namespace Unsquare.UI.Editing
             ActiveDrag = null; // a drag never carries over to another building
             Target = building;
             LastResult = null;
-            // Start in the scope the building is deformed in (Building for undeformed ones).
-            Scope = HasTarget && _service.TryGetCage(Target, null, out var state) ? state.Scope : CageScope.Building;
+            // Deformed buildings open in their own scope; undeformed ones in the default (lot) scope.
+            Scope = DefaultScope;
+            if (HasTarget && _service.TryGetCage(Target, null, out var state) &&
+                !(state.AppliedOffsets.IsIdentity && state.TargetOffsets.IsIdentity))
+                Scope = state.Scope;
             Changed?.Invoke();
         }
 

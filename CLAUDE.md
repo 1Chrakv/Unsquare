@@ -69,6 +69,8 @@ commit, configuration and build time on load.
 - `CageScope.Building` = main mesh bounds (only attachments inside the box deform); `CageScope.Lot` = lot
   rectangle (`lotSize × 8 m`, ground to roof) and everything on it. Scope is part of the variant name
   (Building keeps the pre-scope seed) and of `ManifestEntry.Scope`.
+- The editor opens undeformed buildings in Lot scope (`CageEditSession.DefaultScope`); deformed ones open in
+  the scope they were deformed in. Objects without a lot fall back to Building.
 - Attachments (`IAttachmentDeformer`, filtered by `AttachmentContext.Affects`) are deformed in the clone's prefab
   data: props (`ObjectSubObjects`), areas (`ObjectSubAreas`), lanes (`ObjectSubLanes`), nets (`ObjectSubNets`).
 - How the game keeps them, and what that means:

@@ -28,7 +28,7 @@ How to verify Unsquare in a running city with the hotkeys and the cage overlay (
 | Move up / down | Alt+PageUp / Alt+PageDown |
 | Cycle step 0.1 / 0.5 / 2 m | Alt+S |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
-| Toggle building / lot cage | Alt+T |
+| Toggle lot / building cage (lot is the default) | Alt+T |
 | Write cage state to the log | Alt+L |
 
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
@@ -55,8 +55,8 @@ X (red), Y (green), Z (blue).
 | 14 | Reset a building, save, set its `LastUsedUtc` in `variants.json` > 14 days back, restart | Housekeeping log: entry pruned, its assets deleted, shared assets kept |
 | 15 | Delete `variants.json`, load a save with deformed buildings | Document what breaks (see `HowTo.md` §13.7) |
 | 16 | On a building with roof props and a storefront: raise the top face, lean it sideways, pull a bottom front corner out | Roof props rise, move and tilt with the roof; the storefront follows its corner and stays on the ground; reset puts all props back |
-| 17 | House with garden (shed, trees, paving, fences), Building scope: deform the house | Shed, trees, paving and fences stay exactly where they were |
-| 18 | Same house, Alt+T (Lot scope), skew/taper the lot inside its plot | Cage spans the fence rectangle; `Attachments of …` log lists props/areas/lanes/nets; paving, grass, fences, paths, shed and trees follow; trees stay upright; `Lot sync …` log shows moved areas/net edges |
+| 17 | House with garden (shed, trees, paving, fences), Alt+T to Building scope: deform the house | Shed, trees, paving and fences stay exactly where they were |
+| 18 | Undeformed house selected: cage opens in Lot scope; skew/taper the lot inside its plot | Cage spans the fence rectangle; `Attachments of …` log lists props/areas/lanes/nets; paving, grass, fences, paths, shed and trees follow; trees stay upright; `Lot sync …` log shows moved areas/net edges |
 | 19 | Push a lot bottom corner outside the plot | Cage turns magenta, log warns once; the edit still applies |
 | 20 | Save, reload, cold restart with lot- and building-scope variants | Both restore; older building-scope variants keep their names and shapes; lot areas/paths stay deformed |
 | 21 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
