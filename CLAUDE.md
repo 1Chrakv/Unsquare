@@ -64,12 +64,26 @@ commit, configuration and build time on load.
 - Prefab names, deform keys, asset names and GUID seeds are **permanent**: change them only with a version bump
   and a migration, otherwise existing saves break.
 
+## Cage scope and lot deformation
+
+- `CageScope.Building` = main mesh bounds (only attachments inside the box deform); `CageScope.Lot` = lot
+  rectangle (`lotSize × 8 m`, ground to roof) and everything on it. Scope is part of the variant name
+  (Building keeps the pre-scope seed) and of `ManifestEntry.Scope`.
+- Attachments (`IAttachmentDeformer`, filtered by `AttachmentContext.Affects`) are deformed in the clone's prefab
+  data: props (`ObjectSubObjects`), areas (`ObjectSubAreas`), lanes (`ObjectSubLanes`), nets (`ObjectSubNets`).
+- How the game keeps them, and what that means:
+  - **Props and lanes** are rebuilt from the prefab when the building is `Updated`, so the swap is enough.
+  - **Areas and nets** are saved entities created once by the placement tool. `LotInstanceSync` (called from
+    `PrefabSwapper`) rewrites the existing instances from the old to the new prefab layout. Instances are matched
+    by ground distance; nodes linked to outside nets (roads) never move.
+- Ground items keep their heights (the game projects them on the terrain). Lot size, zone cells and terrain
+  flattening stay rectangular; a lot outline leaving its plot only warns (`LotBounds`).
+- Effects (`EffectSource`) are not deformed yet.
+
 ## Props: rigid placement, full deformation later
 
-- **Now:** sub-objects (props, attached sub-buildings) get rigid poses: `SubObjectDeformer` → `RigidDeformer`
-  (anchor follows the cage, rotation = polar part of the Jacobian). Further building-relative placements plug in
-  as `IAttachmentDeformer`s: effects (`EffectSource`), lot areas (`ObjectSubAreas`), paths (`ObjectSubNets`),
-  lanes (`ObjectSubLanes`).
+- **Now:** sub-objects (props, attached sub-buildings) get rigid poses via `SubObjectDeformer` → `RigidDeformer`:
+  anchor follows the cage, rotation = polar part of the Jacobian, ground props (`m_ParentMesh == -1`) yaw only.
 - **Why props are not mesh-deformed yet:**
   - Prop meshes belong to shared prefabs, so bending them needs a baked prop variant per prop, placement and
     deformation (incl. LODs), and assets multiply.
