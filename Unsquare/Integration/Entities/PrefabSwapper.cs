@@ -4,7 +4,10 @@ using Unity.Entities;
 
 namespace Unsquare.Integration.Entities
 {
-    /// <summary>Points a building at another prefab and makes dependent systems and the renderer refresh.</summary>
+    /// <summary>
+    /// Points a building at another prefab, moves its saved lot entities along and makes dependent systems
+    /// and the renderer refresh.
+    /// </summary>
     internal static class PrefabSwapper
     {
         public static bool Swap(EntityManager entityManager, Entity building, Entity targetPrefab)
@@ -14,6 +17,7 @@ namespace Unsquare.Integration.Entities
                 return false;
 
             entityManager.SetComponentData(building, new PrefabRef(targetPrefab));
+            LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab);
             // Updated: simulation systems re-evaluate; BatchesUpdated: renderer rebuilds mesh batches.
             if (!entityManager.HasComponent<Updated>(building))
                 entityManager.AddComponent<Updated>(building);
