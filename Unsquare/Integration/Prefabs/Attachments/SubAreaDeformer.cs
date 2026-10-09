@@ -24,35 +24,42 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 result[i] = original;
                 if (original?.m_NodePositions == null || !context.Affects(Centroid(original.m_NodePositions)))
                     continue;
-                if (TryDeform(original, context, out var deformed))
+                if (TryDeform(original, context, out var deformed, out int contactsBefore, out int contactsAfter))
                 {
                     result[i] = deformed;
                     deformedCount++;
                 }
                 else
                 {
-                    Mod.Log.Warn($"Area {i} of {source.name} would self-intersect; kept undeformed.");
+                    Mod.Log.Warn($"Area {i} of {source.name} would fold over itself " +
+                                 $"(contacts {contactsBefore} -> {contactsAfter}); kept undeformed.");
                 }
             }
             subAreas.m_SubAreas = result;
             return new AttachmentCount("areas", result.Length, deformedCount);
         }
 
-        private static bool TryDeform(ObjectSubAreaInfo original, AttachmentContext context, out ObjectSubAreaInfo deformed)
+        // Outlines may already touch themselves (holes via zero-width bridges); only new contacts are a fold.
+        private static bool TryDeform(ObjectSubAreaInfo original, AttachmentContext context,
+            out ObjectSubAreaInfo deformed, out int contactsBefore, out int contactsAfter)
         {
             var nodes = original.m_NodePositions;
             var positions = new float3[nodes.Length];
-            var outline = new float2[nodes.Length];
+            var before = new float2[nodes.Length];
+            var after = new float2[nodes.Length];
             for (int n = 0; n < nodes.Length; n++)
             {
                 float3 p = context.Deformation.Apply(nodes[n], out _);
                 if (IsGround(original, n))
                     p.y = nodes[n].y; // projected onto the terrain anyway
                 positions[n] = p;
-                outline[n] = p.xz;
+                before[n] = nodes[n].xz;
+                after[n] = p.xz;
             }
             deformed = null;
-            if (!PolygonCheck.IsSimple(outline))
+            contactsBefore = PolygonCheck.CountContacts(before);
+            contactsAfter = PolygonCheck.CountContacts(after);
+            if (contactsAfter > contactsBefore)
                 return false;
             deformed = PrefabCloning.ShallowCopy(original);
             deformed.m_NodePositions = positions;

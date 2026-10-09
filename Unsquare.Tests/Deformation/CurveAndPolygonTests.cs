@@ -60,6 +60,54 @@ namespace Unsquare.Tests.Deformation
             Assert.That(PolygonCheck.IsSimple(new[] { new float2(0, 0), new float2(4, 4), new float2(4, 0), new float2(0, 4) }), Is.False);
         }
 
+        // Square with a square hole, joined to the outline by a zero-width bridge along y = 5.
+        private static readonly float2[] SquareWithHole =
+        {
+            new(0, 5), new(0, 0), new(10, 0), new(10, 10), new(0, 10), new(0, 5),
+            new(3, 5), new(3, 7), new(7, 7), new(7, 3), new(3, 3), new(3, 5),
+        };
+
+        private static float2[] Map(float2[] points, System.Func<float2, float2> f)
+        {
+            var result = new float2[points.Length];
+            for (int i = 0; i < points.Length; i++)
+                result[i] = f(points[i]);
+            return result;
+        }
+
+        [Test]
+        public void CountContacts_BridgedHole_AlreadyTouches()
+        {
+            Assert.That(PolygonCheck.CountContacts(SquareWithHole), Is.GreaterThan(0));
+            Assert.That(PolygonCheck.IsSimple(SquareWithHole), Is.False);
+        }
+
+        [Test]
+        public void AddsContacts_BridgedHoleTranslatedOrTapered_IsAccepted()
+        {
+            var moved = Map(SquareWithHole, p => p + new float2(4, -2));
+            var tapered = Map(SquareWithHole, p => new float2(p.x * (1f + p.y * 0.03f), p.y));
+            Assert.That(PolygonCheck.AddsContacts(SquareWithHole, moved), Is.False);
+            Assert.That(PolygonCheck.AddsContacts(SquareWithHole, tapered), Is.False);
+        }
+
+        [Test]
+        public void CountContacts_DuplicatePoint_CountsLikeWithout()
+        {
+            var square = new[] { new float2(0, 0), new float2(10, 0), new float2(10, 10), new float2(0, 10) };
+            var duplicated = new[] { new float2(0, 0), new float2(10, 0), new float2(10, 0), new float2(10, 10), new float2(0, 10) };
+            Assert.That(PolygonCheck.CountContacts(duplicated), Is.EqualTo(PolygonCheck.CountContacts(square)));
+            Assert.That(PolygonCheck.IsSimple(duplicated), Is.True);
+        }
+
+        [Test]
+        public void AddsContacts_CornerPulledAcrossOppositeEdge_IsRejected()
+        {
+            var square = new[] { new float2(0, 0), new float2(10, 0), new float2(10, 10), new float2(0, 10) };
+            var folded = new[] { new float2(0, 0), new float2(10, 0), new float2(-5, 5), new float2(0, 10) };
+            Assert.That(PolygonCheck.AddsContacts(square, folded), Is.True);
+        }
+
         [Test]
         public void IsSimple_TooFewPoints_IsNotSimple()
         {
