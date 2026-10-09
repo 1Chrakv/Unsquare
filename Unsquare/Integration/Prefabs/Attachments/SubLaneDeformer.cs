@@ -23,7 +23,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
             {
                 var original = subLanes.m_SubLanes[i];
                 result[i] = original;
-                if (original == null || !context.Affects(CurveConversions.Middle(original.m_BezierCurve)))
+                if (original == null)
                     continue;
                 var info = PrefabCloning.ShallowCopy(original);
                 bool onGround = info.m_ParentMesh.x < 0 && info.m_ParentMesh.y < 0;

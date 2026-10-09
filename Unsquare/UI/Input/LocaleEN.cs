@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Colossal;
-using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 
 namespace Unsquare.UI.Input
@@ -35,8 +34,6 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.PerformanceGroup), "Performance and storage" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.ResetGroup), "Reset" },
                 { _settings.GetBindingMapLocaleID(), "Unsquare" },
-                { _settings.GetEnumValueLocaleID(CageScope.Lot), "Lot (building and everything on its plot)" },
-                { _settings.GetEnumValueLocaleID(CageScope.Building), "Building (main mesh only)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),
@@ -50,9 +47,6 @@ namespace Unsquare.UI.Input
                 entries[_settings.GetBindingKeyLocaleID(hotkey.ActionName)] = hotkey.Label;
             }
 
-            Option(entries, nameof(UnsquareSettings.DefaultScope), "Default cage scope",
-                "Cage used for buildings that are not deformed yet. Deformed buildings open in the scope they were " +
-                "deformed in; objects without a lot always use Building.");
             Option(entries, nameof(UnsquareSettings.SmallStep), "Small nudge step (m)",
                 "Smallest step of the step-size hotkey. Snapped to 0.1 m.");
             Option(entries, nameof(UnsquareSettings.MediumStep), "Medium nudge step (m)",
@@ -83,9 +77,6 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.FacadeReach), "Facade alignment reach (m)",
                 "Props this close to a facade turn exactly with it instead of with the average deformation. " +
                 "0 turns facade alignment off." + NewDeformations);
-            Option(entries, nameof(UnsquareSettings.BuildingMargin), "Building scope margin (m)",
-                "In Building scope, attachments this far outside the building box still follow, " +
-                "e.g. props on the roof edge." + NewDeformations);
 
             Option(entries, nameof(UnsquareSettings.AreaMatchDistance), "Area match distance (m)",
                 "Saved lot areas further from their expected outline count as edited by you and are not moved.");

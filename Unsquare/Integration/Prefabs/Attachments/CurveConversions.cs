@@ -23,7 +23,5 @@ namespace Unsquare.Integration.Prefabs.Attachments
             }
             return deformed;
         }
-
-        public static Unity.Mathematics.float3 Middle(Bezier4x3 curve) => (curve.a + curve.d) * 0.5f;
     }
 }

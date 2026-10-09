@@ -6,7 +6,7 @@ using Unsquare.Core.Options;
 namespace Unsquare.Integration.Systems
 {
     /// <summary>
-    /// What the public API needs from the variant machinery. Shapes passed in are already validated;
+    /// What the public API needs from the variant machinery. Offsets passed in are already validated;
     /// identity offsets revert the building to its base prefab.
     /// </summary>
     internal interface IVariantPipeline
@@ -19,10 +19,10 @@ namespace Unsquare.Integration.Systems
 
         bool TryDescribe(Entity building, out BuildingDescription description);
 
-        /// <summary>Shape of a request still in flight (debouncing or waiting to swap).</summary>
-        bool TryGetRequested(Entity building, out CageShape shape);
+        /// <summary>Offsets of a request still in flight (debouncing or waiting to swap).</summary>
+        bool TryGetRequested(Entity building, out CageOffsets offsets);
         VariantStatus GetStatus(Entity building);
-        void Request(Entity building, CageShape shape);
+        void Request(Entity building, CageOffsets offsets);
 
         /// <summary>Swaps every deformed building back to its base prefab; returns the count.</summary>
         int ResetAll();

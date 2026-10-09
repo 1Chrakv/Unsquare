@@ -9,13 +9,16 @@ namespace Unsquare.Core.Persistence
     /// </summary>
     public sealed class VariantManifest
     {
-        public const int FormatVersion = 1;
+        public const int FormatVersion = 2;
 
         private readonly Dictionary<string, ManifestEntry> _entries = new(StringComparer.Ordinal);
 
         public int Count => _entries.Count;
         public IEnumerable<ManifestEntry> Entries => _entries.Values;
         public bool IsDirty { get; private set; }
+
+        /// <summary>Entries dropped on load because the file had an older <see cref="FormatVersion"/>.</summary>
+        public int DiscardedOutdatedCount { get; private set; }
 
         public bool TryGet(string key, out ManifestEntry entry) => _entries.TryGetValue(key, out entry);
 
@@ -89,6 +92,13 @@ namespace Unsquare.Core.Persistence
             var status = AtomicJsonFile.Read(path, out Document document);
             if (document?.Entries == null)
                 return status;
+            if (document.Version != FormatVersion)
+            {
+                // Older formats are not migrated (early development): their variants are dropped.
+                manifest.DiscardedOutdatedCount = document.Entries.Count;
+                manifest.IsDirty = true;
+                return status;
+            }
             foreach (var entry in document.Entries)
             {
                 if (entry?.BaseType == null || entry.VariantName == null)

@@ -30,7 +30,6 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.ResetSelected, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.LogState, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
-    [SettingsUIKeyboardAction(CageHotkeys.ToggleScope, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     public sealed partial class UnsquareSettings : ModSetting
     {
         public const string MainTab = "Main";
@@ -100,10 +99,6 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.L, CageHotkeys.LogState, alt: true)]
         public ProxyBinding LogStateBinding { get; set; }
-
-        [SettingsUISection(MainTab, HotkeyGroup)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.T, CageHotkeys.ToggleScope, alt: true)]
-        public ProxyBinding ToggleScopeBinding { get; set; }
 
         public override void SetDefaults()
         {

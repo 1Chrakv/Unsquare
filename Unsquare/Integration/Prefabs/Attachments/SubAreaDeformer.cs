@@ -24,7 +24,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
             {
                 var original = subAreas.m_SubAreas[i];
                 result[i] = original;
-                if (original?.m_NodePositions == null || !context.Affects(Centroid(original.m_NodePositions)))
+                if (original?.m_NodePositions == null)
                     continue;
                 if (TryDeform(original, context, out var deformed, out int contactsBefore, out int contactsAfter))
                 {
@@ -70,13 +70,5 @@ namespace Unsquare.Integration.Prefabs.Attachments
 
         private static bool IsGround(ObjectSubAreaInfo info, int node) =>
             info.m_ParentMeshes == null || node >= info.m_ParentMeshes.Length || info.m_ParentMeshes[node] < 0;
-
-        private static float3 Centroid(float3[] nodes)
-        {
-            float3 sum = float3.zero;
-            foreach (var node in nodes)
-                sum += node;
-            return nodes.Length == 0 ? sum : sum / nodes.Length;
-        }
     }
 }

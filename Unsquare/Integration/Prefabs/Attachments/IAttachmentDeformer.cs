@@ -13,7 +13,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
         AttachmentKind Kind { get; }
 
         /// <summary>
-        /// Deforms what <see cref="AttachmentContext.Affects"/> selects; must detach any data it changes from
+        /// Deforms all attachments of its kind with the lot cage; must detach any data it changes from
         /// <paramref name="source"/> so the base prefab stays intact.
         /// </summary>
         AttachmentCount Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context);

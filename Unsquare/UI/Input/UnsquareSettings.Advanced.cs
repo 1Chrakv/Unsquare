@@ -3,7 +3,6 @@ using System.Reflection;
 using Game.Settings;
 using Game.UI;
 using Unity.Mathematics;
-using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Options;
 using Unsquare.UI.Editing;
@@ -23,9 +22,6 @@ namespace Unsquare.UI.Input
         public const string OverlayGroup = "Overlay";
         public const string PerformanceGroup = "Performance";
         public const string ResetGroup = "Reset";
-
-        [SettingsUISection(AdvancedTab, EditingGroup)]
-        public CageScope DefaultScope { get; set; }
 
         [SettingsUISection(AdvancedTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
@@ -69,10 +65,6 @@ namespace Unsquare.UI.Input
         [SettingsUISection(AdvancedTab, AttachmentsGroup)]
         [SettingsUISlider(min = 0f, max = 20f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float FacadeReach { get; set; }
-
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
-        [SettingsUISlider(min = 0f, max = 3f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
-        public float BuildingMargin { get; set; }
 
         [SettingsUISection(AdvancedTab, LotSyncGroup)]
         [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
@@ -131,15 +123,14 @@ namespace Unsquare.UI.Input
                 Clamped(MinLocalVolume, nameof(MinLocalVolume)) / 100f);
             var attachments = new AttachmentOptions(DeformProps, DeformAreas, DeformLanes, DeformNets,
                 Defined(AttachedProps, AttachmentOptions.Default.AttachedPropMode),
-                Clamped(FacadeReach, nameof(FacadeReach)), Clamped(BuildingMargin, nameof(BuildingMargin)));
+                Clamped(FacadeReach, nameof(FacadeReach)));
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
                 (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
                 Clamped(AreaMatchDistance, nameof(AreaMatchDistance)), Clamped(NetMatchDistance, nameof(NetMatchDistance)));
         }
 
-        public CageEditOptions ToEditOptions() => new(Defined(DefaultScope, CageEditOptions.Default.DefaultScope),
-            Clamped(SmallStep, nameof(SmallStep)), Clamped(MediumStep, nameof(MediumStep)),
-            Clamped(LargeStep, nameof(LargeStep)));
+        public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
+            Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)));
 
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
@@ -148,7 +139,6 @@ namespace Unsquare.UI.Input
         private void SetAdvancedDefaults()
         {
             var edit = CageEditOptions.Default;
-            DefaultScope = edit.DefaultScope;
             SmallStep = edit.SmallStep;
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;
@@ -163,7 +153,6 @@ namespace Unsquare.UI.Input
             DeformNets = pipeline.Attachments.DeformNets;
             AttachedProps = pipeline.Attachments.AttachedPropMode;
             FacadeReach = pipeline.Attachments.FacadeReachMeters;
-            BuildingMargin = pipeline.Attachments.BuildingMarginMeters;
             AreaMatchDistance = pipeline.AreaMatchMeters;
             NetMatchDistance = pipeline.NetMatchMeters;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;

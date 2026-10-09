@@ -48,10 +48,10 @@ namespace Unsquare.Integration.Prefabs
 
         public bool TryGetVariant(string variantName, out VariantInfo info) => _variants.TryGetValue(variantName, out info);
 
-        /// <summary>Base prefab and applied shape of any building prefab (undeformed for non-variants).</summary>
-        public bool TryResolveBase(PrefabBase current, out ObjectGeometryPrefab basePrefab, out CageShape applied)
+        /// <summary>Base prefab and applied offsets of any building prefab (identity for non-variants).</summary>
+        public bool TryResolveBase(PrefabBase current, out ObjectGeometryPrefab basePrefab, out CageOffsets applied)
         {
-            applied = CageShape.Undeformed;
+            applied = CageOffsets.Identity;
             basePrefab = null;
             if (current == null)
                 return false;
@@ -63,7 +63,7 @@ namespace Unsquare.Integration.Prefabs
             if (_variants.TryGetValue(current.name, out var info))
             {
                 basePrefab = info.BasePrefab;
-                applied = info.Shape;
+                applied = info.Offsets;
                 return true;
             }
             // Unknown variant (e.g. manifest lost): fall back to the base without offsets.

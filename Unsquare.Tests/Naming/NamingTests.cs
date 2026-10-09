@@ -22,7 +22,7 @@ namespace Unsquare.Tests.Naming
         [Test]
         public void VariantName_RoundTripsToBaseName()
         {
-            string name = VariantNaming.VariantName("EU_Residential_02", CageScope.Building, Offsets);
+            string name = VariantNaming.VariantName("EU_Residential_02", Offsets);
             Assert.That(name, Does.StartWith("EU_Residential_02__uq"));
             Assert.That(VariantNaming.TryParse(name, out var baseName), Is.True);
             Assert.That(baseName, Is.EqualTo("EU_Residential_02"));
@@ -31,7 +31,7 @@ namespace Unsquare.Tests.Naming
         [Test]
         public void VariantName_BaseContainingSeparatorText_ParsesLastOccurrence()
         {
-            string name = VariantNaming.VariantName("Odd__uqName", CageScope.Building, Offsets);
+            string name = VariantNaming.VariantName("Odd__uqName", Offsets);
             Assert.That(VariantNaming.TryParse(name, out var baseName), Is.True);
             Assert.That(baseName, Is.EqualTo("Odd__uqName"));
         }
@@ -39,30 +39,20 @@ namespace Unsquare.Tests.Naming
         [Test]
         public void VariantName_DependsOnOffsetsOnly()
         {
-            string a = VariantNaming.VariantName("Base", CageScope.Building, Offsets);
-            string b = VariantNaming.VariantName("Base", CageScope.Building, CageOffsets.FromArray(Offsets.ToArray()));
-            string c = VariantNaming.VariantName("Base", CageScope.Building, Offsets.Move(CageHandle.Corner(0), new float3(0.1f, 0, 0)));
+            string a = VariantNaming.VariantName("Base", Offsets);
+            string b = VariantNaming.VariantName("Base", CageOffsets.FromArray(Offsets.ToArray()));
+            string c = VariantNaming.VariantName("Base", Offsets.Move(CageHandle.Corner(0), new float3(0.1f, 0, 0)));
             Assert.That(b, Is.EqualTo(a));
             Assert.That(c, Is.Not.EqualTo(a));
         }
 
         [Test]
-        public void VariantName_BuildingScope_KeepsPreScopeNames()
+        public void VariantName_UsesLotSeed()
         {
-            // Regression: saves created before scopes existed reference names from this exact seed.
+            // Saves reference names from this exact seed.
             string expected = "Base__uq" +
-                              StableHash.Compute("Unsquare:offsets:v1:" + Offsets.ToCanonicalString()).ToHex(6);
-            Assert.That(VariantNaming.VariantName("Base", CageScope.Building, Offsets), Is.EqualTo(expected));
-        }
-
-        [Test]
-        public void VariantName_LotScope_DiffersAndRoundTrips()
-        {
-            string building = VariantNaming.VariantName("Base", CageScope.Building, Offsets);
-            string lot = VariantNaming.VariantName("Base", CageScope.Lot, Offsets);
-            Assert.That(lot, Is.Not.EqualTo(building));
-            Assert.That(VariantNaming.TryParse(lot, out var baseName), Is.True);
-            Assert.That(baseName, Is.EqualTo("Base"));
+                              StableHash.Compute("Unsquare:lot-offsets:v1:" + Offsets.ToCanonicalString()).ToHex(6);
+            Assert.That(VariantNaming.VariantName("Base", Offsets), Is.EqualTo(expected));
         }
 
         [TestCase("Plain_Building")]

@@ -9,7 +9,7 @@ namespace Unsquare.UI.Editing
 {
     /// <summary>
     /// UI-agnostic edit model shared by every input (hotkeys, later mouse drag and panels) and every view.
-    /// Holds target building, cage scope, selected handle, step and drag; turns commands into service requests.
+    /// Holds target building, selected handle, step and drag; turns commands into service requests.
     /// </summary>
     public sealed class CageEditSession
     {
@@ -32,11 +32,8 @@ namespace Unsquare.UI.Editing
         public Entity Target { get; private set; } = Entity.Null;
         public bool HasTarget => Target != Entity.Null;
 
-        /// <summary>Default scope and nudge sizes; set via <see cref="Configure"/>.</summary>
+        /// <summary>Nudge sizes; set via <see cref="Configure"/>.</summary>
         public CageEditOptions Options { get; private set; } = CageEditOptions.Default;
-
-        /// <summary>Which cage is edited: the building's mesh bounds or its whole lot.</summary>
-        public CageScope Scope { get; private set; } = CageEditOptions.Default.DefaultScope;
         public CageHandleCursor Cursor { get; private set; }
         public NudgeStep Step { get; private set; } = NudgeStep.Default;
         public CageDrag ActiveDrag { get; private set; }
@@ -45,13 +42,10 @@ namespace Unsquare.UI.Editing
         public bool TryGetCage(out CageState state)
         {
             state = default;
-            return HasTarget && _service.TryGetCage(Target, Scope, out state);
+            return HasTarget && _service.TryGetCage(Target, out state);
         }
 
-        /// <summary>
-        /// Applies new options. The step keeps its position (small, medium, large); the default scope is used from
-        /// the next target on.
-        /// </summary>
+        /// <summary>Applies new options; the step keeps its position (small, medium, large).</summary>
         public void Configure(CageEditOptions options)
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
@@ -66,32 +60,6 @@ namespace Unsquare.UI.Editing
             ActiveDrag = null; // a drag never carries over to another building
             Target = building;
             LastResult = null;
-            // Deformed buildings open in their own scope; undeformed ones in the default (lot) scope.
-            Scope = Options.DefaultScope;
-            if (HasTarget && _service.TryGetCage(Target, null, out var state) &&
-                !(state.AppliedOffsets.IsIdentity && state.TargetOffsets.IsIdentity))
-                Scope = state.Scope;
-            Changed?.Invoke();
-        }
-
-        /// <summary>Switches between building and lot cage; the next edit replaces a deformation in the other scope.</summary>
-        public void ToggleScope()
-        {
-            if (!HasTarget)
-                return;
-            ActiveDrag = null;
-            var next = Scope == CageScope.Building ? CageScope.Lot : CageScope.Building;
-            if (_service.TryGetCage(Target, next, out var state) && state.Scope != next)
-            {
-                Log($"{next} cage not available for building {Target}");
-                return;
-            }
-            bool deformedElsewhere = _service.TryGetCage(Target, Scope, out var current) &&
-                                     !current.AppliedOffsets.IsIdentity;
-            Scope = next;
-            Log(deformedElsewhere
-                ? $"Scope {Scope}: the next edit replaces the current deformation"
-                : $"Scope {Scope}");
             Changed?.Invoke();
         }
 
@@ -110,7 +78,7 @@ namespace Unsquare.UI.Editing
         public DeformRequestResult Nudge(float3 direction) =>
             Record($"Nudge {Cursor} {direction * Step.Meters}",
                 HasTarget
-                    ? _service.MoveHandle(Target, Scope, Cursor.Handle, direction * Step.Meters)
+                    ? _service.MoveHandle(Target, Cursor.Handle, direction * Step.Meters)
                     : DeformRequestResult.NotDeformable);
 
         public bool BeginDrag()
@@ -126,7 +94,7 @@ namespace Unsquare.UI.Editing
         public DeformRequestResult UpdateDrag(float3 totalDelta) =>
             ActiveDrag == null
                 ? DeformRequestResult.NotDeformable
-                : Record(null, _service.SetOffsets(Target, Scope, ActiveDrag.OffsetsFor(totalDelta)));
+                : Record(null, _service.SetOffsets(Target, ActiveDrag.OffsetsFor(totalDelta)));
 
         public void EndDrag()
         {
@@ -144,7 +112,7 @@ namespace Unsquare.UI.Editing
                 return;
             var start = ActiveDrag.StartOffsets;
             ActiveDrag = null;
-            Record($"Drag of {Cursor} cancelled", _service.SetOffsets(Target, Scope, start));
+            Record($"Drag of {Cursor} cancelled", _service.SetOffsets(Target, start));
         }
 
         public DeformRequestResult Reset() =>
@@ -162,7 +130,7 @@ namespace Unsquare.UI.Editing
         {
             if (!TryGetCage(out var state))
                 return HasTarget ? $"Building {Target}: not deformable" : "No building selected";
-            return $"Building {Target}: {state.Status}, {state.Scope} cage, handle {Cursor}, step {Step}, box {state.Box}, " +
+            return $"Building {Target}: {state.Status}, handle {Cursor}, step {Step}, lot box {state.Box}, " +
                    $"applied [{state.AppliedOffsets}], target [{state.TargetOffsets}]";
         }
 

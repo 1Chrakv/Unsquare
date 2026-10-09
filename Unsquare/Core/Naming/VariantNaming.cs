@@ -4,25 +4,23 @@ using Unsquare.Core.Cage;
 namespace Unsquare.Core.Naming
 {
     /// <summary>
-    /// Variant prefab names: "&lt;BaseName&gt;__uq&lt;12 hex&gt;", hashed from scope and offsets.
-    /// Saves reference prefabs by this name, so the scheme (incl. both seeds) is permanent.
+    /// Variant prefab names: "&lt;BaseName&gt;__uq&lt;12 hex&gt;", hashed from the lot cage offsets.
+    /// Saves reference prefabs by this name, so changing the scheme or seed breaks saves.
     /// </summary>
     public static class VariantNaming
     {
         public const string Separator = "__uq";
         private const int HashBytes = 6;
 
-        // The building seed predates scopes; it must stay unchanged so existing saves keep their variants.
-        private const string BuildingSeedPrefix = "Unsquare:offsets:v1:";
-        private const string LotSeedPrefix = "Unsquare:lot-offsets:v1:";
+        private const string SeedPrefix = "Unsquare:lot-offsets:v1:";
 
-        public static string VariantName(string baseName, CageScope scope, CageOffsets offsets)
+        public static string VariantName(string baseName, CageOffsets offsets)
         {
             if (string.IsNullOrEmpty(baseName))
                 throw new ArgumentException("Base name required.", nameof(baseName));
             if (offsets == null)
                 throw new ArgumentNullException(nameof(offsets));
-            string seed = (scope == CageScope.Lot ? LotSeedPrefix : BuildingSeedPrefix) + offsets.ToCanonicalString();
+            string seed = SeedPrefix + offsets.ToCanonicalString();
             return baseName + Separator + StableHash.Compute(seed).ToHex(HashBytes);
         }
 

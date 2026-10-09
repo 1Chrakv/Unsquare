@@ -99,7 +99,7 @@ namespace Unsquare.Tests.Persistence
         }
 
         [Test]
-        public void Load_EntryWithoutScope_IsBuildingScope()
+        public void Load_OlderFormat_DiscardsEntries()
         {
             using var temp = new TempDirectory();
             string path = temp.File("old.json");
@@ -109,26 +109,24 @@ namespace Unsquare.Tests.Persistence
 
             VariantManifest.Load(path, out var manifest);
 
-            manifest.TryGet("BuildingPrefab/B__uq000000000001", out var entry);
-            Assert.That(entry.Scope, Is.Null);
-            Assert.That(entry.ParsedScope, Is.EqualTo(CageScope.Building));
+            Assert.That(manifest.Count, Is.EqualTo(0));
+            Assert.That(manifest.DiscardedOutdatedCount, Is.EqualTo(1));
+            Assert.That(manifest.IsDirty, Is.True);
         }
 
         [Test]
-        public void SaveAndLoad_KeepsLotScope()
+        public void SaveAndLoad_CurrentFormat_KeepsEntries()
         {
             using var temp = new TempDirectory();
             string path = temp.File("m.json");
             var manifest = new VariantManifest();
-            var lotEntry = Entry("V", "UQ_a");
-            lotEntry.Scope = nameof(CageScope.Lot);
-            manifest.Register(lotEntry, "City", Now);
+            manifest.Register(Entry("V", "UQ_a"), "City", Now);
             manifest.Save(path);
 
             VariantManifest.Load(path, out var loaded);
 
-            loaded.TryGet("BuildingPrefab/V", out var entry);
-            Assert.That(entry.ParsedScope, Is.EqualTo(CageScope.Lot));
+            Assert.That(loaded.TryGet("BuildingPrefab/V", out _), Is.True);
+            Assert.That(loaded.DiscardedOutdatedCount, Is.EqualTo(0));
         }
 
         [Test]

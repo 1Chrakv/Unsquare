@@ -7,7 +7,7 @@ using Unsquare.Core.Options;
 namespace Unsquare.Api
 {
     /// <summary>
-    /// UI entry point for deforming buildings via their cage. All positions and deltas are in building space
+    /// UI entry point for deforming buildings via their lot cage. All positions and deltas are in building space
     /// (see <see cref="BuildingSpace"/>). Main thread only; obtain it via <see cref="UnsquareApi"/>.
     /// </summary>
     public interface IBuildingDeformService
@@ -15,20 +15,17 @@ namespace Unsquare.Api
         /// <summary>Raised when a building's cage state changed; query it with <see cref="TryGetCage"/>.</summary>
         event Action<Entity> CageChanged;
 
-        /// <summary>
-        /// Cage of a building in the given scope, or in the scope currently applied/requested when null.
-        /// A deformation in the other scope shows as undeformed here.
-        /// </summary>
-        bool TryGetCage(Entity building, CageScope? scope, out CageState state);
+        /// <summary>Lot cage of a building; false for objects without a lot (not deformable).</summary>
+        bool TryGetCage(Entity building, out CageState state);
 
         /// <summary>
-        /// Requests absolute offsets in a scope (debounced); replaces any deformation in the other scope. For drags,
-        /// keep the offsets from drag start and pass <c>start.Move(handle, totalDelta)</c> to avoid rounding drift.
+        /// Requests absolute offsets (debounced). For drags, keep the offsets from drag start and pass
+        /// <c>start.Move(handle, totalDelta)</c> to avoid rounding drift.
         /// </summary>
-        DeformRequestResult SetOffsets(Entity building, CageScope scope, CageOffsets offsets);
+        DeformRequestResult SetOffsets(Entity building, CageOffsets offsets);
 
-        /// <summary>Nudges a handle relative to the current target offsets of a scope, e.g. for +/- buttons.</summary>
-        DeformRequestResult MoveHandle(Entity building, CageScope scope, CageHandle handle, float3 delta);
+        /// <summary>Nudges a handle relative to the current target offsets, e.g. for +/- buttons.</summary>
+        DeformRequestResult MoveHandle(Entity building, CageHandle handle, float3 delta);
 
         /// <summary>Reverts the building to its original prefab.</summary>
         DeformRequestResult Reset(Entity building);

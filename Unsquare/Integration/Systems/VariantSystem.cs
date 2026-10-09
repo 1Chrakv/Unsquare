@@ -32,10 +32,10 @@ namespace Unsquare.Integration.Systems
     {
         private readonly Dictionary<Entity, PendingSwap> _swaps = new();
         private readonly Dictionary<Entity, VariantStatus> _statuses = new();
-        private readonly Dictionary<(ObjectGeometryPrefab, CageScope), CageBox> _boxes = new();
-        private readonly List<KeyValuePair<Entity, CageShape>> _due = new();
+        private readonly Dictionary<ObjectGeometryPrefab, (CageBox Lot, CageBox Building)> _boxes = new();
+        private readonly List<KeyValuePair<Entity, CageOffsets>> _due = new();
         private readonly List<(Entity Building, bool Succeeded)> _finished = new();
-        private readonly Debouncer<Entity, CageShape> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
+        private readonly Debouncer<Entity, CageOffsets> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
 
         private PrefabSystem _prefabSystem;
         private CityConfigurationSystem _citySystem;
@@ -135,39 +135,39 @@ namespace Unsquare.Integration.Systems
         bool IVariantPipeline.TryDescribe(Entity building, out BuildingDescription description) =>
             TryDescribe(building, out description);
 
-        bool IVariantPipeline.TryGetRequested(Entity building, out CageShape shape)
+        bool IVariantPipeline.TryGetRequested(Entity building, out CageOffsets offsets)
         {
-            if (_debouncer.TryPeek(building, out shape))
+            if (_debouncer.TryPeek(building, out offsets))
                 return true;
             bool swapping = _swaps.TryGetValue(building, out var swap);
-            shape = swapping ? swap.Shape : default;
+            offsets = swapping ? swap.Offsets : null;
             return swapping;
         }
 
         VariantStatus IVariantPipeline.GetStatus(Entity building) =>
             _statuses.TryGetValue(building, out var status) ? status : VariantStatus.Idle;
 
-        void IVariantPipeline.Request(Entity building, CageShape shape)
+        void IVariantPipeline.Request(Entity building, CageOffsets offsets)
         {
             if (!TryDescribe(building, out var description))
                 return;
-            shape = new CageShape(description.Effective(shape.Scope), shape.Offsets ?? CageOffsets.Identity);
+            offsets ??= CageOffsets.Identity;
             _swaps.Remove(building);
 
-            if (shape.Equals(description.Applied))
+            if (offsets.Equals(description.Applied))
             {
                 _debouncer.Cancel(building);
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
-            if (shape.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
+            if (offsets.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
             {
                 _debouncer.Cancel(building); // reverting needs no bake
-                QueueSwap(building, baseEntity, description.BasePrefab, shape);
+                QueueSwap(building, baseEntity, description.BasePrefab, offsets);
             }
             else
             {
-                _debouncer.Request(building, shape, UnityEngine.Time.realtimeSinceStartupAsDouble);
+                _debouncer.Request(building, offsets, UnityEngine.Time.realtimeSinceStartupAsDouble);
                 SetStatus(building, VariantStatus.Pending);
             }
             Enabled = true;
@@ -204,24 +204,28 @@ namespace Unsquare.Integration.Systems
             if (!EntityManager.HasComponent<Building>(building) ||
                 !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
                 !_resolver.TryResolveBase(current, out var basePrefab, out var applied) ||
-                !TryGetBox(basePrefab, CageScope.Building, out var buildingBox))
+                !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return false;
-            CageBox? lotBox = TryGetBox(basePrefab, CageScope.Lot, out var lot) ? lot : (CageBox?)null;
-            description = new BuildingDescription(basePrefab, buildingBox, lotBox, applied);
+            description = new BuildingDescription(basePrefab, lotBox, buildingBox, applied);
             return true;
         }
 
-        private bool TryGetBox(ObjectGeometryPrefab basePrefab, CageScope scope, out CageBox box)
+        private bool TryGetBoxes(ObjectGeometryPrefab basePrefab, out CageBox lotBox, out CageBox buildingBox)
         {
-            if (_boxes.TryGetValue((basePrefab, scope), out box))
+            if (_boxes.TryGetValue(basePrefab, out var boxes))
+            {
+                (lotBox, buildingBox) = boxes;
                 return true;
-            if (!CageBoxMeasurer.TryMeasure(basePrefab, scope, out box))
+            }
+            buildingBox = default;
+            if (!CageBoxMeasurer.TryMeasureLot(basePrefab, out lotBox) ||
+                !CageBoxMeasurer.TryMeasureMeshes(basePrefab, out buildingBox))
                 return false;
-            _boxes[(basePrefab, scope)] = box;
+            _boxes[basePrefab] = (lotBox, buildingBox);
             return true;
         }
 
-        private void Bake(Entity building, CageShape shape)
+        private void Bake(Entity building, CageOffsets offsets)
         {
             if (!TryDescribe(building, out var description))
             {
@@ -230,51 +234,49 @@ namespace Unsquare.Integration.Systems
             }
             var stopwatch = Stopwatch.StartNew();
             int createdBefore = _renderBuilder.CreatedAssetCount;
-            bool created = TryGetOrCreateVariant(description.BasePrefab, shape, isRestore: false, out var variant);
+            bool created = TryGetOrCreateVariant(description.BasePrefab, offsets, isRestore: false, out var variant);
             stopwatch.Stop();
             // 0 new assets means everything was reused (existing prefab or cached geometry).
             Mod.Log.Info($"Bake for building {building}: {(created ? variant.name : "failed")}, " +
                          $"{stopwatch.ElapsedMilliseconds} ms, {_renderBuilder.CreatedAssetCount - createdBefore} new assets");
 
             if (created && _prefabSystem.TryGetEntity(variant, out var variantEntity))
-                QueueSwap(building, variantEntity, description.BasePrefab, shape);
+                QueueSwap(building, variantEntity, description.BasePrefab, offsets);
             else
                 SetStatus(building, VariantStatus.Failed);
         }
 
-        private bool TryGetOrCreateVariant(ObjectGeometryPrefab basePrefab, CageShape shape, bool isRestore,
+        private bool TryGetOrCreateVariant(ObjectGeometryPrefab basePrefab, CageOffsets offsets, bool isRestore,
             out ObjectGeometryPrefab variant)
         {
             variant = null;
-            var offsets = shape.Offsets;
             string typeName = basePrefab.GetType().Name;
-            string variantName = VariantNaming.VariantName(basePrefab.name, shape.Scope, offsets);
+            string variantName = VariantNaming.VariantName(basePrefab.name, offsets);
             if (_resolver.TryFind(typeName, variantName, out var existing))
             {
                 variant = existing as ObjectGeometryPrefab;
                 if (variant != null)
-                    _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, shape));
+                    _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, offsets));
                 return variant != null;
             }
-            if (!TryGetBox(basePrefab, shape.Scope, out var box) ||
-                !TryGetBox(basePrefab, CageScope.Building, out var buildingBox))
+            if (!TryGetBoxes(basePrefab, out var box, out var buildingBox))
             {
-                Mod.Log.Warn($"No {shape.Scope} cage box for {basePrefab.name}.");
+                Mod.Log.Warn($"No lot cage box for {basePrefab.name}.");
                 return false;
             }
 
             // Restores skip validation: a save already references the variant, refusing it breaks the building.
             if (!isRestore && CageValidator.Validate(box, offsets, _options.Limits) != CageValidity.Valid)
             {
-                Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {shape}");
+                Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {offsets}");
                 return false;
             }
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
-            if (!_factory.TryCreate(basePrefab, variantName, box, shape.Scope, buildingBox, offsets, _options.Attachments,
+            if (!_factory.TryCreate(basePrefab, variantName, box, buildingBox, offsets, _options.Attachments,
                     assets, out variant))
                 return false;
-            _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, shape));
+            _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, offsets));
 
             string key = ManifestEntry.MakeKey(typeName, variantName);
             if (isRestore)
@@ -288,15 +290,14 @@ namespace Unsquare.Integration.Systems
                 BaseName = basePrefab.name,
                 VariantName = variantName,
                 Offsets = offsets.ToArray(),
-                Scope = shape.Scope.ToString(),
                 Assets = new List<string>(assets),
             }, _citySystem.cityName, DateTime.UtcNow);
             return true;
         }
 
-        private void QueueSwap(Entity building, Entity targetPrefab, ObjectGeometryPrefab basePrefab, CageShape shape)
+        private void QueueSwap(Entity building, Entity targetPrefab, ObjectGeometryPrefab basePrefab, CageOffsets offsets)
         {
-            _swaps[building] = new PendingSwap(targetPrefab, basePrefab, shape);
+            _swaps[building] = new PendingSwap(targetPrefab, basePrefab, offsets);
             SetStatus(building, VariantStatus.WaitingForPrefab);
         }
 
@@ -356,6 +357,9 @@ namespace Unsquare.Integration.Systems
         private bool LoadState()
         {
             var manifestStatus = VariantManifest.Load(ModPaths.ManifestFile, out _manifest);
+            if (_manifest.DiscardedOutdatedCount > 0)
+                Mod.Log.Warn($"Variant manifest has an old format: discarded {_manifest.DiscardedOutdatedCount} variants. " +
+                             "Deformed buildings in older saves revert or break; delete ModsData/Unsquare to free space.");
             BoundsCache.Load(ModPaths.BoundsCacheFile, out var bounds);
             _renderBuilder.BoundsCache = bounds;
 
@@ -393,10 +397,10 @@ namespace Unsquare.Integration.Systems
             {
                 try
                 {
-                    var shape = new CageShape(entry.ParsedScope, CageOffsets.FromArray(entry.Offsets));
+                    var offsets = CageOffsets.FromArray(entry.Offsets);
                     if (_resolver.TryFind(entry.BaseType, entry.BaseName, out var found) &&
                         found is ObjectGeometryPrefab basePrefab &&
-                        TryGetOrCreateVariant(basePrefab, shape, isRestore: true, out _))
+                        TryGetOrCreateVariant(basePrefab, offsets, isRestore: true, out _))
                         restored++;
                     else
                         failed++;
@@ -456,16 +460,16 @@ namespace Unsquare.Integration.Systems
 
         private readonly struct PendingSwap
         {
-            public PendingSwap(Entity targetPrefab, ObjectGeometryPrefab basePrefab, CageShape shape)
+            public PendingSwap(Entity targetPrefab, ObjectGeometryPrefab basePrefab, CageOffsets offsets)
             {
                 TargetPrefab = targetPrefab;
                 BasePrefab = basePrefab;
-                Shape = shape;
+                Offsets = offsets;
             }
 
             public Entity TargetPrefab { get; }
             public ObjectGeometryPrefab BasePrefab { get; }
-            public CageShape Shape { get; }
+            public CageOffsets Offsets { get; }
         }
     }
 }

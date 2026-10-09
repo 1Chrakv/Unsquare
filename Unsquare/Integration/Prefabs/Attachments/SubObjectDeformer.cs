@@ -27,7 +27,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
             for (int i = 0; i < deformed.Length; i++)
             {
                 var original = subObjects.m_SubObjects[i];
-                if (original == null || !context.Affects(original.m_Position))
+                if (original == null)
                 {
                     deformed[i] = original;
                     continue;
