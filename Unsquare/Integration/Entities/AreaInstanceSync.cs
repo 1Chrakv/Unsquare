@@ -19,12 +19,10 @@ namespace Unsquare.Integration.Entities
     /// </summary>
     internal static class AreaInstanceSync
     {
-        /// <summary>Areas further off their expected outline than this (mean, meters) were edited by the player.</summary>
-        private const float MaxMatchDistance = 1f;
-
+        /// <param name="maxMatchDistance">Areas further off their expected outline (mean, meters) were edited.</param>
         /// <returns>Number of areas rewritten.</returns>
         public static int Sync(EntityManager entityManager, Entity building, in Transform transform,
-            Entity oldPrefab, Entity newPrefab)
+            Entity oldPrefab, Entity newPrefab, float maxMatchDistance)
         {
             if (!entityManager.TryGetBuffer(building, true, out DynamicBuffer<AreaSubArea> subAreas) || subAreas.Length == 0)
                 return 0;
@@ -44,7 +42,7 @@ namespace Unsquare.Integration.Entities
             }
 
             int[] match = GreedyMatcher.Match(areas.Count, expectedOld.Count,
-                (i, j) => ShapeDistance.Polygon(current[i], Positions(expectedOld[j])), MaxMatchDistance);
+                (i, j) => ShapeDistance.Polygon(current[i], Positions(expectedOld[j])), maxMatchDistance);
 
             int written = 0;
             for (int i = 0; i < areas.Count; i++)

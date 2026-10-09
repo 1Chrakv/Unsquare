@@ -21,12 +21,10 @@ namespace Unsquare.Integration.Entities
     /// </summary>
     internal static class NetInstanceSync
     {
-        /// <summary>Edges whose endpoints are further off than this (mean, meters) were edited by the player.</summary>
-        private const float MaxMatchDistance = 1.5f;
-
+        /// <param name="maxMatchDistance">Edges further off their expected curve (mean, meters) were edited.</param>
         /// <returns>Number of edges rewritten.</returns>
         public static int Sync(EntityManager entityManager, Entity building, in Transform transform,
-            Entity oldPrefab, Entity newPrefab)
+            Entity oldPrefab, Entity newPrefab, float maxMatchDistance)
         {
             if (!entityManager.TryGetBuffer(building, true, out DynamicBuffer<NetSubNet> subNets) || subNets.Length == 0)
                 return 0;
@@ -54,7 +52,7 @@ namespace Unsquare.Integration.Entities
                     CurveConversions.ToCore(expectedOld[j]), out bool flip);
                 reversed[i, j] = flip;
                 return distance;
-            }, MaxMatchDistance);
+            }, maxMatchDistance);
 
             // Target curves per matched edge, then node targets from their endpoints.
             var targets = new Dictionary<Entity, Bezier4x3>();

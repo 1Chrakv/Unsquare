@@ -32,12 +32,12 @@ namespace Unsquare.Integration.Prefabs
 
         /// <param name="buildingBox">The building's mesh box; props align to its faces (facades) in every scope.</param>
         public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box, CageScope scope,
-            CageBox buildingBox, CageOffsets offsets,
+            CageBox buildingBox, CageOffsets offsets, AttachmentOptions attachments,
             ISet<string> usedAssets, out ObjectGeometryPrefab variant)
         {
             variant = null;
             var deformation = new TrilinearCageDeformation(box, offsets);
-            var context = new AttachmentContext(deformation, box, scope, buildingBox, AttachmentOptions.Default);
+            var context = new AttachmentContext(deformation, box, scope, buildingBox, attachments);
             if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), usedAssets, out var meshes))
                 return false;
 
@@ -52,7 +52,11 @@ namespace Unsquare.Integration.Prefabs
                 HideFromAssetBrowsers(clone, basePrefab);
                 var counts = new List<string>(_attachmentDeformers.Count);
                 foreach (var attachmentDeformer in _attachmentDeformers)
-                    counts.Add(attachmentDeformer.Apply(clone, basePrefab, context).ToString());
+                {
+                    counts.Add(attachments.IsEnabled(attachmentDeformer.Kind)
+                        ? attachmentDeformer.Apply(clone, basePrefab, context).ToString()
+                        : $"{attachmentDeformer.Kind} off");
+                }
                 Mod.Log.Info($"Attachments of {variantName} ({scope}): {string.Join(", ", counts)}");
 
                 if (!_prefabSystem.AddPrefab(clone))

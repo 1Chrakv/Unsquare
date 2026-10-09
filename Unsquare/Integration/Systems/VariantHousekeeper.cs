@@ -19,12 +19,18 @@ namespace Unsquare.Integration.Systems
             _store = store;
         }
 
-        public void Run(VariantManifest manifest, BoundsCache boundsCache, DateTime nowUtc)
+        /// <param name="maxUnusedAge">Variants unused for longer are pruned; null keeps them (orphans are still swept).</param>
+        public void Run(VariantManifest manifest, BoundsCache boundsCache, DateTime nowUtc, TimeSpan? maxUnusedAge)
         {
-            var prune = PrunePlanner.PlanPrune(manifest, nowUtc, PrunePlanner.DefaultMaxUnusedAge);
-            foreach (var key in prune.EntryKeys)
-                manifest.Remove(key);
-            int pruned = DeleteAssets(prune.AssetNames, boundsCache);
+            int prunedEntries = 0, pruned = 0;
+            if (maxUnusedAge.HasValue)
+            {
+                var prune = PrunePlanner.PlanPrune(manifest, nowUtc, maxUnusedAge.Value);
+                foreach (var key in prune.EntryKeys)
+                    manifest.Remove(key);
+                prunedEntries = prune.EntryKeys.Count;
+                pruned = DeleteAssets(prune.AssetNames, boundsCache);
+            }
 
             var sweep = PrunePlanner.PlanOrphanSweep(manifest, _store.ListOwnAssetNames());
             if (sweep.IsRefused)
@@ -33,7 +39,7 @@ namespace Unsquare.Integration.Systems
                 return;
             }
             int swept = DeleteAssets(sweep.AssetNames, boundsCache);
-            Mod.Log.Info($"Housekeeping: pruned {prune.EntryKeys.Count} variants ({pruned} assets), swept {swept} orphans.");
+            Mod.Log.Info($"Housekeeping: pruned {prunedEntries} variants ({pruned} assets), swept {swept} orphans.");
         }
 
         private int DeleteAssets(IReadOnlyList<string> names, BoundsCache boundsCache)

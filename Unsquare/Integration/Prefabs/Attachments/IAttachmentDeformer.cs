@@ -9,6 +9,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
     /// </summary>
     internal interface IAttachmentDeformer
     {
+        /// <summary>What this deformer handles; disabled kinds (<see cref="AttachmentOptions"/>) are skipped.</summary>
+        AttachmentKind Kind { get; }
+
         /// <summary>
         /// Deforms what <see cref="AttachmentContext.Affects"/> selects; must detach any data it changes from
         /// <paramref name="source"/> so the base prefab stays intact.

@@ -9,6 +9,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
     /// </summary>
     internal sealed class SubNetDeformer : IAttachmentDeformer
     {
+        public AttachmentKind Kind => AttachmentKind.Nets;
+
         public AttachmentCount Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context)
         {
             var subNets = PrefabCloning.GetOwnedComponent<ObjectSubNets>(clone, source);

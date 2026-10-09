@@ -10,6 +10,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
     /// </summary>
     internal sealed class SubAreaDeformer : IAttachmentDeformer
     {
+        public AttachmentKind Kind => AttachmentKind.Areas;
+
         public AttachmentCount Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context)
         {
             var subAreas = PrefabCloning.GetOwnedComponent<ObjectSubAreas>(clone, source);

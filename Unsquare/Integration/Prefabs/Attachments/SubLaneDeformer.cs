@@ -9,6 +9,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
     /// </summary>
     internal sealed class SubLaneDeformer : IAttachmentDeformer
     {
+        public AttachmentKind Kind => AttachmentKind.Lanes;
+
         public AttachmentCount Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context)
         {
             var subLanes = PrefabCloning.GetOwnedComponent<ObjectSubLanes>(clone, source);

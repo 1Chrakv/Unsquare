@@ -1,6 +1,7 @@
 using System;
 using Unity.Entities;
 using Unsquare.Core.Cage;
+using Unsquare.Core.Options;
 
 namespace Unsquare.Integration.Systems
 {
@@ -12,6 +13,9 @@ namespace Unsquare.Integration.Systems
     {
         /// <summary>Raised on the main thread whenever a building's status or applied shape changes.</summary>
         event Action<Entity> BuildingChanged;
+
+        /// <summary>Tunables; new values apply to later requests, bakes and swaps.</summary>
+        PipelineOptions Options { get; set; }
 
         bool TryDescribe(Entity building, out BuildingDescription description);
 

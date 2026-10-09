@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
+using Unsquare.Core.Options;
 using Unsquare.Integration.Systems;
 
 namespace Unsquare.Api
@@ -19,6 +20,11 @@ namespace Unsquare.Api
         }
 
         public event Action<Entity> CageChanged;
+
+        public PipelineOptions Options => _pipeline.Options;
+
+        public void Configure(PipelineOptions options) =>
+            _pipeline.Options = options ?? throw new ArgumentNullException(nameof(options));
 
         public bool TryGetCage(Entity building, CageScope? scope, out CageState state)
         {
@@ -47,8 +53,8 @@ namespace Unsquare.Api
 
             var effective = description.Effective(scope);
             var box = description.BoxFor(effective);
-            var clamped = CageValidator.Clamp(box, offsets, CageLimits.Default);
-            if (CageValidator.Validate(box, clamped, CageLimits.Default) != CageValidity.Valid)
+            var clamped = CageValidator.Clamp(box, offsets, Options.Limits);
+            if (CageValidator.Validate(box, clamped, Options.Limits) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
             _pipeline.Request(building, new CageShape(effective, clamped));
             return clamped.Equals(offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;

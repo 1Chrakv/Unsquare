@@ -14,6 +14,7 @@ using Unity.Entities;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Naming;
+using Unsquare.Core.Options;
 using Unsquare.Core.Persistence;
 using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;
@@ -29,14 +30,12 @@ namespace Unsquare.Integration.Systems
     /// </summary>
     public partial class VariantSystem : GameSystemBase, IVariantPipeline
     {
-        private const double DebounceSeconds = 0.4;
-
         private readonly Dictionary<Entity, PendingSwap> _swaps = new();
         private readonly Dictionary<Entity, VariantStatus> _statuses = new();
         private readonly Dictionary<(ObjectGeometryPrefab, CageScope), CageBox> _boxes = new();
         private readonly List<KeyValuePair<Entity, CageShape>> _due = new();
         private readonly List<(Entity Building, bool Succeeded)> _finished = new();
-        private readonly Debouncer<Entity, CageShape> _debouncer = new(DebounceSeconds);
+        private readonly Debouncer<Entity, CageShape> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
 
         private PrefabSystem _prefabSystem;
         private CityConfigurationSystem _citySystem;
@@ -45,6 +44,7 @@ namespace Unsquare.Integration.Systems
         private RenderVariantBuilder _renderBuilder;
         private VariantPrefabFactory _factory;
         private VariantManifest _manifest = new();
+        private PipelineOptions _options = PipelineOptions.Default;
         private EntityQuery _buildingQuery;
         private bool _stateLoaded;
         private bool _simulationReady;
@@ -57,6 +57,18 @@ namespace Unsquare.Integration.Systems
         }
 
         internal IVariantPipeline Pipeline => this;
+
+        PipelineOptions IVariantPipeline.Options
+        {
+            get => _options;
+            set
+            {
+                _options = value ?? throw new ArgumentNullException(nameof(value));
+                _debouncer.DelaySeconds = value.RebakeDelaySeconds;
+            }
+        }
+
+        private SyncTolerances Tolerances => new(_options.AreaMatchMeters, _options.NetMatchMeters);
 
         protected override void OnCreate()
         {
@@ -176,7 +188,7 @@ namespace Unsquare.Integration.Systems
                     !_resolver.TryResolveBase(current, out var basePrefab, out _) ||
                     !_prefabSystem.TryGetEntity(basePrefab, out var baseEntity))
                     continue;
-                if (PrefabSwapper.Swap(EntityManager, building, baseEntity))
+                if (PrefabSwapper.Swap(EntityManager, building, baseEntity, Tolerances))
                 {
                     count++;
                     _buildingChanged?.Invoke(building);
@@ -252,14 +264,15 @@ namespace Unsquare.Integration.Systems
             }
 
             // Restores skip validation: a save already references the variant, refusing it breaks the building.
-            if (!isRestore && CageValidator.Validate(box, offsets, CageLimits.Default) != CageValidity.Valid)
+            if (!isRestore && CageValidator.Validate(box, offsets, _options.Limits) != CageValidity.Valid)
             {
                 Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {shape}");
                 return false;
             }
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
-            if (!_factory.TryCreate(basePrefab, variantName, box, shape.Scope, buildingBox, offsets, assets, out variant))
+            if (!_factory.TryCreate(basePrefab, variantName, box, shape.Scope, buildingBox, offsets, _options.Attachments,
+                    assets, out variant))
                 return false;
             _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, shape));
 
@@ -318,7 +331,7 @@ namespace Unsquare.Integration.Systems
             {
                 if (_prefabSystem.TryGetEntity(swap.BasePrefab, out var donor) && donor != swap.TargetPrefab)
                     SimDataCopier.CopyMissing(EntityManager, donor, swap.TargetPrefab);
-                PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab);
+                PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab, Tolerances);
                 return true;
             }
             catch (Exception e)
@@ -364,7 +377,8 @@ namespace Unsquare.Integration.Systems
         {
             try
             {
-                new VariantHousekeeper(_store).Run(_manifest, _renderBuilder.BoundsCache, DateTime.UtcNow);
+                new VariantHousekeeper(_store).Run(_manifest, _renderBuilder.BoundsCache, DateTime.UtcNow,
+                    _options.PruneUnused ? _options.PruneAfter : (TimeSpan?)null);
             }
             catch (Exception e)
             {

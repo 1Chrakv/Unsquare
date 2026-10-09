@@ -12,6 +12,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
         /// <summary>Sub-objects without a parent mesh stand on the ground (trees, sheds) and snap to terrain.</summary>
         private const int GroundParentMesh = -1;
 
+        public AttachmentKind Kind => AttachmentKind.Props;
+
         public AttachmentCount Apply(ObjectGeometryPrefab clone, ObjectGeometryPrefab source, AttachmentContext context)
         {
             var subObjects = PrefabCloning.GetOwnedComponent<ObjectSubObjects>(clone, source);
@@ -31,9 +33,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
                     continue;
                 }
                 var info = PrefabCloning.ShallowCopy(original);
-                var mode = info.m_ParentMesh == GroundParentMesh ? PlacementMode.Upright : PlacementMode.Follow;
-                var pose = RigidDeformer.Place(context.Deformation, context.AlignmentBox, context.Options.FacadeReachMeters,
-                    new RigidPose(info.m_Position, info.m_Rotation), mode);
+                var mode = info.m_ParentMesh == GroundParentMesh ? PlacementMode.Upright : context.Options.AttachedPropMode;
+                var pose = RigidDeformer.Place(context.Deformation, context.AlignmentBox,
+                    context.Options.FacadeReachMeters, new RigidPose(info.m_Position, info.m_Rotation), mode);
                 info.m_Position = pose.Position;
                 info.m_Rotation = pose.Rotation;
                 deformed[i] = info;

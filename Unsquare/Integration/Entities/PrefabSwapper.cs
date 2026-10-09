@@ -10,14 +10,15 @@ namespace Unsquare.Integration.Entities
     /// </summary>
     internal static class PrefabSwapper
     {
-        public static bool Swap(EntityManager entityManager, Entity building, Entity targetPrefab)
+        public static bool Swap(EntityManager entityManager, Entity building, Entity targetPrefab,
+            SyncTolerances tolerances)
         {
             var current = entityManager.GetComponentData<PrefabRef>(building);
             if (current.m_Prefab == targetPrefab)
                 return false;
 
             entityManager.SetComponentData(building, new PrefabRef(targetPrefab));
-            LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab);
+            LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab, tolerances);
             // Updated: simulation systems re-evaluate; BatchesUpdated: renderer rebuilds mesh batches.
             if (!entityManager.HasComponent<Updated>(building))
                 entityManager.AddComponent<Updated>(building);

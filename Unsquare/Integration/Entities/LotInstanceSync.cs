@@ -11,14 +11,17 @@ namespace Unsquare.Integration.Entities
     /// </summary>
     internal static class LotInstanceSync
     {
-        public static void Sync(EntityManager entityManager, Entity building, Entity oldPrefab, Entity newPrefab)
+        public static void Sync(EntityManager entityManager, Entity building, Entity oldPrefab, Entity newPrefab,
+            SyncTolerances tolerances)
         {
             if (oldPrefab == newPrefab || !entityManager.TryGetComponent(building, out Transform transform))
                 return;
             try
             {
-                int areas = AreaInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab);
-                int nets = NetInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab);
+                int areas = AreaInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab,
+                    tolerances.AreaMeters);
+                int nets = NetInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab,
+                    tolerances.NetMeters);
                 if (areas > 0 || nets > 0)
                     Mod.Log.Info($"Lot sync for building {building}: {areas} areas, {nets} net edges moved.");
             }

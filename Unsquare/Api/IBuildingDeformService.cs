@@ -2,6 +2,7 @@ using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
+using Unsquare.Core.Options;
 
 namespace Unsquare.Api
 {
@@ -34,5 +35,11 @@ namespace Unsquare.Api
 
         /// <summary>Reverts every deformed building in the city (uninstall path); returns how many.</summary>
         int ResetAll();
+
+        /// <summary>Current tunables (limits, attachments, rebake delay, pruning, lot sync).</summary>
+        PipelineOptions Options { get; }
+
+        /// <summary>Replaces the tunables; applies to later requests and new variants, not to existing ones.</summary>
+        void Configure(PipelineOptions options);
     }
 }
