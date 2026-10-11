@@ -1,0 +1,25 @@
+// The anchor is the point above the roof; the window sits centered on top of it with a gap.
+.anchor {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    padding-bottom: 24rem;
+    pointer-events: none;
+}
+
+.window {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 6rem;
+    border-radius: 6rem;
+    background-color: rgba(24, 33, 51, 0.85);
+    backdrop-filter: blur(5px);
+    pointer-events: auto;
+}
+
+.divider {
+    width: 2rem;
+    height: 28rem;
+    margin: 0 6rem;
+    background-color: rgba(255, 255, 255, 0.2);
+}
