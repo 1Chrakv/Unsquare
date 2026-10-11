@@ -39,11 +39,16 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),
                     "Reset all advanced options to their defaults?" },
             };
+            entries[_settings.GetOptionLabelLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
+                CageHotkeys.ToggleModeLabel;
+            entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
+                "Turns Unsquare mode on and off, like the Unsquare button. The other hotkeys only work in the mode.";
+            entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ToggleMode)] = CageHotkeys.ToggleModeLabel;
             foreach (var hotkey in CageHotkeys.All)
             {
                 entries[_settings.GetOptionLabelLocaleID(hotkey.PropertyName)] = hotkey.Label;
                 entries[_settings.GetOptionDescLocaleID(hotkey.PropertyName)] =
-                    $"{hotkey.Label} on the building selected in the info panel.";
+                    $"{hotkey.Label} on the building edited in Unsquare mode.";
                 entries[_settings.GetBindingKeyLocaleID(hotkey.ActionName)] = hotkey.Label;
             }
 
@@ -53,6 +58,8 @@ namespace Unsquare.UI.Input
                 "Middle step of the step-size hotkey. Snapped to 0.1 m.");
             Option(entries, nameof(UnsquareSettings.LargeStep), "Large nudge step (m)",
                 "Largest step of the step-size hotkey. Snapped to 0.1 m.");
+            Option(entries, nameof(UnsquareSettings.PickRadius), "Mouse pick radius (px)",
+                "How close the mouse must be to an edge, a corner or a gizmo arrow to grab it.");
 
             Option(entries, nameof(UnsquareSettings.MaxOffsetFactor), "Max corner offset (× box size)",
                 "How far a cage corner may move per axis, relative to the cage size on that axis.");
@@ -85,12 +92,14 @@ namespace Unsquare.UI.Input
 
             Option(entries, nameof(UnsquareSettings.LineRadius), "Line thickness (m)",
                 "Radius of the cage lines.");
-            Option(entries, nameof(UnsquareSettings.HandleSize), "Handle size (m)",
-                "Diameter of the handles of the current kind.");
+            Option(entries, nameof(UnsquareSettings.HandleSize), "Hovered handle size (m)",
+                "Diameter of the dot on a hovered corner or face.");
             Option(entries, nameof(UnsquareSettings.SelectedHandleSize), "Selected handle size (m)",
-                "Diameter of the selected handle.");
-            Option(entries, nameof(UnsquareSettings.AxisLength), "Axis length (m)",
-                "Length of the axis arrows on the selected handle; 0 hides them.");
+                "Diameter of the dot on the selected corner or face.");
+            Option(entries, nameof(UnsquareSettings.AxisLength), "Min gizmo length (m)",
+                "Shortest length of the gizmo arrows, used when the camera is close.");
+            Option(entries, nameof(UnsquareSettings.GizmoSize), "Gizmo size on screen",
+                "Length of the gizmo arrows as a share of the screen height.");
 
             Option(entries, nameof(UnsquareSettings.RebakeDelay), "Rebake delay (s)",
                 "Quiet time after the last edit before the building is rebuilt. Higher values save work while dragging.");

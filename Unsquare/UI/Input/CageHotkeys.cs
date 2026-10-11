@@ -10,6 +10,10 @@ namespace Unsquare.UI.Input
     /// </summary>
     internal static class CageHotkeys
     {
+        /// <summary>Turns Unsquare mode on and off; the only action that works outside the mode.</summary>
+        public const string ToggleMode = "UnsquareToggleMode";
+        public const string ToggleModeLabel = "Toggle Unsquare mode";
+
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";
         public const string KindFace = "UnsquareKindFace";

@@ -9,6 +9,7 @@ using Unsquare.Integration.Systems;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
 using Unsquare.UI.Overlay;
+using Unsquare.UI.Tool;
 
 namespace Unsquare
 {
@@ -35,7 +36,8 @@ namespace Unsquare
             // Before PrefabInitializeSystem, so prefabs added by the variant system initialize in the same frame.
             updateSystem.UpdateBefore<VariantSystem, PrefabInitializeSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
-            updateSystem.UpdateAfter<CageHotkeySystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
+            updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
+            updateSystem.UpdateAfter<CageHotkeySystem, UnsquareToolSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);

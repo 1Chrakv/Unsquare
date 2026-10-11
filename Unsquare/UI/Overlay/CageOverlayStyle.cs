@@ -1,26 +1,29 @@
 using UnityEngine;
 using Unsquare.Api;
+using Unsquare.Core.Editing;
 
 namespace Unsquare.UI.Overlay
 {
     /// <summary>
-    /// Colours and sizes of the cage overlay. Kept apart from drawing so later states
-    /// (hover, drag, multi-select) only add entries here.
+    /// Colours and sizes of the cage overlay and the move gizmo. Kept apart from drawing so new states
+    /// only add entries here.
     /// </summary>
     public sealed class CageOverlayStyle
     {
-        public static CageOverlayStyle Default { get; } = new(0.1f, 0.8f, 1.8f, 2f);
+        public static CageOverlayStyle Default { get; } = new(0.1f, 0.8f, 1.8f, 2f, 0.12f);
 
-        public CageOverlayStyle(float lineRadius, float handleDiameter, float selectedHandleDiameter, float axisLength)
+        public CageOverlayStyle(float lineRadius, float handleDiameter, float selectedHandleDiameter,
+            float axisLength, float gizmoScreenSize)
         {
             LineRadius = lineRadius;
             HandleDiameter = handleDiameter;
             SelectedHandleDiameter = selectedHandleDiameter;
             AxisLength = axisLength;
+            GizmoScreenSize = gizmoScreenSize;
         }
 
         public Color RestBox { get; } = new(1f, 1f, 1f, 0.35f);
-        public Color Handle { get; } = new(1f, 1f, 1f, 0.8f);
+        public Color HoveredHandle { get; } = new(0.45f, 0.95f, 1f, 1f);
         public Color SelectedHandle { get; } = new(1f, 0.55f, 0f, 1f);
         public Color AxisX { get; } = new(0.95f, 0.2f, 0.2f, 1f);
         public Color AxisY { get; } = new(0.2f, 0.9f, 0.2f, 1f);
@@ -33,9 +36,38 @@ namespace Unsquare.UI.Overlay
         public float LineRadius { get; }
         public float DashLength { get; } = 1f;
         public float GapLength { get; } = 0.6f;
+
+        /// <summary>Hovered and selected edges are drawn this much thicker.</summary>
+        public float HighlightRadiusFactor { get; } = 2f;
+
+        /// <summary>Dot of a hovered corner or face.</summary>
         public float HandleDiameter { get; }
+
+        /// <summary>Dot of the selected corner or face.</summary>
         public float SelectedHandleDiameter { get; }
+
+        /// <summary>Shortest gizmo arrow in metres, used when the camera is close.</summary>
         public float AxisLength { get; }
+
+        /// <summary>Gizmo arrow length as a part of the view height.</summary>
+        public float GizmoScreenSize { get; }
+
+        /// <summary>Arrow thickness relative to its length, so the gizmo keeps its look at any zoom.</summary>
+        public float GizmoRadiusRatio { get; } = 0.03f;
+        public float ActiveAxisRadiusFactor { get; } = 1.8f;
+
+        public float GizmoLength(float cameraDistance, ViewScale scale) =>
+            GizmoAxes.AxisLength(cameraDistance, scale.AngularSizeOfViewFraction(GizmoScreenSize), AxisLength);
+
+        public Color Axis(int axis) => axis switch
+        {
+            0 => AxisX,
+            1 => AxisY,
+            _ => AxisZ,
+        };
+
+        /// <summary>Hovered or dragged arrows are lifted towards white.</summary>
+        public Color ActiveAxis(int axis) => Color.Lerp(Axis(axis), Color.white, 0.45f);
 
         public Color Cage(DeformStatus status) => status switch
         {

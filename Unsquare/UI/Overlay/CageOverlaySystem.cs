@@ -8,13 +8,14 @@ using Unsquare.Api;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
 using Unsquare.UI.Editing;
+using Unsquare.UI.Tool;
 using Transform = Game.Objects.Transform;
 
 namespace Unsquare.UI.Overlay
 {
     /// <summary>
-    /// Read-only view of the edit session: draws rest box, deformed cage (coloured by status),
-    /// the handles of the current kind and axes on the selected handle around the target building.
+    /// Read-only view of the edit session: draws rest box, deformed cage (coloured by status), the hovered
+    /// and selected handle and the move gizmo on the selected handle around the target building.
     /// </summary>
     public partial class CageOverlaySystem : GameSystemBase
     {
@@ -50,7 +51,16 @@ namespace Unsquare.UI.Overlay
             DrawWireframe(buffer, transform, cage.Box, CageOffsets.Identity, _style.RestBox, dashed: true);
             var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
             DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);
-            DrawHandles(buffer, transform, cage, session.Cursor);
+
+            var selected = session.Cursor.Handle;
+            var hover = session.Hover;
+            if (hover.HasHandle && hover.Handle != selected)
+                DrawHandle(buffer, transform, cage, hover.Handle, _style.HoveredHandle, _style.HandleDiameter);
+            DrawHandle(buffer, transform, cage, selected, _style.SelectedHandle, _style.SelectedHandleDiameter);
+
+            int activeAxis = session.DragAxis >= 0 ? session.DragAxis : hover.Axis;
+            if (CameraView.TryCapture(out var view))
+                DrawGizmo(buffer, transform, cage.HandlePosition(selected), view, activeAxis);
             _overlayRenderSystem.AddBufferWriter(default);
         }
 
@@ -62,51 +72,72 @@ namespace Unsquare.UI.Overlay
             {
                 if (!dashed)
                 {
-                    DrawSegment(buffer, transform, edge, color);
+                    DrawSegment(buffer, transform, edge, color, _style.LineRadius);
                     continue;
                 }
                 _dashes.Clear();
                 SegmentDashes.Split(edge, _style.DashLength, _style.GapLength, _dashes);
                 foreach (var dash in _dashes)
-                    DrawSegment(buffer, transform, dash, color);
+                    DrawSegment(buffer, transform, dash, color, _style.LineRadius);
+            }
+        }
+
+        // Corners get a dot, edges a thick line, faces a thick outline and a dot in the centre.
+        private void DrawHandle(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
+            CageHandle handle, Color color, float dotDiameter)
+        {
+            var corners = CageTopology.CornersOf(handle);
+            float radius = _style.LineRadius * _style.HighlightRadiusFactor;
+            switch (handle.Kind)
+            {
+                case CageHandleKind.Edge:
+                    DrawSegment(buffer, transform,
+                        new CageSegment(cage.CornerPosition(corners[0]), cage.CornerPosition(corners[1])), color, radius);
+                    return;
+                case CageHandleKind.Face:
+                    // Face corners come in bit order of the two in-plane axes; 0-1-3-2 walks around the quad.
+                    DrawSegment(buffer, transform, FaceSide(cage, corners[0], corners[1]), color, radius);
+                    DrawSegment(buffer, transform, FaceSide(cage, corners[1], corners[3]), color, radius);
+                    DrawSegment(buffer, transform, FaceSide(cage, corners[3], corners[2]), color, radius);
+                    DrawSegment(buffer, transform, FaceSide(cage, corners[2], corners[0]), color, radius);
+                    break;
+            }
+            buffer.DrawCircle(color, BuildingSpace.HandleWorldPosition(transform, cage, handle), dotDiameter);
+        }
+
+        private static CageSegment FaceSide(in CageState cage, int a, int b) =>
+            new(cage.CornerPosition(a), cage.CornerPosition(b));
+
+        // Arrows along the building axes, i.e. exactly what a drag (and the move hotkeys) moves along.
+        private void DrawGizmo(OverlayRenderSystem.Buffer buffer, in Transform transform, float3 origin,
+            in CameraView view, int activeAxis)
+        {
+            float distance = math.distance(view.Position, BuildingSpace.PointToWorld(transform, origin));
+            float length = _style.GizmoLength(distance, view.Scale);
+            float radius = length * _style.GizmoRadiusRatio;
+            for (int axis = 0; axis < GizmoAxes.AxisCount; axis++)
+            {
+                bool active = axis == activeAxis;
+                var color = active ? _style.ActiveAxis(axis) : _style.Axis(axis);
+                float axisRadius = active ? radius * _style.ActiveAxisRadiusFactor : radius;
+                float3 direction = GizmoAxes.Direction(axis);
+                float3 tip = origin + direction * length;
+                DrawSegment(buffer, transform, new CageSegment(origin, tip), color, axisRadius);
+                DrawSegment(buffer, transform, new CageSegment(tip - direction * (length * 0.2f), tip), color,
+                    axisRadius * 2.2f);
             }
         }
 
         // Overlay lines measure length on the ground plane only, so vertical ones vanish; cylinders work at any slope.
-        private void DrawSegment(OverlayRenderSystem.Buffer buffer, in Transform transform, CageSegment local, Color color)
+        private void DrawSegment(OverlayRenderSystem.Buffer buffer, in Transform transform, CageSegment local,
+            Color color, float radius)
         {
             float3 a = BuildingSpace.PointToWorld(transform, local.A);
             float3 b = BuildingSpace.PointToWorld(transform, local.B);
             if (!SegmentPose.TryCreate(a, b, out var pose))
                 return;
-            buffer.DrawCustomMesh(color, pose.Center, pose.Length, _style.LineRadius,
+            buffer.DrawCustomMesh(color, pose.Center, pose.Length, radius,
                 OverlayRenderSystem.CustomMeshType.Cylinder, pose.Rotation);
         }
-
-        private void DrawHandles(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
-            CageHandleCursor cursor)
-        {
-            int count = CageTopology.CountOf(cursor.Kind);
-            for (int i = 0; i < count; i++)
-            {
-                if (i == cursor.Index)
-                    continue;
-                var handle = new CageHandleCursor(cursor.Kind, i).Handle;
-                buffer.DrawCircle(_style.Handle, BuildingSpace.HandleWorldPosition(transform, cage, handle),
-                    _style.HandleDiameter);
-            }
-
-            float3 local = cage.HandlePosition(cursor.Handle);
-            float3 world = BuildingSpace.PointToWorld(transform, local);
-            buffer.DrawCircle(_style.SelectedHandle, world, _style.SelectedHandleDiameter);
-            DrawAxis(buffer, transform, local, new float3(1, 0, 0), _style.AxisX);
-            DrawAxis(buffer, transform, local, new float3(0, 1, 0), _style.AxisY);
-            DrawAxis(buffer, transform, local, new float3(0, 0, 1), _style.AxisZ);
-        }
-
-        // Axes are drawn in building space so they show exactly what the move hotkeys do.
-        private void DrawAxis(OverlayRenderSystem.Buffer buffer, in Transform transform, float3 origin, float3 axis,
-            Color color) =>
-            DrawSegment(buffer, transform, new CageSegment(origin, origin + axis * _style.AxisLength), color);
     }
 }

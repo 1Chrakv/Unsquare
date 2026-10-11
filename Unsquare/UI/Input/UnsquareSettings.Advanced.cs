@@ -35,6 +35,10 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float LargeStep { get; set; }
 
+        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISlider(min = 4f, max = 40f, step = 1f, unit = Unit.kInteger)]
+        public float PickRadius { get; set; }
+
         [SettingsUISection(AdvancedTab, LimitsGroup)]
         [SettingsUISlider(min = 0.5f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float MaxOffsetFactor { get; set; }
@@ -90,6 +94,10 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 0f, max = 10f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float AxisLength { get; set; }
 
+        [SettingsUISection(AdvancedTab, OverlayGroup)]
+        [SettingsUISlider(min = 2f, max = 30f, step = 1f, unit = Unit.kPercentage)]
+        public float GizmoSize { get; set; }
+
         [SettingsUISection(AdvancedTab, PerformanceGroup)]
         [SettingsUISlider(min = 0.1f, max = 2f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float RebakeDelay { get; set; }
@@ -130,11 +138,12 @@ namespace Unsquare.UI.Input
         }
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
-            Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)));
+            Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)),
+            Clamped(PickRadius, nameof(PickRadius)));
 
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
-            Clamped(AxisLength, nameof(AxisLength)));
+            Clamped(AxisLength, nameof(AxisLength)), Clamped(GizmoSize, nameof(GizmoSize)) / 100f);
 
         private void SetAdvancedDefaults()
         {
@@ -142,6 +151,7 @@ namespace Unsquare.UI.Input
             SmallStep = edit.SmallStep;
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;
+            PickRadius = edit.PickRadiusPixels;
 
             var pipeline = PipelineOptions.Default;
             MaxOffsetFactor = pipeline.Limits.MaxOffsetFactor;
@@ -164,6 +174,7 @@ namespace Unsquare.UI.Input
             HandleSize = style.HandleDiameter;
             SelectedHandleSize = style.SelectedHandleDiameter;
             AxisLength = style.AxisLength;
+            GizmoSize = style.GizmoScreenSize * 100f;
         }
 
         // Hand-edited settings files may hold anything; the slider attribute is the single source of the range.

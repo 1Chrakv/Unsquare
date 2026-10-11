@@ -15,6 +15,7 @@ namespace Unsquare.UI.Input
         PerformanceGroup, ResetGroup)]
     [SettingsUIShowGroupName(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
         PerformanceGroup)]
+    [SettingsUIKeyboardAction(CageHotkeys.ToggleMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindFace, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -39,6 +40,10 @@ namespace Unsquare.UI.Input
         {
             SetDefaults();
         }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.U, CageHotkeys.ToggleMode, alt: true)]
+        public ProxyBinding ToggleModeBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Digit1, CageHotkeys.KindCorner, alt: true)]
