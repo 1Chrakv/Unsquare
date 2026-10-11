@@ -59,6 +59,40 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void Reset_Face_ZeroesOnlyItsCorners()
+        {
+            var all = CageOffsets.Identity;
+            for (int i = 0; i < CageTopology.CornerCount; i++)
+                all = all.WithCornerSteps(i, new int3(i + 1, 0, 0));
+            var face = CageHandle.Face(5);
+            var reset = all.Reset(face);
+            var faceCorners = CageTopology.CornersOf(face);
+            for (int i = 0; i < CageTopology.CornerCount; i++)
+            {
+                var expected = faceCorners.Contains(i) ? int3.zero : new int3(i + 1, 0, 0);
+                Assert.That(reset.Steps(i), Is.EqualTo(expected), $"corner {i}");
+            }
+        }
+
+        [Test]
+        public void Reset_Corner_KeepsOtherCorners()
+        {
+            var moved = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, 1, 0));
+            var corner = CageTopology.CornersOf(CageHandle.Face(3))[0];
+            var reset = moved.Reset(CageHandle.Corner(corner));
+            Assert.That(reset.Steps(corner), Is.EqualTo(int3.zero));
+            Assert.That(Enumerable.Range(0, 8).Count(i => reset.Steps(i).y == 10), Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Reset_UntouchedHandle_ReturnsSameInstance()
+        {
+            var moved = CageOffsets.Identity.Move(CageHandle.Corner(0), new float3(1, 0, 0));
+            var untouched = Enumerable.Range(1, 7).First(i => !CageTopology.CornersOf(CageHandle.Corner(i)).Contains(0));
+            Assert.That(moved.Reset(CageHandle.Corner(untouched)), Is.SameAs(moved));
+        }
+
+        [Test]
         public void ToArray_FromArray_RoundTrips()
         {
             var offsets = CageOffsets.Identity

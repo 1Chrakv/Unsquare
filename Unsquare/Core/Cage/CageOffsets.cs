@@ -95,6 +95,21 @@ namespace Unsquare.Core.Cage
             return new CageOffsets(steps);
         }
 
+        /// <summary>Returns offsets with every corner of the handle back at zero; the other corners keep theirs.</summary>
+        public CageOffsets Reset(CageHandle handle)
+        {
+            var corners = CageTopology.CornersOf(handle);
+            int3[] steps = null;
+            for (int i = 0; i < corners.Count; i++)
+            {
+                if (math.all(_steps[corners[i]] == int3.zero))
+                    continue;
+                steps ??= (int3[])_steps.Clone();
+                steps[corners[i]] = int3.zero;
+            }
+            return steps == null ? this : new CageOffsets(steps);
+        }
+
         /// <summary>Returns offsets with a single corner set to an absolute value in steps.</summary>
         public CageOffsets WithCornerSteps(int corner, int3 steps)
         {
