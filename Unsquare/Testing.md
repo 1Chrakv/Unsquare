@@ -25,13 +25,15 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
 | Action | Input |
 |---|---|
+| Preview | Hovering a building shows its cage dimmed (while no handle is selected) |
 | 1. Select a building | Click it (outside the current cage); no handle is selected yet |
 | 2. Select a handle | Click an edge, face or corner, depending on the pick mode (default edges; Alt+W cycles) |
 | Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue) |
-| Step back | Right-click: cancels a drag, else clears the handle, else the building, else leaves the mode |
+| Step back | Right-click: cancels a drag, else clears the handle, else the building; never leaves the mode |
 
-While a handle is selected the building is locked: clicks on other buildings or the ground do nothing. A left click
-never clears the building; only right-click does.
+While a handle is selected the building is locked: clicks on other buildings or the ground close to the cage do
+nothing; a click far away (outside the cage grown by 25 % of its size, at least 5 m) deselects the handle. A left click
+never clears the building; only right-click does. Only Alt+U and the toolbar button leave Unsquare mode.
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
@@ -93,13 +95,17 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake after release; one `Drag of Face3 ended -> …` line |
 | 35 | Select a front edge, drag the red and blue arrows | Both corners of the edge move together along X / Z |
 | 36 | Start a drag, right-click while holding the mouse | Shape snaps back to before the drag; log `Drag … cancelled` |
-| 37 | With a handle selected, click another house and the ground; then right-click and click the other house | Locked: nothing changes; after the right-click (log `Selection cleared`) the other house becomes the target |
-| 38 | Right-click repeatedly | Selection cleared, then target cleared (cage gone), then the mode turns off |
+| 37 | With a handle selected, click a neighbour next to the cage; then right-click and click the neighbour | Locked: nothing changes; after the right-click (log `Selection cleared`) the neighbour becomes the target |
+| 38 | Right-click repeatedly | Selection cleared, then target cleared (cage gone), then nothing more; the mode stays on |
 | 39 | Select an edge and click just beside it (on the ground or a neighbour) | Cage and gizmo stay; nothing changes |
 | 40 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
 | 41 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
 | 42 | Options → Advanced: change pick radius and gizmo size | Picking gets easier/harder, gizmo resizes immediately |
 | 43 | Leave the mode during a drag (Esc or Alt+U) | Drag cancelled, cage and gizmo hidden |
+| 44 | Mode on, no building selected: move the mouse over several houses and the ground | Each house shows a dim cage while hovered; none over the ground |
+| 45 | Select a house (no handle): hover other houses; then select an edge and hover them again | Other houses are previewed; with the edge selected no preview appears |
+| 46 | With an edge selected, click far away on the map | Log `Selection cleared`; the building stays selected (cage visible), the next click can pick another house |
+| 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its 0.8 size (6 % of the view height, at least 1 m) |
 
 ## Reporting problems
 
