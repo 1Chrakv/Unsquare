@@ -123,6 +123,9 @@ namespace Unsquare.UI.Overlay
         private void DrawCage(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
             CageEditSession session)
         {
+            // Custom meshes only render in frames whose buffer also holds a regular primitive; this keeps them alive.
+            buffer.DrawCircle(_style.KeepAlive, BuildingSpace.PointToWorld(transform, cage.Box.Center),
+                _style.KeepAliveDiameter);
             DrawWireframe(buffer, transform, cage.Box, CageOffsets.Identity, _style.RestBox, dashed: true);
             var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
             DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);

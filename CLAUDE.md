@@ -67,6 +67,8 @@ commit, configuration and build time on load.
 - Use `Mod.Log` (`Colossal.Logging.ILog`) for logging, never `Debug.Log`.
 - `OverlayRenderSystem` lines/curves are ground-plane only (length measured in xz; vertical ones vanish). Draw 3D
   lines as `CustomMeshType.Cylinder` via `DrawCustomMesh` (see `SegmentPose`).
+- Custom meshes are only rendered in frames whose overlay buffer also holds a regular primitive (circle, line);
+  `CageOverlaySystem` draws a near-invisible keep-alive circle every frame.
 - Prefab names, deform keys, asset names, GUID seeds and the manifest format are what saves depend on. While in
   early development, breaking them is allowed (bump `VariantManifest.FormatVersion`), but only after the user
   confirmed it.

@@ -23,6 +23,10 @@ namespace Unsquare.UI.Overlay
         }
 
         public Color RestBox { get; } = new(1f, 1f, 1f, 0.35f);
+
+        /// <summary>Invisible circle drawn every frame so the overlay renders the cage cylinders.</summary>
+        public Color KeepAlive { get; } = new(1f, 1f, 1f, 0.02f); // not 0, in case empty colours get skipped
+        public float KeepAliveDiameter { get; } = 0.05f;
         public Color HoveredHandle { get; } = new(0.45f, 0.95f, 1f, 1f);
         public Color SelectedHandle { get; } = new(1f, 0.55f, 0f, 1f);
         public Color AxisX { get; } = new(0.95f, 0.2f, 0.2f, 1f);
