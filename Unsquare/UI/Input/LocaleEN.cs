@@ -45,6 +45,11 @@ namespace Unsquare.UI.Input
             entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
                 "Turns Unsquare mode on and off, like the Unsquare button. The other hotkeys only work in the mode.";
             entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ToggleMode)] = CageHotkeys.ToggleModeLabel;
+            entries[_settings.GetOptionLabelLocaleID(nameof(UnsquareSettings.ExitModeBinding))] =
+                CageHotkeys.ExitModeLabel;
+            entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ExitModeBinding))] =
+                "Leaves Unsquare mode. Only active while the mode is on, so the key keeps its usual meaning otherwise.";
+            entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ExitMode)] = CageHotkeys.ExitModeLabel;
             foreach (var hotkey in CageHotkeys.All)
             {
                 entries[_settings.GetOptionLabelLocaleID(hotkey.PropertyName)] = hotkey.Label;
@@ -61,6 +66,9 @@ namespace Unsquare.UI.Input
                 "Largest step of the step-size hotkey. Snapped to 0.1 m.");
             Option(entries, nameof(UnsquareSettings.PickRadius), "Mouse pick radius (px)",
                 "How close the mouse must be to an edge, a corner or a gizmo arrow to grab it.");
+            Option(entries, nameof(UnsquareSettings.FarClickMargin), "Far-click margin",
+                "A click outside the selected building's cage grown by this share of its size steps back: " +
+                "first the selected edge, face or corner is deselected, then the building.");
 
             Option(entries, nameof(UnsquareSettings.MaxOffsetFactor), "Max corner offset (× box size)",
                 "How far a cage corner may move per axis, relative to the cage size on that axis.");

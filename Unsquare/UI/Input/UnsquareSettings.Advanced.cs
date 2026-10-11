@@ -39,6 +39,10 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 4f, max = 40f, step = 1f, unit = Unit.kInteger)]
         public float PickRadius { get; set; }
 
+        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISlider(min = 0f, max = 50f, step = 1f, unit = Unit.kPercentage)]
+        public float FarClickMargin { get; set; }
+
         [SettingsUISection(AdvancedTab, LimitsGroup)]
         [SettingsUISlider(min = 0.5f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float MaxOffsetFactor { get; set; }
@@ -139,7 +143,7 @@ namespace Unsquare.UI.Input
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
             Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)),
-            Clamped(PickRadius, nameof(PickRadius)));
+            Clamped(PickRadius, nameof(PickRadius)), Clamped(FarClickMargin, nameof(FarClickMargin)) / 100f);
 
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
@@ -152,6 +156,7 @@ namespace Unsquare.UI.Input
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;
             PickRadius = edit.PickRadiusPixels;
+            FarClickMargin = edit.FarClickMarginFraction * 100f;
 
             var pipeline = PipelineOptions.Default;
             MaxOffsetFactor = pipeline.Limits.MaxOffsetFactor;

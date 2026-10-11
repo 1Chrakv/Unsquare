@@ -1,16 +1,18 @@
 namespace Unsquare.UI.Editing
 {
-    /// <summary>Tunables of the edit session: the three nudge step sizes and the mouse pick radius.</summary>
+    /// <summary>Tunables of the edit session: nudge step sizes, mouse pick radius and far-click margin.</summary>
     public sealed class CageEditOptions
     {
-        public static readonly CageEditOptions Default = new(0.1f, 0.5f, 2f, 12f);
+        public static readonly CageEditOptions Default = new(0.1f, 0.5f, 2f, 12f, 0.05f);
 
-        public CageEditOptions(float smallStep, float mediumStep, float largeStep, float pickRadiusPixels)
+        public CageEditOptions(float smallStep, float mediumStep, float largeStep, float pickRadiusPixels,
+            float farClickMarginFraction)
         {
             SmallStep = smallStep;
             MediumStep = mediumStep;
             LargeStep = largeStep;
             PickRadiusPixels = pickRadiusPixels;
+            FarClickMarginFraction = farClickMarginFraction;
         }
 
         public float SmallStep { get; }
@@ -21,13 +23,13 @@ namespace Unsquare.UI.Editing
         public float PickRadiusPixels { get; }
 
         /// <summary>
-        /// A click outside the cage grown by this margin (part of its largest size, at least the minimum in metres)
-        /// deselects the handle; closer misses keep it.
+        /// A click outside the target's cage grown by this part of its largest size steps back (handle, then
+        /// building); closer misses change nothing.
         /// </summary>
-        public float FarClickMarginFraction { get; } = 0.25f;
-        public float FarClickMinMargin { get; } = 5f;
+        public float FarClickMarginFraction { get; }
 
         public override string ToString() =>
-            $"steps {SmallStep}/{MediumStep}/{LargeStep} m, pick radius {PickRadiusPixels} px";
+            $"steps {SmallStep}/{MediumStep}/{LargeStep} m, pick radius {PickRadiusPixels} px, " +
+            $"far-click margin {FarClickMarginFraction * 100f} %";
     }
 }

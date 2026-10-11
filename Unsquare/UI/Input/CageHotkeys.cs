@@ -14,6 +14,10 @@ namespace Unsquare.UI.Input
         public const string ToggleMode = "UnsquareToggleMode";
         public const string ToggleModeLabel = "Toggle Unsquare mode";
 
+        /// <summary>Leaves Unsquare mode (default Esc); ignored outside the mode.</summary>
+        public const string ExitMode = "UnsquareExitMode";
+        public const string ExitModeLabel = "Leave Unsquare mode";
+
         public const string CyclePickKind = "UnsquareCyclePickKind";
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";

@@ -132,7 +132,8 @@ namespace Unsquare.UI.Tool
             if (!applyAction.WasPressedThisFrame())
                 return;
 
-            // A miss never clears the target. A selected handle locks the building until a far click or right-click.
+            // Clicks near the cage never change the selection; far clicks step back (handle, then building).
+            // A selected handle locks the building: other buildings cannot be picked until it is released.
             if (hover.HasAxis)
                 StartDrag(session, context, hover.Axis);
             else if (hover.HasHandle)
@@ -144,14 +145,13 @@ namespace Unsquare.UI.Tool
             }
             else if (hovered != Entity.Null && hovered != session.Target)
                 SelectBuilding(session, hovered);
+            else if (hovered == Entity.Null && hasContext && !IsNearCage(session, context))
+                session.ClearTarget();
         }
 
-        private static bool IsNearCage(CageEditSession session, in PickContext context)
-        {
-            var options = session.Options;
-            return CageProximity.IsNear(context.Cage.Box, context.Cage.TargetOffsets, context.Ray,
-                options.FarClickMarginFraction, options.FarClickMinMargin);
-        }
+        private static bool IsNearCage(CageEditSession session, in PickContext context) =>
+            CageProximity.IsNear(context.Cage.Box, context.Cage.TargetOffsets, context.Ray,
+                session.Options.FarClickMarginFraction);
 
         // Arrows only exist with a selected handle; cage parts only of the current pick mode.
         private static CageHover FindHover(CageEditSession session, in PickContext context)
