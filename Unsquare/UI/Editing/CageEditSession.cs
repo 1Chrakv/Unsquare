@@ -35,6 +35,9 @@ namespace Unsquare.UI.Editing
         public Entity Target { get; private set; } = Entity.Null;
         public bool HasTarget => Target != Entity.Null;
 
+        /// <summary>Building under the mouse that a click would select; its cage is previewed. Never the target.</summary>
+        public Entity PreviewBuilding { get; private set; } = Entity.Null;
+
         /// <summary>Pick mode and selected handle; a selected handle shows the gizmo.</summary>
         public HandleSelection Selection { get; private set; } = HandleSelection.Default;
 
@@ -60,6 +63,12 @@ namespace Unsquare.UI.Editing
             return HasTarget && _service.TryGetCage(Target, out state);
         }
 
+        public bool TryGetPreviewCage(out CageState state)
+        {
+            state = default;
+            return PreviewBuilding != Entity.Null && _service.TryGetCage(PreviewBuilding, out state);
+        }
+
         /// <summary>Applies new options; the step keeps its position (small, medium, large).</summary>
         public void Configure(CageEditOptions options)
         {
@@ -78,6 +87,7 @@ namespace Unsquare.UI.Editing
                 CancelDrag();
                 ClearTarget();
                 Selection = HandleSelection.Default;
+                PreviewBuilding = Entity.Null;
             }
             IsEnabled = enabled;
             Log(enabled ? "Unsquare mode on" : "Unsquare mode off");
@@ -127,6 +137,17 @@ namespace Unsquare.UI.Editing
         public void PreviousHandle() => SetSelection(Selection.Previous());
         public void SelectHandle(CageHandle handle) => SetSelection(Selection.Select(handle));
         public void ClearSelection() => SetSelection(Selection.Clear());
+
+        /// <summary>Sets the previewed building; the target itself and anything outside the mode are not previewed.</summary>
+        public void SetPreview(Entity building)
+        {
+            if (!IsEnabled || building == Target)
+                building = Entity.Null;
+            if (building == PreviewBuilding)
+                return;
+            PreviewBuilding = building;
+            Changed?.Invoke();
+        }
 
         public void SetHover(CageHover hover)
         {
@@ -233,6 +254,7 @@ namespace Unsquare.UI.Editing
             DragAxis = -1;
             Hover = CageHover.None;
             Selection = Selection.Clear();
+            PreviewBuilding = Entity.Null;
             Target = building;
             LastResult = null;
             Log(building == Entity.Null ? "Target cleared" : $"Target {building}");

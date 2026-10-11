@@ -109,6 +109,7 @@ namespace Unsquare.UI.Tool
             if (overUi)
             {
                 session.SetHover(CageHover.None);
+                session.SetPreview(Entity.Null);
                 return;
             }
 
@@ -116,23 +117,40 @@ namespace Unsquare.UI.Tool
             var hover = hasContext ? FindHover(session, context) : CageHover.None;
             session.SetHover(hover);
 
+            // Only an unlocked editor can switch buildings, so only then is the building under the mouse previewed.
+            var hovered = Entity.Null;
+            if (!session.IsLocked && GetRaycastResult(out Entity hit, out RaycastHit _))
+                TryResolveBuilding(hit, out hovered);
+            session.SetPreview(hover.HasHandle || hover.HasAxis ? Entity.Null : hovered);
+
+            // Right-click steps back but never leaves the mode; only the toggle does.
             if (cancelAction.WasPressedThisFrame())
             {
-                if (session.StepBack() == StepBackResult.None)
-                    Toggle();
+                session.StepBack();
                 return;
             }
             if (!applyAction.WasPressedThisFrame())
                 return;
 
-            // A miss never clears the target; only right-click does. A selected handle locks the building.
+            // A miss never clears the target. A selected handle locks the building until a far click or right-click.
             if (hover.HasAxis)
                 StartDrag(session, context, hover.Axis);
             else if (hover.HasHandle)
                 session.SelectHandle(hover.Handle);
-            else if (!session.IsLocked && GetRaycastResult(out Entity hit, out RaycastHit _) &&
-                     TryResolveBuilding(hit, out var building) && building != session.Target)
-                SelectBuilding(session, building);
+            else if (session.IsLocked)
+            {
+                if (hasContext && !IsNearCage(session, context))
+                    session.ClearSelection();
+            }
+            else if (hovered != Entity.Null && hovered != session.Target)
+                SelectBuilding(session, hovered);
+        }
+
+        private static bool IsNearCage(CageEditSession session, in PickContext context)
+        {
+            var options = session.Options;
+            return CageProximity.IsNear(context.Cage.Box, context.Cage.TargetOffsets, context.Ray,
+                options.FarClickMarginFraction, options.FarClickMinMargin);
         }
 
         // Arrows only exist with a selected handle; cage parts only of the current pick mode.

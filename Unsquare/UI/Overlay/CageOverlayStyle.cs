@@ -10,7 +10,7 @@ namespace Unsquare.UI.Overlay
     /// </summary>
     public sealed class CageOverlayStyle
     {
-        public static CageOverlayStyle Default { get; } = new(0.1f, 0.8f, 1.8f, 2f, 0.12f);
+        public static CageOverlayStyle Default { get; } = new(0.1f, 0.8f, 1.8f, 1f, 0.06f);
 
         public CageOverlayStyle(float lineRadius, float handleDiameter, float selectedHandleDiameter,
             float axisLength, float gizmoScreenSize)
@@ -23,6 +23,9 @@ namespace Unsquare.UI.Overlay
         }
 
         public Color RestBox { get; } = new(1f, 1f, 1f, 0.35f);
+
+        /// <summary>Cage of the building under the mouse that a click would select.</summary>
+        public Color Preview { get; } = new(1f, 1f, 1f, 0.45f);
 
         /// <summary>Invisible circle drawn every frame so the overlay renders the cage cylinders.</summary>
         public Color KeepAlive { get; } = new(1f, 1f, 1f, 0.02f); // not 0, in case empty colours get skipped

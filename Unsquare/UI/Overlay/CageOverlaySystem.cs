@@ -15,8 +15,8 @@ using Transform = Game.Objects.Transform;
 namespace Unsquare.UI.Overlay
 {
     /// <summary>
-    /// Read-only view of the edit session: draws rest box, deformed cage (coloured by status), the hovered
-    /// and selected handle and the move gizmo on the selected handle around the target building.
+    /// Read-only view of the edit session: draws rest box, deformed cage (coloured by status), hovered and
+    /// selected handle and move gizmo of the target building, and a dim cage of the building under the mouse.
     /// </summary>
     public partial class CageOverlaySystem : GameSystemBase
     {
@@ -58,15 +58,29 @@ namespace Unsquare.UI.Overlay
         private void Draw()
         {
             var session = _editor.Session;
-            if (!session.TryGetCage(out var cage) ||
-                !BuildingSpace.TryGetTransform(EntityManager, session.Target, out var transform))
+            Transform transform = default;
+            Transform previewTransform = default;
+            bool hasTarget = session.TryGetCage(out var cage) &&
+                             BuildingSpace.TryGetTransform(EntityManager, session.Target, out transform);
+            bool hasPreview = session.TryGetPreviewCage(out var preview) &&
+                              BuildingSpace.TryGetTransform(EntityManager, session.PreviewBuilding, out previewTransform);
+            if (!hasTarget && !hasPreview)
                 return;
 
             var buffer = _overlayRenderSystem.GetBuffer(out JobHandle dependencies);
             dependencies.Complete(); // we draw on the main thread
             try
             {
-                DrawCage(buffer, transform, cage, session);
+                // Custom meshes only render in frames whose buffer also holds a regular primitive; this keeps them alive.
+                var anchor = hasTarget
+                    ? BuildingSpace.PointToWorld(transform, cage.Box.Center)
+                    : BuildingSpace.PointToWorld(previewTransform, preview.Box.Center);
+                buffer.DrawCircle(_style.KeepAlive, anchor, _style.KeepAliveDiameter);
+                if (hasPreview)
+                    DrawWireframe(buffer, previewTransform, preview.Box, preview.TargetOffsets, _style.Preview,
+                        dashed: false);
+                if (hasTarget)
+                    DrawCage(buffer, transform, cage, session);
             }
             finally
             {
@@ -77,9 +91,6 @@ namespace Unsquare.UI.Overlay
         private void DrawCage(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
             CageEditSession session)
         {
-            // Custom meshes only render in frames whose buffer also holds a regular primitive; this keeps them alive.
-            buffer.DrawCircle(_style.KeepAlive, BuildingSpace.PointToWorld(transform, cage.Box.Center),
-                _style.KeepAliveDiameter);
             DrawWireframe(buffer, transform, cage.Box, CageOffsets.Identity, _style.RestBox, dashed: true);
             var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
             DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);
