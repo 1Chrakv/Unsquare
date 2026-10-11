@@ -14,11 +14,13 @@ namespace Unsquare.UI.Editing
     public sealed class CageEditSession
     {
         private readonly IBuildingDeformService _service;
+        private readonly EditHistory<Entity> _history;
         private bool _warnedLeavingLot;
 
         public CageEditSession(IBuildingDeformService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _history = new EditHistory<Entity>(Options.HistoryDepth);
             _service.CageChanged += building =>
             {
                 if (building == Target)
@@ -74,6 +76,7 @@ namespace Unsquare.UI.Editing
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Step = Step.WithSizes(options.SmallStep, options.MediumStep, options.LargeStep);
+            _history.Capacity = options.HistoryDepth;
             Changed?.Invoke();
         }
 
@@ -174,10 +177,12 @@ namespace Unsquare.UI.Editing
                 Log("No handle selected");
                 return DeformRequestResult.NotDeformable;
             }
-            return Record($"Nudge {Selection.Handle} {direction * Step.Meters}",
-                HasTarget
-                    ? _service.MoveHandle(Target, Selection.Handle, direction * Step.Meters)
-                    : DeformRequestResult.NotDeformable);
+            var command = $"Nudge {Selection.Handle} {direction * Step.Meters}";
+            if (!TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            var result = _service.MoveHandle(Target, Selection.Handle, direction * Step.Meters);
+            RememberEdit(state.TargetOffsets, result);
+            return Record(command, result);
         }
 
         /// <summary>Starts dragging the selected handle along a gizmo axis (0..2).</summary>
@@ -207,6 +212,8 @@ namespace Unsquare.UI.Editing
             if (ActiveDrag == null)
                 return;
             var handle = ActiveDrag.Handle;
+            if (TryGetCage(out var state))
+                _history.Record(Target, ActiveDrag.StartOffsets, state.TargetOffsets); // one step per drag
             ActiveDrag = null;
             DragAxis = -1;
             Log($"Drag of {handle} ended -> {LastResult?.ToString() ?? "unchanged"}");
@@ -224,17 +231,34 @@ namespace Unsquare.UI.Editing
             Record($"Drag of {drag.Handle} cancelled", _service.SetOffsets(Target, drag.StartOffsets));
         }
 
-        public DeformRequestResult Reset() =>
-            Record("Reset", HasTarget ? _service.Reset(Target) : DeformRequestResult.NotDeformable);
+        public DeformRequestResult Reset()
+        {
+            if (!TryGetCage(out var state))
+                return Record("Reset", DeformRequestResult.NotDeformable);
+            var result = _service.Reset(Target);
+            RememberEdit(state.TargetOffsets, result);
+            return Record("Reset", result);
+        }
 
+        /// <summary>Not undoable (uninstall path), so it also clears the history.</summary>
         public int ResetAll()
         {
             if (!IsEnabled)
                 return 0;
+            _history.Clear();
             int count = _service.ResetAll();
             Log($"Reset all: {count} buildings");
             return count;
         }
+
+        /// <summary>Reverts the newest cage edit on any building; that building becomes the target.</summary>
+        public void Undo() => Revisit(true);
+
+        /// <summary>Repeats the newest undone cage edit; that building becomes the target.</summary>
+        public void Redo() => Revisit(false);
+
+        /// <summary>Forgets all edits, e.g. when another city is loaded.</summary>
+        public void ClearHistory() => _history.Clear();
 
         /// <summary>One-line summary of target, selection, step and cage state, e.g. for logs.</summary>
         public string Describe()
@@ -259,6 +283,34 @@ namespace Unsquare.UI.Editing
             LastResult = null;
             Log(building == Entity.Null ? "Target cleared" : $"Target {building}");
             Changed?.Invoke();
+        }
+
+        // Edits of buildings that are gone are dropped and the next one is tried.
+        private void Revisit(bool undo)
+        {
+            if (!IsEnabled || ActiveDrag != null)
+                return;
+            CageEdit<Entity> edit;
+            while (undo ? _history.TryUndo(out edit) : _history.TryRedo(out edit))
+            {
+                if (!_service.TryGetCage(edit.Building, out _))
+                {
+                    _history.Forget(edit.Building);
+                    continue;
+                }
+                SetTarget(edit.Building);
+                Record($"{(undo ? "Undo" : "Redo")} on {edit.Building}",
+                    _service.SetOffsets(edit.Building, undo ? edit.Before : edit.After));
+                return;
+            }
+            Log(undo ? "Nothing to undo" : "Nothing to redo");
+        }
+
+        // The requested offsets are read back, so clamping is part of the edit.
+        private void RememberEdit(CageOffsets before, DeformRequestResult result)
+        {
+            if ((result is DeformRequestResult.Accepted or DeformRequestResult.Clamped) && TryGetCage(out var state))
+                _history.Record(Target, before, state.TargetOffsets);
         }
 
         private void SetPickKind(HandleSelection selection)

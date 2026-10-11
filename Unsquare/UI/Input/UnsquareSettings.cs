@@ -32,6 +32,8 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.CycleStep, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetSelected, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.Undo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.Redo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.LogState, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     public sealed partial class UnsquareSettings : ModSetting
     {
@@ -110,6 +112,14 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]
         public ProxyBinding ResetAllBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Z, CageHotkeys.Undo, ctrl: true)]
+        public ProxyBinding UndoBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Y, CageHotkeys.Redo, ctrl: true)]
+        public ProxyBinding RedoBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.L, CageHotkeys.LogState, alt: true)]

@@ -29,6 +29,7 @@ namespace Unsquare.UI.Editing
         {
             base.OnGamePreload(purpose, mode);
             Session.ClearTarget(); // entities of the previous city are gone
+            Session.ClearHistory();
         }
     }
 }

@@ -43,6 +43,10 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 0f, max = 50f, step = 1f, unit = Unit.kPercentage)]
         public float FarClickMargin { get; set; }
 
+        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISlider(min = 10f, max = 500f, step = 10f, unit = Unit.kInteger)]
+        public int UndoSteps { get; set; }
+
         [SettingsUISection(AdvancedTab, LimitsGroup)]
         [SettingsUISlider(min = 0.5f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float MaxOffsetFactor { get; set; }
@@ -143,7 +147,8 @@ namespace Unsquare.UI.Input
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
             Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)),
-            Clamped(PickRadius, nameof(PickRadius)), Clamped(FarClickMargin, nameof(FarClickMargin)) / 100f);
+            Clamped(PickRadius, nameof(PickRadius)), Clamped(FarClickMargin, nameof(FarClickMargin)) / 100f,
+            (int)Clamped(UndoSteps, nameof(UndoSteps)));
 
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
@@ -157,6 +162,7 @@ namespace Unsquare.UI.Input
             LargeStep = edit.LargeStep;
             PickRadius = edit.PickRadiusPixels;
             FarClickMargin = edit.FarClickMarginFraction * 100f;
+            UndoSteps = edit.HistoryDepth;
 
             var pipeline = PipelineOptions.Default;
             MaxOffsetFactor = pipeline.Limits.MaxOffsetFactor;

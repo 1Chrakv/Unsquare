@@ -69,6 +69,8 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.FarClickMargin), "Far-click margin",
                 "A click outside the selected building's cage grown by this share of its size steps back: " +
                 "first the selected edge, face or corner is deselected, then the building.");
+            Option(entries, nameof(UnsquareSettings.UndoSteps), "Undo steps",
+                "How many cage edits (nudges, drags, resets) undo can take back, across all buildings.");
 
             Option(entries, nameof(UnsquareSettings.MaxOffsetFactor), "Max corner offset (× box size)",
                 "How far a cage corner may move per axis, relative to the cage size on that axis.");

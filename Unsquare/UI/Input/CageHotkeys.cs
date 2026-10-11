@@ -34,6 +34,8 @@ namespace Unsquare.UI.Input
         public const string ResetSelected = "UnsquareResetSelected";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
+        public const string Undo = "UnsquareUndo";
+        public const string Redo = "UnsquareRedo";
 
         public static readonly IReadOnlyList<HotkeyDefinition> All = new[]
         {
@@ -67,6 +69,8 @@ namespace Unsquare.UI.Input
                 s => s.Reset()),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",
                 s => s.ResetAll()),
+            new HotkeyDefinition(Undo, nameof(UnsquareSettings.UndoBinding), "Undo cage edit", s => s.Undo()),
+            new HotkeyDefinition(Redo, nameof(UnsquareSettings.RedoBinding), "Redo cage edit", s => s.Redo()),
             new HotkeyDefinition(LogState, nameof(UnsquareSettings.LogStateBinding), "Write cage state to the log",
                 s => Mod.Log.Info($"[Edit] {s.Describe()}")),
         };

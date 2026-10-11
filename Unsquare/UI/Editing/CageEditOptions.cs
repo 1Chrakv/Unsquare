@@ -1,18 +1,19 @@
 namespace Unsquare.UI.Editing
 {
-    /// <summary>Tunables of the edit session: nudge step sizes, mouse pick radius and far-click margin.</summary>
+    /// <summary>Tunables of the edit session: nudge step sizes, mouse pick radius, far-click margin, undo depth.</summary>
     public sealed class CageEditOptions
     {
-        public static readonly CageEditOptions Default = new(0.1f, 0.5f, 2f, 12f, 0.05f);
+        public static readonly CageEditOptions Default = new(0.1f, 0.5f, 2f, 12f, 0.05f, 100);
 
         public CageEditOptions(float smallStep, float mediumStep, float largeStep, float pickRadiusPixels,
-            float farClickMarginFraction)
+            float farClickMarginFraction, int historyDepth)
         {
             SmallStep = smallStep;
             MediumStep = mediumStep;
             LargeStep = largeStep;
             PickRadiusPixels = pickRadiusPixels;
             FarClickMarginFraction = farClickMarginFraction;
+            HistoryDepth = historyDepth;
         }
 
         public float SmallStep { get; }
@@ -28,8 +29,11 @@ namespace Unsquare.UI.Editing
         /// </summary>
         public float FarClickMarginFraction { get; }
 
+        /// <summary>How many cage edits Ctrl+Z can take back.</summary>
+        public int HistoryDepth { get; }
+
         public override string ToString() =>
             $"steps {SmallStep}/{MediumStep}/{LargeStep} m, pick radius {PickRadiusPixels} px, " +
-            $"far-click margin {FarClickMarginFraction * 100f} %";
+            $"far-click margin {FarClickMarginFraction * 100f} %, {HistoryDepth} undo steps";
     }
 }
