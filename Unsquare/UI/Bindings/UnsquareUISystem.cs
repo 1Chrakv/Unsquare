@@ -19,14 +19,7 @@ namespace Unsquare.UI.Bindings
             base.OnCreate();
             _tool = World.GetOrCreateSystemManaged<UnsquareToolSystem>();
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "modeActive", () => _tool.IsActive));
-            AddBinding(new TriggerBinding(Group, "toggleMode", ToggleMode));
-        }
-
-        // Logged so a button that seems dead shows whether the click reaches the mod.
-        private void ToggleMode()
-        {
-            Mod.Log.Info($"[UI] Toggle requested (active={_tool.IsActive})");
-            _tool.Toggle();
+            AddBinding(new TriggerBinding(Group, "toggleMode", () => _tool.Toggle()));
         }
     }
 }

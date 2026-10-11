@@ -104,11 +104,7 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 ## Reporting problems
 
 Note the checklist number, press Alt+L on the affected building and attach the log lines starting at the last
-`[Edit]` command (include any `Bake`, `Restored`, `[Overlay]` or error lines).
-
-If the cage is not visible: the overlay logs `[Overlay] Drawing for … at (x, y, z)` (or `NoCage`, `NoTransform`, `Idle`)
-whenever its state or target changes, and Alt+L adds `Overlay: … last drawn frame N of M …`. A growing frame count with
-`Drawing` means the lines are sent to the renderer; compare the logged centre with the building.
+`[Edit]` command (include any `Bake`, `Restored` or error lines).
 
 Known risks to watch: Alt+arrow keys may also pan the camera (rebind if so); baking fails with "not CPU readable" if
 render meshes cannot be read; if buildings come back undeformed after reload, variant restore at preload did not run.

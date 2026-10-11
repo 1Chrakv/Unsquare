@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Game;
 using Game.Input;
 using Unsquare.UI.Editing;
-using Unsquare.UI.Overlay;
 using Unsquare.UI.Tool;
 
 namespace Unsquare.UI.Input
@@ -17,16 +16,13 @@ namespace Unsquare.UI.Input
         private readonly List<(ProxyAction Action, Action<CageEditSession> Command)> _bindings = new();
         private CageEditorSystem _editor;
         private UnsquareToolSystem _tool;
-        private CageOverlaySystem _overlay;
         private ProxyAction _toggleMode;
-        private ProxyAction _logState;
 
         protected override void OnCreate()
         {
             base.OnCreate();
             _editor = World.GetOrCreateSystemManaged<CageEditorSystem>();
             _tool = World.GetOrCreateSystemManaged<UnsquareToolSystem>();
-            _overlay = World.GetOrCreateSystemManaged<CageOverlaySystem>();
         }
 
         /// <summary>Connects the input actions registered by the settings; call once after RegisterKeyBindings.</summary>
@@ -34,7 +30,6 @@ namespace Unsquare.UI.Input
         {
             _bindings.Clear();
             _toggleMode = Enable(settings, CageHotkeys.ToggleMode);
-            _logState = settings.GetAction(CageHotkeys.LogState);
             foreach (var hotkey in CageHotkeys.All)
             {
                 var action = Enable(settings, hotkey.ActionName);
@@ -58,8 +53,6 @@ namespace Unsquare.UI.Input
                 if (action.WasPressedThisFrame())
                     command(session);
             }
-            if (_logState != null && _logState.WasPressedThisFrame())
-                Mod.Log.Info($"[Edit] {_overlay.DescribeDrawing()}");
         }
 
         private static ProxyAction Enable(UnsquareSettings settings, string actionName)
