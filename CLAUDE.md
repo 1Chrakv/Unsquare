@@ -36,8 +36,9 @@ dotnet test Unsquare.Tests
 ```
 
 The mod project imports `Mod.props`/`Mod.targets` from `%CSII_TOOLPATH%` (net48, C# 9). Game DLLs are resolved
-from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare`; with the game running the deploy fails (locked DLLs).
-After the deploy the build runs `npm run build` in `UiModule/` (needs Node.js; skip with `-p:SkipUiModule=true`).
+from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare` and refuse to while the game runs (locked DLL).
+The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModule/` (needs Node.js). Never pass
+`-p:SkipUiModule=true` for a deploy you want to test: without the UI module the Unsquare button is missing.
 
 ## Versioning
 
