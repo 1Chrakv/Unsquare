@@ -75,5 +75,17 @@ namespace Unsquare.Tests.Editing
             Assert.That(offsets.Steps(0), Is.EqualTo(new int3(10, 0, 0)));
             Assert.That(offsets.Steps(7), Is.EqualTo(new int3(0, 20, 0)));
         }
+    
+        [Test]
+        public void TryAdvance_WithinOneGridStep_ReportsNoChange()
+        {
+            var drag = new CageDrag(CageHandle.Face(3), CageOffsets.Identity);
+            Assert.That(drag.TryAdvance(new float3(0, 0.03f, 0), out _), Is.False);
+            Assert.That(drag.TryAdvance(new float3(0, 0.06f, 0), out var first), Is.True);
+            Assert.That(first.Steps(2).y, Is.EqualTo(1));
+            Assert.That(drag.TryAdvance(new float3(0, 0.09f, 0), out _), Is.False);
+            Assert.That(drag.TryAdvance(new float3(0, 0.16f, 0), out var second), Is.True);
+            Assert.That(second.Steps(2).y, Is.EqualTo(2));
+        }
     }
 }

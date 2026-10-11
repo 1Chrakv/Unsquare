@@ -12,6 +12,8 @@ namespace Unsquare.Core.Editing
             Index = Wrap(index, CageTopology.CountOf(kind));
         }
 
+        public static CageHandleCursor From(CageHandle handle) => new(handle.Kind, handle.Index);
+
         public CageHandleKind Kind { get; }
         public int Index { get; }
 

@@ -48,5 +48,12 @@ namespace Unsquare.Tests.Editing
             Assert.That(new CageHandleCursor(CageHandleKind.Corner, 9).Index, Is.EqualTo(1));
             Assert.That(new CageHandleCursor(CageHandleKind.Corner, -1).Index, Is.EqualTo(7));
         }
+    
+        [Test]
+        public void From_Handle_KeepsKindAndIndex()
+        {
+            var cursor = CageHandleCursor.From(CageHandle.Edge(7));
+            Assert.That(cursor.Handle, Is.EqualTo(CageHandle.Edge(7)));
+        }
     }
 }
