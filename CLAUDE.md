@@ -12,7 +12,7 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
-| `UiModule/` | React UI module (game template): bottom-bar mode button, talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
+| `UiModule/` | React UI module (game template): mode button next to the underground toggle, talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
