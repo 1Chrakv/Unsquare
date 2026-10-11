@@ -31,15 +31,17 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 | Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue) |
 | Step back | Right-click: cancels a drag, else clears the handle, else the building; never leaves the mode |
 
-While a handle is selected the building is locked: clicks on other buildings or the ground close to the cage do
-nothing; a click far away (outside the cage grown by 25 % of its size, at least 5 m) deselects the handle. A left click
-never clears the building; only right-click does. Only Alt+U and the toolbar button leave Unsquare mode.
+Clicks close to the selected building's cage never change the selection. A click far away (outside the cage grown by
+the far-click margin, default 5 % of its size) steps back: first the handle is deselected, then the building. While a
+handle is selected the building is locked: clicks on other buildings do nothing. Only Esc, Alt+U and the toolbar button
+leave Unsquare mode.
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
+| Leave Unsquare mode (only in the mode) | Esc |
 | Cycle pick mode edges → faces → corners | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
@@ -100,12 +102,13 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 39 | Select an edge and click just beside it (on the ground or a neighbour) | Cage and gizmo stay; nothing changes |
 | 40 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
 | 41 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
-| 42 | Options → Advanced: change pick radius and gizmo size | Picking gets easier/harder, gizmo resizes immediately |
+| 42 | Options → Advanced: change pick radius, far-click margin and gizmo size | Picking gets easier/harder, far clicks need more/less distance, gizmo resizes immediately |
 | 43 | Leave the mode during a drag (Esc or Alt+U) | Drag cancelled, cage and gizmo hidden |
 | 44 | Mode on, no building selected: move the mouse over several houses and the ground | Each house shows a dim cage while hovered; none over the ground |
 | 45 | Select a house (no handle): hover other houses; then select an edge and hover them again | Other houses are previewed; with the edge selected no preview appears |
-| 46 | With an edge selected, click far away on the map | Log `Selection cleared`; the building stays selected (cage visible), the next click can pick another house |
+| 46 | With an edge selected, click ~1 m beside the cage, then a few metres away, then again far away on the ground | Near click: nothing; far click: `Selection cleared` (cage stays); second far click: `Target cleared` (cage gone) |
 | 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its 0.8 size (6 % of the view height, at least 1 m) |
+| 48 | Press Esc in the mode (also during a drag); press Esc outside the mode | Mode off (`Unsquare mode off`, button not highlighted, drag cancelled); outside the mode Esc behaves as usual. Note whether the pause menu opens too |
 
 ## Reporting problems
 
