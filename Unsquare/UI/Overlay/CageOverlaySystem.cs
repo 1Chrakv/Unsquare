@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using Game;
 using Game.Rendering;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -25,6 +27,24 @@ namespace Unsquare.UI.Overlay
         private OverlayRenderSystem _overlayRenderSystem;
         private CageOverlayStyle _style = CageOverlayStyle.Default;
 
+        // Diagnostics: state changes are logged once, Alt+L adds the rest; never logs per frame.
+        private DrawState _state = DrawState.Idle;
+        private Entity _stateTarget = Entity.Null;
+        private float3 _lastCenter;
+        private long _frame;
+        private long _lastDrawnFrame = -1;
+        private int _segments;
+        private int _lastSegments;
+        private bool _loggedFailure;
+
+        private enum DrawState
+        {
+            Idle,
+            NoCage,
+            NoTransform,
+            Drawing,
+        }
+
         /// <summary>Colours and sizes; replaced when the options change.</summary>
         public CageOverlayStyle Style
         {
@@ -39,15 +59,70 @@ namespace Unsquare.UI.Overlay
             _overlayRenderSystem = World.GetOrCreateSystemManaged<OverlayRenderSystem>();
         }
 
+        /// <summary>One line on what the overlay last did, for the log-state hotkey.</summary>
+        public string DescribeDrawing()
+        {
+            string distance = CameraView.TryCapture(out var view)
+                ? $"{math.distance(view.Position, _lastCenter):0.0} m"
+                : "no camera";
+            return $"Overlay: {_state} for {_stateTarget}, last drawn frame {_lastDrawnFrame} of {_frame}, " +
+                   $"{_lastSegments} segments, cage centre {_lastCenter}, camera distance {distance}";
+        }
+
         protected override void OnUpdate()
         {
+            _frame++;
+            try
+            {
+                Draw();
+            }
+            catch (Exception e)
+            {
+                if (!_loggedFailure)
+                    Mod.Log.Error(e, "[Overlay] Drawing failed");
+                _loggedFailure = true;
+            }
+        }
+
+        private void Draw()
+        {
             var session = _editor.Session;
-            if (!session.TryGetCage(out var cage) ||
-                !BuildingSpace.TryGetTransform(EntityManager, session.Target, out var transform))
+            if (!session.HasTarget)
+            {
+                SetState(DrawState.Idle, Entity.Null);
                 return;
+            }
+            if (!session.TryGetCage(out var cage))
+            {
+                SetState(DrawState.NoCage, session.Target);
+                return;
+            }
+            if (!BuildingSpace.TryGetTransform(EntityManager, session.Target, out var transform))
+            {
+                SetState(DrawState.NoTransform, session.Target);
+                return;
+            }
 
             var buffer = _overlayRenderSystem.GetBuffer(out JobHandle dependencies);
             dependencies.Complete(); // we draw on the main thread
+            _segments = 0;
+            try
+            {
+                DrawCage(buffer, transform, cage, session);
+            }
+            finally
+            {
+                _overlayRenderSystem.AddBufferWriter(default);
+            }
+            _lastDrawnFrame = _frame;
+            _lastSegments = _segments;
+            _lastCenter = BuildingSpace.PointToWorld(transform, cage.Box.Center);
+            SetState(DrawState.Drawing, session.Target);
+        }
+
+        private void DrawCage(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
+            CageEditSession session)
+        {
             DrawWireframe(buffer, transform, cage.Box, CageOffsets.Identity, _style.RestBox, dashed: true);
             var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
             DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);
@@ -65,7 +140,19 @@ namespace Unsquare.UI.Overlay
                 if (CameraView.TryCapture(out var view))
                     DrawGizmo(buffer, transform, cage.HandlePosition(selection.Handle), view, activeAxis);
             }
-            _overlayRenderSystem.AddBufferWriter(default);
+        }
+
+        private void SetState(DrawState state, Entity target)
+        {
+            if (state == _state && target == _stateTarget)
+                return;
+            _state = state;
+            _stateTarget = target;
+            if (state == DrawState.Drawing)
+                Mod.Log.Info($"[Overlay] Drawing for {target} at {_lastCenter}, {_segments} segments, " +
+                             $"line radius {_style.LineRadius}");
+            else
+                Mod.Log.Info($"[Overlay] {state} for {target}");
         }
 
         private void DrawWireframe(OverlayRenderSystem.Buffer buffer, in Transform transform, CageBox box,
@@ -142,6 +229,7 @@ namespace Unsquare.UI.Overlay
                 return;
             buffer.DrawCustomMesh(color, pose.Center, pose.Length, radius,
                 OverlayRenderSystem.CustomMeshType.Cylinder, pose.Rotation);
+            _segments++;
         }
     }
 }
