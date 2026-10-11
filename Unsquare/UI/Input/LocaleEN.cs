@@ -34,6 +34,7 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.PerformanceGroup), "Performance and storage" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.ResetGroup), "Reset" },
                 { _settings.GetBindingMapLocaleID(), "Unsquare" },
+                { "Unsquare.ModeButton.Tooltip", "Unsquare: deform buildings (Alt+U)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),

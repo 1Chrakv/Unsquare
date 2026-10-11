@@ -92,6 +92,16 @@
         </Reference>
     </ItemGroup>
 
+    <!--The bottom-bar button is a UI module (UiModule/, webpack writes into Mods\Unsquare); it must run after
+        DeployWIP, which deletes the deploy folder. Skip with -p:SkipUiModule=true (e.g. without Node.js).-->
+    <PropertyGroup>
+        <UiModuleDir>$(MSBuildProjectDirectory)\..\UiModule</UiModuleDir>
+    </PropertyGroup>
+    <Target Name="BuildUiModule" AfterTargets="DeployWIP" Condition="'$(NeedBuild)' == 'true' and '$(SkipUiModule)' != 'true'">
+        <Exec Command="npm ci --no-audit --no-fund" WorkingDirectory="$(UiModuleDir)" Condition="!Exists('$(UiModuleDir)\node_modules')" />
+        <Exec Command="npm run build" WorkingDirectory="$(UiModuleDir)" />
+    </Target>
+
     <ItemGroup>
         <None Include="$(ModPropsFile)" Link="Properties\Mod.props"/>
         <None Include="$(ModTargetsFile)" Link="Properties\Mod.targets"/>

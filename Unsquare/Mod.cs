@@ -6,6 +6,7 @@ using Game.Prefabs;
 using Game.SceneFlow;
 using Unsquare.Api;
 using Unsquare.Integration.Systems;
+using Unsquare.UI.Bindings;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
 using Unsquare.UI.Overlay;
@@ -39,6 +40,7 @@ namespace Unsquare
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageHotkeySystem, UnsquareToolSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
+            updateSystem.UpdateAt<UnsquareUISystem>(SystemUpdatePhase.UIUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
             _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world),

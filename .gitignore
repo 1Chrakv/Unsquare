@@ -7,3 +7,5 @@ riderModule.iml
 Library/
 Logs/
 TestResults/
+
+UiModule/node_modules/
