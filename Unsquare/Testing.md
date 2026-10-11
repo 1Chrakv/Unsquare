@@ -49,6 +49,7 @@ leave Unsquare mode.
 | Move +Z / −Z (+Z = street side) | Alt+↑ / Alt+↓ |
 | Move up / down | Alt+PageUp / Alt+PageDown |
 | Cycle step 0.1 / 0.5 / 2 m | Alt+S |
+| Reset selected corner / edge / face | Alt+R |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
@@ -116,6 +117,9 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 52 | Deform house A, then house B, bulldoze B, Ctrl+Z | B's edit is skipped silently; A's edit is undone |
 | 53 | Ctrl+Z after Alt+Shift+Delete or after loading another save | `[Edit] Nothing to undo` |
 | 54 | Mode off: press Ctrl+Z / Ctrl+Y | Nothing happens (no `[Edit]` log) |
+| 55 | Raise the top face, select one of its corners (Alt+1), Alt+R | Only that corner drops back; the other three stay raised; log `Reset Corner… -> Accepted` |
+| 56 | Building selected without a handle, Alt+R | Log `No handle selected`; nothing changes |
+| 57 | After a handle reset, Ctrl+Z | The corner/edge/face returns to where it was in one step |
 
 ## Reporting problems
 

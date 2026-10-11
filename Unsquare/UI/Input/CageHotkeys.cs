@@ -31,6 +31,7 @@ namespace Unsquare.UI.Input
         public const string MovePosY = "UnsquareMovePosY";
         public const string MoveNegY = "UnsquareMoveNegY";
         public const string CycleStep = "UnsquareCycleStep";
+        public const string ResetHandle = "UnsquareResetHandle";
         public const string ResetSelected = "UnsquareResetSelected";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
@@ -65,6 +66,8 @@ namespace Unsquare.UI.Input
                 s => s.Nudge(new float3(0, -1, 0))),
             new HotkeyDefinition(CycleStep, nameof(UnsquareSettings.CycleStepBinding), "Cycle step size",
                 s => s.CycleStep()),
+            new HotkeyDefinition(ResetHandle, nameof(UnsquareSettings.ResetHandleBinding),
+                "Reset selected corner, edge or face", s => s.ResetHandle()),
             new HotkeyDefinition(ResetSelected, nameof(UnsquareSettings.ResetSelectedBinding), "Reset selected building",
                 s => s.Reset()),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",

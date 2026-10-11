@@ -30,6 +30,7 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.MovePosY, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.MoveNegY, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CycleStep, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.ResetHandle, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetSelected, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.Undo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -104,6 +105,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.S, CageHotkeys.CycleStep, alt: true)]
         public ProxyBinding CycleStepBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.R, CageHotkeys.ResetHandle, alt: true)]
+        public ProxyBinding ResetHandleBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Backspace, CageHotkeys.ResetSelected, alt: true)]

@@ -172,17 +172,16 @@ namespace Unsquare.UI.Editing
         /// <summary>Moves the selected handle by one step along a building-space direction (e.g. float3(0, 1, 0)).</summary>
         public DeformRequestResult Nudge(float3 direction)
         {
-            if (HasTarget && !Selection.HasHandle)
-            {
-                Log("No handle selected");
-                return DeformRequestResult.NotDeformable;
-            }
-            var command = $"Nudge {Selection.Handle} {direction * Step.Meters}";
-            if (!TryGetCage(out var state))
-                return Record(command, DeformRequestResult.NotDeformable);
-            var result = _service.MoveHandle(Target, Selection.Handle, direction * Step.Meters);
-            RememberEdit(state.TargetOffsets, result);
-            return Record(command, result);
+            var handle = Selection.Handle;
+            var delta = direction * Step.Meters;
+            return EditHandle($"Nudge {handle} {delta}", offsets => offsets.Move(handle, delta));
+        }
+
+        /// <summary>Puts the corners of the selected handle back to their original place; the rest keeps its shape.</summary>
+        public DeformRequestResult ResetHandle()
+        {
+            var handle = Selection.Handle;
+            return EditHandle($"Reset {handle}", offsets => offsets.Reset(handle));
         }
 
         /// <summary>Starts dragging the selected handle along a gizmo axis (0..2).</summary>
@@ -304,6 +303,21 @@ namespace Unsquare.UI.Editing
                 return;
             }
             Log(undo ? "Nothing to undo" : "Nothing to redo");
+        }
+
+        // Undoable change of the target's offsets that needs a selected handle.
+        private DeformRequestResult EditHandle(string command, Func<CageOffsets, CageOffsets> change)
+        {
+            if (HasTarget && !Selection.HasHandle)
+            {
+                Log("No handle selected");
+                return DeformRequestResult.NotDeformable;
+            }
+            if (!TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            var result = _service.SetOffsets(Target, change(state.TargetOffsets));
+            RememberEdit(state.TargetOffsets, result);
+            return Record(command, result);
         }
 
         // The requested offsets are read back, so clamping is part of the edit.
