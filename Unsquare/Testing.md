@@ -15,9 +15,9 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
    The first line, e.g. `Unsquare 0.1.0+abc1234 (Debug, built 2026-10-08 20:05:21 UTC) loading`, must show the
    commit and build time you expect; otherwise the game runs an older build.
-   `Mods\Unsquare` must also contain `Unsquare.mjs` and `images\` (the bottom-bar button).
-4. Load a city, turn on Unsquare mode (button at the bottom right, or Alt+U) and click a building: it becomes the
-   edit target. A building selected in the info panel before entering the mode is taken over.
+   `Mods\Unsquare` must also contain `Unsquare.mjs` and `images\` (the toolbar button).
+4. Load a city, turn on Unsquare mode (button next to the Underground toggle, or Alt+U) and click a building: it
+   becomes the edit target. A building selected in the info panel before entering the mode is taken over.
 5. After an update that bumps the manifest format (e.g. to 0.6.0), start a new city: older deformed buildings
    are discarded (log `Variant manifest has an old format …`).
 
@@ -25,19 +25,22 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
 | Action | Input |
 |---|---|
-| Select a building | Click it (outside the current cage); click empty ground to deselect |
-| Select an edge / face | Click near an edge, otherwise on a face |
-| Select a corner | Ctrl+click near a corner (only selects; Ctrl never starts or changes a drag) |
+| 1. Select a building | Click it (outside the current cage); no handle is selected yet |
+| 2. Select a handle | Click an edge, face or corner, depending on the pick mode (default edges; Alt+W cycles) |
 | Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue) |
-| Cancel | Right-click: cancels a drag, else deselects the building, else leaves the mode |
+| Step back | Right-click: cancels a drag, else clears the handle, else the building, else leaves the mode |
+
+While a handle is selected the building is locked: clicks on other buildings or the ground do nothing. A left click
+never clears the building; only right-click does.
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
-| Handle kind corner / edge / face | Alt+1 / Alt+2 / Alt+3 |
-| Previous / next handle | Alt+Q / Alt+E |
+| Cycle pick mode edges → faces → corners | Alt+W |
+| Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
+| Select previous / next handle of the pick mode | Alt+Q / Alt+E |
 | Move −X / +X (width) | Alt+← / Alt+→ |
 | Move +Z / −Z (+Z = street side) | Alt+↑ / Alt+↓ |
 | Move up / down | Alt+PageUp / Alt+PageDown |
@@ -47,7 +50,7 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
 applied, red failed, magenta = lot outline leaves its plot); orange = selected handle (thick edge, face outline and
-dot, or corner dot), cyan = hovered handle; gizmo on the selected handle with arrows along the building axes X (red),
+dot, or corner dot), cyan = hovered handle of the pick mode; gizmo (only with a selected handle) on it with arrows along the building axes X (red),
 Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 
 ## Checklist
@@ -55,7 +58,7 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | # | Test | Expected |
 |---|---|---|
 | 1 | Select a zoned building, rotate the camera | Box and cage line up with the building at any building rotation |
-| 2 | Alt+1/2/3, Alt+Q/E | Orange dot visits every corner, edge midpoint and face centre; axes match the move keys |
+| 2 | Alt+1/2/3, Alt+Q/E | The selection visits every corner, edge and face; gizmo arrows match the move keys |
 | 3 | Alt+3, select the top face (Face 3), Alt+PageUp ×4 | Cage turns yellow; ~0.4 s after the last press the building rises and the cage turns green; one `Bake …` log line |
 | 4 | Zoom far out | Shape stays deformed (LODs deformed too) |
 | 5 | Move single corners and edges | Taper, skew and twist look smooth; lighting/normals look right |
@@ -84,17 +87,19 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 28 | Deform a building, select another one, reselect it and nudge again | The cage shows the current shape; the nudge continues from it (never from undeformed) |
 | 29 | Click the Unsquare button, then Alt+U, then the button again | Button highlighted while the mode is on; log `[Edit] Unsquare mode on/off` each time |
 | 30 | Mode off: press Alt+→, Alt+Shift+Delete, click buildings | Nothing happens (no `[Edit]` log, no overlay); buildings open the info panel as usual |
-| 31 | Mode on: click a house, then another, then empty ground | Cage moves to the clicked house; empty ground hides it |
-| 32 | Hover along a cage edge, then over a face, then hold Ctrl near a corner | Edge turns cyan near it, face outline elsewhere; with Ctrl only corners highlight |
-| 33 | Click an edge, a face, Ctrl+click a corner | Orange selection and gizmo move to the clicked handle |
+| 31 | Mode on: click a house, then another house, then empty ground | Cage moves to the second house; empty ground changes nothing; log `[Edit] Target …` per switch |
+| 32 | Hover the cage in each pick mode (Alt+W) | Edge mode: edges turn cyan near the mouse; face mode: faces; corner mode: corners; log `[Edit] Pick mode …` |
+| 33 | Click an edge, then a face (Alt+W), then a corner | First click of a house selects nothing; each later click moves the orange selection and gizmo; log `[Edit] Selected …` |
 | 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake after release; one `Drag of Face3 ended -> …` line |
 | 35 | Select a front edge, drag the red and blue arrows | Both corners of the edge move together along X / Z |
 | 36 | Start a drag, right-click while holding the mouse | Shape snaps back to before the drag; log `Drag … cancelled` |
-| 37 | Drag an edge, press and release Ctrl mid-drag; Ctrl+click on a gizmo arrow | The drag continues on the edge; Ctrl+click never starts a drag (selects a corner or nothing) |
-| 38 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
-| 39 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
-| 40 | Options → Advanced: change pick radius and gizmo size | Picking gets easier/harder, gizmo resizes immediately |
-| 41 | Leave the mode during a drag (Esc or Alt+U) | Drag cancelled, cage and gizmo hidden |
+| 37 | With a handle selected, click another house and the ground; then right-click and click the other house | Locked: nothing changes; after the right-click (log `Selection cleared`) the other house becomes the target |
+| 38 | Right-click repeatedly | Selection cleared, then target cleared (cage gone), then the mode turns off |
+| 39 | Select an edge and click just beside it (on the ground or a neighbour) | Cage and gizmo stay; nothing changes |
+| 40 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
+| 41 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
+| 42 | Options → Advanced: change pick radius and gizmo size | Picking gets easier/harder, gizmo resizes immediately |
+| 43 | Leave the mode during a drag (Esc or Alt+U) | Drag cancelled, cage and gizmo hidden |
 
 ## Reporting problems
 
