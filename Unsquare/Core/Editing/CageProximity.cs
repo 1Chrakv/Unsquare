@@ -9,9 +9,8 @@ namespace Unsquare.Core.Editing
     /// </summary>
     public static class CageProximity
     {
-        /// <param name="marginFraction">Margin as a part of the cage's largest size.</param>
-        /// <param name="minMargin">Smallest margin in metres, so small buildings are not too hard to hit.</param>
-        public static bool IsNear(CageBox box, CageOffsets offsets, CageRay ray, float marginFraction, float minMargin)
+        /// <param name="marginFraction">Margin as a part of the cage's largest size, e.g. 0.05.</param>
+        public static bool IsNear(CageBox box, CageOffsets offsets, CageRay ray, float marginFraction)
         {
             float3 min = DeformedCage.CornerPosition(box, offsets, 0);
             float3 max = min;
@@ -21,7 +20,7 @@ namespace Unsquare.Core.Editing
                 min = math.min(min, corner);
                 max = math.max(max, corner);
             }
-            float margin = math.max(minMargin, marginFraction * math.cmax(max - min));
+            float margin = marginFraction * math.cmax(max - min);
             return HitsBox(ray, min - margin, max + margin);
         }
 

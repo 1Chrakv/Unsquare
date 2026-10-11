@@ -7,12 +7,14 @@ namespace Unsquare.Tests.Editing
 {
     public class CageProximityTests
     {
-        // Largest size 20 m → margin max(5, 0.25 × 20) = 5 m.
+        // Largest size 20 m → margin 0.05 × 20 = 1 m.
+        private const float Margin = 0.05f;
         private static readonly CageBox Box = new(float3.zero, new float3(10, 8, 20));
         private static readonly float3 Down = new(0, -1, 0);
 
-        private static bool IsNear(float3 origin, float3 direction, CageOffsets offsets = null, CageBox? box = null) =>
-            CageProximity.IsNear(box ?? Box, offsets ?? CageOffsets.Identity, new CageRay(origin, direction), 0.25f, 5f);
+        private static bool IsNear(float3 origin, float3 direction, CageOffsets offsets = null,
+            float margin = Margin) =>
+            CageProximity.IsNear(Box, offsets ?? CageOffsets.Identity, new CageRay(origin, direction), margin);
 
         [Test]
         public void IsNear_RayThroughBox_IsTrue()
@@ -23,21 +25,20 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void IsNear_RayWithinMargin_IsTrue()
         {
-            Assert.That(IsNear(new float3(13, 100, 10), Down), Is.True);
+            Assert.That(IsNear(new float3(10.8f, 100, 10), Down), Is.True);
         }
 
         [Test]
         public void IsNear_RayFarAway_IsFalse()
         {
-            Assert.That(IsNear(new float3(30, 100, 10), Down), Is.False);
+            Assert.That(IsNear(new float3(13, 100, 10), Down), Is.False);
         }
 
         [Test]
-        public void IsNear_SmallBox_UsesMinimumMargin()
+        public void IsNear_ZeroMargin_OnlyTheBoxCounts()
         {
-            var small = new CageBox(float3.zero, new float3(2, 2, 2));
-            Assert.That(IsNear(new float3(6, 100, 1), Down, box: small), Is.True);
-            Assert.That(IsNear(new float3(8, 100, 1), Down, box: small), Is.False);
+            Assert.That(IsNear(new float3(9.9f, 100, 10), Down, margin: 0f), Is.True);
+            Assert.That(IsNear(new float3(10.2f, 100, 10), Down, margin: 0f), Is.False);
         }
 
         [Test]
@@ -49,9 +50,9 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void IsNear_RaisedCage_CountsNewExtent()
         {
-            // Horizontal ray 20 m above the rest box: far for the rest box, near once the top is raised by 16 m.
-            var raised = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, 16, 0));
-            var origin = new float3(-100, 28, 10);
+            // Horizontal ray 12 m up: above the 8 m rest box, inside the cage once the top is raised by 6 m.
+            var raised = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, 6, 0));
+            var origin = new float3(-100, 12, 10);
             var direction = new float3(1, 0, 0);
             Assert.That(IsNear(origin, direction), Is.False);
             Assert.That(IsNear(origin, direction, raised), Is.True);
