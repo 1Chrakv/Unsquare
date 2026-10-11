@@ -8,7 +8,6 @@ using Game.Tools;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine.InputSystem;
 using Unsquare.Api;
 using Unsquare.Core.Editing;
 using Unsquare.UI.Editing;
@@ -17,8 +16,8 @@ using Unsquare.UI.Overlay;
 namespace Unsquare.UI.Tool
 {
     /// <summary>
-    /// Unsquare mode: a game tool that owns the mouse. Clicks pick the target building and its edges and faces
-    /// (corners with Ctrl); dragging a gizmo arrow moves the selected handle. Only talks to the session.
+    /// Unsquare mode: a game tool that owns the mouse. A first click picks the building, a second one a handle of
+    /// the pick mode; dragging a gizmo arrow moves it; right-click steps back. Only talks to the session.
     /// </summary>
     public partial class UnsquareToolSystem : ToolBaseSystem
     {
@@ -51,6 +50,8 @@ namespace Unsquare.UI.Tool
                 m_ToolSystem.activeTool = m_DefaultToolSystem;
             else if (m_ToolSystem.actionMode.IsGameOrEditor())
                 m_ToolSystem.activeTool = this;
+            else
+                Mod.Log.Info($"[Edit] Unsquare mode is not available in {m_ToolSystem.actionMode}.");
         }
 
         public override void InitializeRaycast()
@@ -70,7 +71,7 @@ namespace Unsquare.UI.Tool
             var session = _editor.Session;
             session.SetEnabled(true);
             if (TryResolveBuilding(m_ToolSystem.selected, out var building))
-                SetTarget(session, building);
+                SelectBuilding(session, building);
         }
 
         protected override void OnStopRunning()
@@ -111,54 +112,45 @@ namespace Unsquare.UI.Tool
                 return;
             }
 
-            bool corners = IsCtrlPressed();
             bool hasContext = TryGetPickContext(session, out var context);
-            var hover = hasContext ? FindHover(session, context, corners) : CageHover.None;
+            var hover = hasContext ? FindHover(session, context) : CageHover.None;
             session.SetHover(hover);
 
             if (cancelAction.WasPressedThisFrame())
             {
-                if (session.HasTarget)
-                    session.ClearTarget();
-                else
+                if (session.StepBack() == StepBackResult.None)
                     Toggle();
                 return;
             }
             if (!applyAction.WasPressedThisFrame())
                 return;
 
+            // A miss never clears the target; only right-click does. A selected handle locks the building.
             if (hover.HasAxis)
                 StartDrag(session, context, hover.Axis);
             else if (hover.HasHandle)
                 session.SelectHandle(hover.Handle);
-            else if (!corners)
-                SetTarget(session, GetRaycastResult(out Entity hit, out RaycastHit _) &&
-                                   TryResolveBuilding(hit, out var building)
-                    ? building
-                    : Entity.Null);
+            else if (!session.IsLocked && GetRaycastResult(out Entity hit, out RaycastHit _) &&
+                     TryResolveBuilding(hit, out var building) && building != session.Target)
+                SelectBuilding(session, building);
         }
 
-        // Ctrl only changes what is picked; it never starts a drag, so Ctrl+click on an arrow selects a corner.
-        private static CageHover FindHover(CageEditSession session, in PickContext context, bool corners)
+        // Arrows only exist with a selected handle; cage parts only of the current pick mode.
+        private static CageHover FindHover(CageEditSession session, in PickContext context)
         {
-            var cage = context.Cage;
-            if (corners)
-                return CagePicker.TryPickCorner(cage.Box, cage.TargetOffsets, context.Ray, context.Tolerance,
-                    out var corner)
-                    ? CageHover.OnHandle(corner)
-                    : CageHover.None;
-            if (GizmoAxes.TryPickAxis(context.GizmoOrigin, context.GizmoLength, context.Ray, context.Tolerance,
-                    out int axis))
+            if (context.HasGizmo && GizmoAxes.TryPickAxis(context.GizmoOrigin, context.GizmoLength, context.Ray,
+                    context.Tolerance, out int axis))
                 return CageHover.OnAxis(axis);
-            return CagePicker.TryPick(cage.Box, cage.TargetOffsets, context.Ray, context.Tolerance, false,
-                out var handle)
+            var cage = context.Cage;
+            return CagePicker.TryPick(cage.Box, cage.TargetOffsets, context.Ray, context.Tolerance,
+                session.Selection.PickKind, out var handle)
                 ? CageHover.OnHandle(handle)
                 : CageHover.None;
         }
 
         private void StartDrag(CageEditSession session, in PickContext context, int axis)
         {
-            if (AxisDrag.TryStart(context.GizmoOrigin, axis, context.Ray, out var drag) && session.BeginDrag(axis))
+            if (context.HasGizmo && AxisDrag.TryStart(context.GizmoOrigin, axis, context.Ray, out var drag) && session.BeginDrag(axis))
                 _axisDrag = drag;
         }
 
@@ -185,10 +177,9 @@ namespace Unsquare.UI.Tool
                 session.UpdateDrag(delta);
         }
 
-        private void SetTarget(CageEditSession session, Entity building)
+        private static void SelectBuilding(CageEditSession session, Entity building)
         {
-            session.SetTarget(building);
-            if (building != Entity.Null && !session.TryGetCage(out _))
+            if (session.SelectBuilding(building) && !session.TryGetCage(out _))
                 Mod.Log.Info($"[Edit] Building {building} has no lot cage and cannot be deformed.");
         }
 
@@ -224,27 +215,29 @@ namespace Unsquare.UI.Tool
                 return false;
             var ray = new CageRay(BuildingSpace.PointToBuilding(transform, line.a), direction);
 
-            float3 origin = cage.HandlePosition(session.Cursor.Handle);
+            float tolerance = view.Scale.AngularSizeOfPixels(session.Options.PickRadiusPixels);
+            var selection = session.Selection;
+            if (!selection.HasHandle)
+            {
+                context = new PickContext(cage, ray, tolerance, false, float3.zero, 0f);
+                return true;
+            }
+            float3 origin = cage.HandlePosition(selection.Handle);
             float distance = math.distance(view.Position, BuildingSpace.PointToWorld(transform, origin));
-            context = new PickContext(cage, ray, view.Scale.AngularSizeOfPixels(session.Options.PickRadiusPixels),
-                origin, _overlay.Style.GizmoLength(distance, view.Scale));
+            context = new PickContext(cage, ray, tolerance, true, origin, _overlay.Style.GizmoLength(distance, view.Scale));
             return true;
-        }
-
-        private static bool IsCtrlPressed()
-        {
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.ctrlKey.isPressed;
         }
 
         /// <summary>Everything needed to pick in building space for one frame.</summary>
         private readonly struct PickContext
         {
-            public PickContext(CageState cage, CageRay ray, float tolerance, float3 gizmoOrigin, float gizmoLength)
+            public PickContext(CageState cage, CageRay ray, float tolerance, bool hasGizmo, float3 gizmoOrigin,
+                float gizmoLength)
             {
                 Cage = cage;
                 Ray = ray;
                 Tolerance = tolerance;
+                HasGizmo = hasGizmo;
                 GizmoOrigin = gizmoOrigin;
                 GizmoLength = gizmoLength;
             }
@@ -252,6 +245,7 @@ namespace Unsquare.UI.Tool
             public CageState Cage { get; }
             public CageRay Ray { get; }
             public float Tolerance { get; }
+            public bool HasGizmo { get; }
             public float3 GizmoOrigin { get; }
             public float GizmoLength { get; }
         }

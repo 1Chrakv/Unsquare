@@ -52,15 +52,19 @@ namespace Unsquare.UI.Overlay
             var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
             DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);
 
-            var selected = session.Cursor.Handle;
+            // The cage is always drawn while there is a target; selection and gizmo only with a selected handle.
+            var selection = session.Selection;
             var hover = session.Hover;
-            if (hover.HasHandle && hover.Handle != selected)
+            if (hover.HasHandle && (!selection.HasHandle || hover.Handle != selection.Handle))
                 DrawHandle(buffer, transform, cage, hover.Handle, _style.HoveredHandle, _style.HandleDiameter);
-            DrawHandle(buffer, transform, cage, selected, _style.SelectedHandle, _style.SelectedHandleDiameter);
-
-            int activeAxis = session.DragAxis >= 0 ? session.DragAxis : hover.Axis;
-            if (CameraView.TryCapture(out var view))
-                DrawGizmo(buffer, transform, cage.HandlePosition(selected), view, activeAxis);
+            if (selection.HasHandle)
+            {
+                DrawHandle(buffer, transform, cage, selection.Handle, _style.SelectedHandle,
+                    _style.SelectedHandleDiameter);
+                int activeAxis = session.DragAxis >= 0 ? session.DragAxis : hover.Axis;
+                if (CameraView.TryCapture(out var view))
+                    DrawGizmo(buffer, transform, cage.HandlePosition(selection.Handle), view, activeAxis);
+            }
             _overlayRenderSystem.AddBufferWriter(default);
         }
 

@@ -57,9 +57,6 @@
         <Reference Include="Colossal.UI.Binding">
             <Private>false</Private>
         </Reference>
-        <Reference Include="Unity.InputSystem">
-            <Private>false</Private>
-        </Reference>
         <Reference Include="UnityEngine.CoreModule">
             <Private>false</Private>
         </Reference>

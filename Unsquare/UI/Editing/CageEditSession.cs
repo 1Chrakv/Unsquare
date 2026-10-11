@@ -8,8 +8,8 @@ using Unsquare.Core.Editing;
 namespace Unsquare.UI.Editing
 {
     /// <summary>
-    /// UI-agnostic edit model shared by every input (hotkeys, mouse tool, later panels) and every view. Holds
-    /// target, selected and hovered handle, step and drag; commands only run while Unsquare mode is enabled.
+    /// UI-agnostic edit model shared by every input (mouse tool, hotkeys, later panels) and every view. Holds target,
+    /// pick mode, selected and hovered handle, step and drag; commands only run while Unsquare mode is enabled.
     /// </summary>
     public sealed class CageEditSession
     {
@@ -26,7 +26,7 @@ namespace Unsquare.UI.Editing
             };
         }
 
-        /// <summary>Raised when mode, target, cursor, hover, step, drag or the target's cage state changed.</summary>
+        /// <summary>Raised when mode, target, selection, hover, step, drag or the target's cage state changed.</summary>
         public event Action Changed;
 
         /// <summary>Unsquare mode is on; set by the tool. While off, every command does nothing.</summary>
@@ -35,9 +35,14 @@ namespace Unsquare.UI.Editing
         public Entity Target { get; private set; } = Entity.Null;
         public bool HasTarget => Target != Entity.Null;
 
-        /// <summary>Nudge sizes; set via <see cref="Configure"/>.</summary>
+        /// <summary>Pick mode and selected handle; a selected handle shows the gizmo.</summary>
+        public HandleSelection Selection { get; private set; } = HandleSelection.Default;
+
+        /// <summary>While a handle is selected, clicks cannot switch to another building (step back first).</summary>
+        public bool IsLocked => Selection.HasHandle;
+
+        /// <summary>Nudge sizes and pick radius; set via <see cref="Configure"/>.</summary>
         public CageEditOptions Options { get; private set; } = CageEditOptions.Default;
-        public CageHandleCursor Cursor { get; private set; }
         public NudgeStep Step { get; private set; } = NudgeStep.Default;
         public CageDrag ActiveDrag { get; private set; }
 
@@ -63,7 +68,7 @@ namespace Unsquare.UI.Editing
             Changed?.Invoke();
         }
 
-        /// <summary>Turns Unsquare mode on or off; turning it off cancels a drag and clears the target.</summary>
+        /// <summary>Turns Unsquare mode on or off; turning it off cancels a drag and forgets target and selection.</summary>
         public void SetEnabled(bool enabled)
         {
             if (enabled == IsEnabled)
@@ -72,30 +77,56 @@ namespace Unsquare.UI.Editing
             {
                 CancelDrag();
                 ClearTarget();
+                Selection = HandleSelection.Default;
             }
             IsEnabled = enabled;
             Log(enabled ? "Unsquare mode on" : "Unsquare mode off");
             Changed?.Invoke();
         }
 
-        public void SetTarget(Entity building)
+        /// <summary>Makes a clicked building the target; refused while a handle is selected.</summary>
+        public bool SelectBuilding(Entity building)
         {
-            if (building == Target || (!IsEnabled && building != Entity.Null))
-                return;
-            ActiveDrag = null; // a drag never carries over to another building
-            DragAxis = -1;
-            Hover = CageHover.None;
-            Target = building;
-            LastResult = null;
-            Changed?.Invoke();
+            if (!IsEnabled || IsLocked || building == Entity.Null)
+                return false;
+            SetTarget(building);
+            return true;
         }
 
+        /// <summary>Drops the target regardless of the lock, e.g. when the building no longer exists.</summary>
         public void ClearTarget() => SetTarget(Entity.Null);
 
-        public void SelectKind(CageHandleKind kind) => SetCursor(Cursor.WithKind(kind));
-        public void NextHandle() => SetCursor(Cursor.Next());
-        public void PreviousHandle() => SetCursor(Cursor.Previous());
-        public void SelectHandle(CageHandle handle) => SetCursor(CageHandleCursor.From(handle));
+        /// <summary>Undoes the innermost state: drag, then selection, then target.</summary>
+        public StepBackResult StepBack()
+        {
+            if (ActiveDrag != null)
+            {
+                CancelDrag();
+                return StepBackResult.DragCancelled;
+            }
+            if (Selection.HasHandle)
+            {
+                ClearSelection();
+                return StepBackResult.SelectionCleared;
+            }
+            if (HasTarget)
+            {
+                ClearTarget();
+                return StepBackResult.TargetCleared;
+            }
+            return StepBackResult.None;
+        }
+
+        /// <summary>Sets the pick mode (corner, edge, face); a selected handle stays selected.</summary>
+        public void SelectKind(CageHandleKind kind) => SetPickKind(Selection.WithPickKind(kind));
+
+        /// <summary>Edge → Face → Corner → Edge.</summary>
+        public void CyclePickKind() => SetPickKind(Selection.CyclePickKind());
+
+        public void NextHandle() => SetSelection(Selection.Next());
+        public void PreviousHandle() => SetSelection(Selection.Previous());
+        public void SelectHandle(CageHandle handle) => SetSelection(Selection.Select(handle));
+        public void ClearSelection() => SetSelection(Selection.Clear());
 
         public void SetHover(CageHover hover)
         {
@@ -115,18 +146,25 @@ namespace Unsquare.UI.Editing
         }
 
         /// <summary>Moves the selected handle by one step along a building-space direction (e.g. float3(0, 1, 0)).</summary>
-        public DeformRequestResult Nudge(float3 direction) =>
-            Record($"Nudge {Cursor} {direction * Step.Meters}",
+        public DeformRequestResult Nudge(float3 direction)
+        {
+            if (HasTarget && !Selection.HasHandle)
+            {
+                Log("No handle selected");
+                return DeformRequestResult.NotDeformable;
+            }
+            return Record($"Nudge {Selection.Handle} {direction * Step.Meters}",
                 HasTarget
-                    ? _service.MoveHandle(Target, Cursor.Handle, direction * Step.Meters)
+                    ? _service.MoveHandle(Target, Selection.Handle, direction * Step.Meters)
                     : DeformRequestResult.NotDeformable);
+        }
 
         /// <summary>Starts dragging the selected handle along a gizmo axis (0..2).</summary>
         public bool BeginDrag(int axis)
         {
-            if (!TryGetCage(out var state))
+            if (!Selection.HasHandle || !TryGetCage(out var state))
                 return false;
-            ActiveDrag = new CageDrag(Cursor.Handle, state.TargetOffsets);
+            ActiveDrag = new CageDrag(Selection.Handle, state.TargetOffsets);
             DragAxis = axis;
             Changed?.Invoke();
             return true;
@@ -147,9 +185,10 @@ namespace Unsquare.UI.Editing
         {
             if (ActiveDrag == null)
                 return;
+            var handle = ActiveDrag.Handle;
             ActiveDrag = null;
             DragAxis = -1;
-            Log($"Drag of {Cursor} ended -> {LastResult?.ToString() ?? "unchanged"}");
+            Log($"Drag of {handle} ended -> {LastResult?.ToString() ?? "unchanged"}");
             Changed?.Invoke();
         }
 
@@ -158,10 +197,10 @@ namespace Unsquare.UI.Editing
         {
             if (ActiveDrag == null)
                 return;
-            var start = ActiveDrag.StartOffsets;
+            var drag = ActiveDrag;
             ActiveDrag = null;
             DragAxis = -1;
-            Record($"Drag of {Cursor} cancelled", _service.SetOffsets(Target, start));
+            Record($"Drag of {drag.Handle} cancelled", _service.SetOffsets(Target, drag.StartOffsets));
         }
 
         public DeformRequestResult Reset() =>
@@ -176,21 +215,46 @@ namespace Unsquare.UI.Editing
             return count;
         }
 
-        /// <summary>One-line summary of target, cursor, step and cage state, e.g. for logs.</summary>
+        /// <summary>One-line summary of target, selection, step and cage state, e.g. for logs.</summary>
         public string Describe()
         {
             if (!TryGetCage(out var state))
                 return HasTarget ? $"Building {Target}: not deformable" : "No building selected";
-            return $"Building {Target}: {state.Status}, handle {Cursor}, step {Step}, lot box {state.Box}, " +
+            return $"Building {Target}: {state.Status}, {Selection}, step {Step}, lot box {state.Box}, " +
                    $"applied [{state.AppliedOffsets}], target [{state.TargetOffsets}]";
         }
 
-        // The selection never changes mid-drag (e.g. Ctrl+click), so a drag always moves what it grabbed.
-        private void SetCursor(CageHandleCursor cursor)
+        // A new target starts without a selected handle; the pick mode stays.
+        private void SetTarget(Entity building)
         {
-            if (!IsEnabled || ActiveDrag != null || cursor.Equals(Cursor))
+            if (building == Target)
                 return;
-            Cursor = cursor;
+            ActiveDrag = null; // a drag never carries over to another building
+            DragAxis = -1;
+            Hover = CageHover.None;
+            Selection = Selection.Clear();
+            Target = building;
+            LastResult = null;
+            Log(building == Entity.Null ? "Target cleared" : $"Target {building}");
+            Changed?.Invoke();
+        }
+
+        private void SetPickKind(HandleSelection selection)
+        {
+            if (!IsEnabled || selection.Equals(Selection))
+                return;
+            Selection = selection;
+            Log($"Pick mode {selection.PickKind}");
+            Changed?.Invoke();
+        }
+
+        // The selection never changes mid-drag, so a drag always moves what it grabbed.
+        private void SetSelection(HandleSelection selection)
+        {
+            if (!IsEnabled || !HasTarget || ActiveDrag != null || selection.Equals(Selection))
+                return;
+            Selection = selection;
+            Log(selection.HasHandle ? $"Selected {selection.Handle}" : "Selection cleared");
             Changed?.Invoke();
         }
 
