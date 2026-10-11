@@ -113,12 +113,13 @@ namespace Unsquare.UI.Input
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]
         public ProxyBinding ResetAllBinding { get; set; }
 
+        // Bindings are physical key positions (US layout): this is Ctrl+Z / Ctrl+Y on a German QWERTZ keyboard.
         [SettingsUISection(MainTab, HotkeyGroup)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Z, CageHotkeys.Undo, ctrl: true)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Y, CageHotkeys.Undo, ctrl: true)]
         public ProxyBinding UndoBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Y, CageHotkeys.Redo, ctrl: true)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Z, CageHotkeys.Redo, ctrl: true)]
         public ProxyBinding RedoBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
