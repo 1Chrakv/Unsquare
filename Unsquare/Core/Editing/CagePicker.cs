@@ -1,24 +1,24 @@
+using System;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 
 namespace Unsquare.Core.Editing
 {
     /// <summary>
-    /// Finds the cage handle under a mouse ray. Edges within the angular tolerance win over faces, so the
-    /// border of a face grabs its edge; corners are only picked on request (Ctrl).
+    /// Finds the cage handle of one kind under a mouse ray: corners and edges within an angular tolerance,
+    /// faces by the first hit.
     /// </summary>
     public static class CagePicker
     {
         /// <param name="tolerance">Pick radius as an angular size (metres per metre of camera distance).</param>
-        /// <param name="corners">Pick only corners instead of edges and faces.</param>
-        public static bool TryPick(CageBox box, CageOffsets offsets, CageRay ray, float tolerance, bool corners,
-            out CageHandle handle)
+        public static bool TryPick(CageBox box, CageOffsets offsets, CageRay ray, float tolerance, CageHandleKind kind,
+            out CageHandle handle) => kind switch
         {
-            if (corners)
-                return TryPickCorner(box, offsets, ray, tolerance, out handle);
-            return TryPickEdge(box, offsets, ray, tolerance, out handle) ||
-                   TryPickFace(box, offsets, ray, out handle);
-        }
+            CageHandleKind.Corner => TryPickCorner(box, offsets, ray, tolerance, out handle),
+            CageHandleKind.Edge => TryPickEdge(box, offsets, ray, tolerance, out handle),
+            CageHandleKind.Face => TryPickFace(box, offsets, ray, out handle),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+        };
 
         public static bool TryPickCorner(CageBox box, CageOffsets offsets, CageRay ray, float tolerance,
             out CageHandle handle)

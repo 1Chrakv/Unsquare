@@ -14,35 +14,49 @@ namespace Unsquare.Tests.Editing
         private static readonly float3 Down = new(0, -1, 0);
         private static readonly float3 Back = new(0, 0, -1);
 
-        private static CageHandle? Pick(CageRay ray, bool corners = false, CageOffsets offsets = null) =>
-            CagePicker.TryPick(Box, offsets ?? CageOffsets.Identity, ray, Tolerance, corners, out var handle)
+        private static CageHandle? Pick(CageRay ray, CageHandleKind kind, CageOffsets offsets = null) =>
+            CagePicker.TryPick(Box, offsets ?? CageOffsets.Identity, ray, Tolerance, kind, out var handle)
                 ? handle
                 : null;
 
         [Test]
-        public void TryPick_FromAboveInsideTop_PicksTopFace()
+        public void TryPick_FaceModeFromAbove_PicksTopFace()
         {
-            Assert.That(Pick(new CageRay(new float3(5, 100, 10), Down)), Is.EqualTo(CageHandle.Face(3)));
+            Assert.That(Pick(new CageRay(new float3(5, 100, 10), Down), CageHandleKind.Face),
+                Is.EqualTo(CageHandle.Face(3)));
         }
 
         [Test]
-        public void TryPick_NearFaceBorder_PrefersEdge()
+        public void TryPick_NearEdge_FollowsPickKind()
         {
-            // Just in front of the top front edge (y = 8, z = 20).
-            Assert.That(Pick(new CageRay(new float3(5, 100, 20.3f), Down)), Is.EqualTo(CageHandle.Edge(3)));
+            // Just inside the top front edge (y = 8, z = 20).
+            var ray = new CageRay(new float3(5, 100, 19.9f), Down);
+            Assert.That(Pick(ray, CageHandleKind.Edge), Is.EqualTo(CageHandle.Edge(3)));
+            Assert.That(Pick(ray, CageHandleKind.Face), Is.EqualTo(CageHandle.Face(3)));
+        }
+
+        [Test]
+        public void TryPick_EdgeModeInsideFace_ReturnsFalse()
+        {
+            Assert.That(Pick(new CageRay(new float3(5, 100, 10), Down), CageHandleKind.Edge), Is.Null);
         }
 
         [Test]
         public void TryPick_ThroughTwoFaces_PicksNearest()
         {
-            Assert.That(Pick(new CageRay(new float3(5, 4, 100), Back)), Is.EqualTo(CageHandle.Face(5)));
-            Assert.That(Pick(new CageRay(new float3(5, 4, -100), -Back)), Is.EqualTo(CageHandle.Face(4)));
+            Assert.That(Pick(new CageRay(new float3(5, 4, 100), Back), CageHandleKind.Face),
+                Is.EqualTo(CageHandle.Face(5)));
+            Assert.That(Pick(new CageRay(new float3(5, 4, -100), -Back), CageHandleKind.Face),
+                Is.EqualTo(CageHandle.Face(4)));
         }
 
         [Test]
         public void TryPick_Miss_ReturnsFalse()
         {
-            Assert.That(Pick(new CageRay(new float3(50, 4, 100), Back)), Is.Null);
+            var ray = new CageRay(new float3(50, 4, 100), Back);
+            Assert.That(Pick(ray, CageHandleKind.Face), Is.Null);
+            Assert.That(Pick(ray, CageHandleKind.Edge), Is.Null);
+            Assert.That(Pick(ray, CageHandleKind.Corner), Is.Null);
         }
 
         [Test]
@@ -55,11 +69,11 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
-        public void TryPick_WithCorners_PicksOnlyCorners()
+        public void TryPick_CornerMode_PicksOnlyCorners()
         {
-            var nearCorner = new CageRay(new float3(10.2f, 100, 20.1f), Down);
-            Assert.That(Pick(nearCorner, corners: true), Is.EqualTo(CageHandle.Corner(7)));
-            Assert.That(Pick(new CageRay(new float3(5, 100, 10), Down), corners: true), Is.Null);
+            Assert.That(Pick(new CageRay(new float3(10.2f, 100, 20.1f), Down), CageHandleKind.Corner),
+                Is.EqualTo(CageHandle.Corner(7)));
+            Assert.That(Pick(new CageRay(new float3(5, 100, 19.9f), Down), CageHandleKind.Corner), Is.Null);
         }
 
         [Test]
@@ -67,8 +81,8 @@ namespace Unsquare.Tests.Editing
         {
             var raised = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, 4, 0));
             var ray = new CageRay(new float3(5, 9.5f, 100), Back);
-            Assert.That(Pick(ray), Is.Null);
-            Assert.That(Pick(ray, offsets: raised), Is.EqualTo(CageHandle.Face(5)));
+            Assert.That(Pick(ray, CageHandleKind.Face), Is.Null);
+            Assert.That(Pick(ray, CageHandleKind.Face, raised), Is.EqualTo(CageHandle.Face(5)));
         }
 
         [Test]
