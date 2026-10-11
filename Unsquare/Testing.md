@@ -15,7 +15,7 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
    The first line, e.g. `Unsquare 0.1.0+abc1234 (Debug, built 2026-10-08 20:05:21 UTC) loading`, must show the
    commit and build time you expect; otherwise the game runs an older build.
-   `Mods\Unsquare` must also contain `Unsquare.mjs` and `images\` (the toolbar button).
+   `Mods\Unsquare` must also contain `Unsquare.mjs`, `Unsquare.css` and `images\` (toolbar button, tool window).
 4. Load a city, turn on Unsquare mode (button next to the Underground toggle, or Alt+U) and click a building: it
    becomes the edit target. A building selected in the info panel before entering the mode is taken over.
 5. After an update that bumps the manifest format (e.g. to 0.6.0), start a new city: older deformed buildings
@@ -35,6 +35,12 @@ Clicks close to the selected building's cage never change the selection. A click
 the far-click margin, default 5 % of its size) steps back: first the handle is deselected, then the building. While a
 handle is selected the building is locked: clicks on other buildings do nothing. Only Esc, Alt+U and the toolbar button
 leave Unsquare mode.
+
+## Tool window (in Unsquare mode)
+
+While a building is selected, a small window floats above its roof: pick corners / edges / faces (the active one is
+highlighted), reset the selected corner, edge or face (disabled without a selection) and reset the whole building.
+The buttons run the same commands as Alt+1/2/3, Alt+R and Alt+Backspace.
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
@@ -120,6 +126,13 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 55 | Raise the top face, select one of its corners (Alt+1), Alt+R | Only that corner drops back; the other three stay raised; log `Reset Corner… -> Accepted` |
 | 56 | Building selected without a handle, Alt+R | Log `No handle selected`; nothing changes |
 | 57 | After a handle reset, Ctrl+Z | The corner/edge/face returns to where it was in one step |
+| 58 | Enter the mode without a building, then click one | No window at first; then it appears centred above the roof |
+| 59 | Pan, rotate and zoom the camera; raise one top corner | The window follows the roof and stays above the highest corner; at the screen border it stops at the edge; with the building behind the camera it hides |
+| 60 | Click the corner / edge / face buttons, then press Alt+1/2/3 | Pick mode switches (`[Edit] Pick mode …`); the highlighted button always matches the mode |
+| 61 | Window: reset-part button without and with a selected handle | Greyed out without a handle; with one it resets only that handle (`Reset …`), Ctrl+Z restores it |
+| 62 | Window: reset-building button on a deformed building | Original shape (`[Edit] Reset -> …`); undoable with Ctrl+Z |
+| 63 | Click a window button while a handle is selected | Selection and target stay; the click reaches neither the building nor the ground |
+| 64 | Right-click until the target is cleared, then leave the mode | The window hides with the target and stays hidden outside the mode |
 
 ## Reporting problems
 
