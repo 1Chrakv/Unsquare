@@ -8,8 +8,8 @@ using Unsquare.Core.Editing;
 namespace Unsquare.UI.Editing
 {
     /// <summary>
-    /// UI-agnostic edit model shared by every input (hotkeys, later mouse drag and panels) and every view.
-    /// Holds target building, selected handle, step and drag; turns commands into service requests.
+    /// UI-agnostic edit model shared by every input (hotkeys, mouse tool, later panels) and every view. Holds
+    /// target, selected and hovered handle, step and drag; commands only run while Unsquare mode is enabled.
     /// </summary>
     public sealed class CageEditSession
     {
@@ -26,8 +26,11 @@ namespace Unsquare.UI.Editing
             };
         }
 
-        /// <summary>Raised when target, cursor, step, drag or the target's cage state changed.</summary>
+        /// <summary>Raised when mode, target, cursor, hover, step, drag or the target's cage state changed.</summary>
         public event Action Changed;
+
+        /// <summary>Unsquare mode is on; set by the tool. While off, every command does nothing.</summary>
+        public bool IsEnabled { get; private set; }
 
         public Entity Target { get; private set; } = Entity.Null;
         public bool HasTarget => Target != Entity.Null;
@@ -37,6 +40,13 @@ namespace Unsquare.UI.Editing
         public CageHandleCursor Cursor { get; private set; }
         public NudgeStep Step { get; private set; } = NudgeStep.Default;
         public CageDrag ActiveDrag { get; private set; }
+
+        /// <summary>Gizmo axis (0..2) of the active drag, or -1.</summary>
+        public int DragAxis { get; private set; } = -1;
+
+        /// <summary>What the mouse is over; set by the mouse tool, read by views.</summary>
+        public CageHover Hover { get; private set; } = CageHover.None;
+
         public DeformRequestResult? LastResult { get; private set; }
 
         public bool TryGetCage(out CageState state)
@@ -53,22 +63,52 @@ namespace Unsquare.UI.Editing
             Changed?.Invoke();
         }
 
+        /// <summary>Turns Unsquare mode on or off; turning it off cancels a drag and clears the target.</summary>
+        public void SetEnabled(bool enabled)
+        {
+            if (enabled == IsEnabled)
+                return;
+            if (!enabled)
+            {
+                CancelDrag();
+                ClearTarget();
+            }
+            IsEnabled = enabled;
+            Log(enabled ? "Unsquare mode on" : "Unsquare mode off");
+            Changed?.Invoke();
+        }
+
         public void SetTarget(Entity building)
         {
-            if (building == Target)
+            if (building == Target || (!IsEnabled && building != Entity.Null))
                 return;
             ActiveDrag = null; // a drag never carries over to another building
+            DragAxis = -1;
+            Hover = CageHover.None;
             Target = building;
             LastResult = null;
             Changed?.Invoke();
         }
 
+        public void ClearTarget() => SetTarget(Entity.Null);
+
         public void SelectKind(CageHandleKind kind) => SetCursor(Cursor.WithKind(kind));
         public void NextHandle() => SetCursor(Cursor.Next());
         public void PreviousHandle() => SetCursor(Cursor.Previous());
+        public void SelectHandle(CageHandle handle) => SetCursor(CageHandleCursor.From(handle));
+
+        public void SetHover(CageHover hover)
+        {
+            if (hover.Equals(Hover))
+                return;
+            Hover = hover;
+            Changed?.Invoke();
+        }
 
         public void CycleStep()
         {
+            if (!IsEnabled)
+                return;
             Step = Step.Next();
             Log($"Step {Step}");
             Changed?.Invoke();
@@ -81,27 +121,35 @@ namespace Unsquare.UI.Editing
                     ? _service.MoveHandle(Target, Cursor.Handle, direction * Step.Meters)
                     : DeformRequestResult.NotDeformable);
 
-        public bool BeginDrag()
+        /// <summary>Starts dragging the selected handle along a gizmo axis (0..2).</summary>
+        public bool BeginDrag(int axis)
         {
             if (!TryGetCage(out var state))
                 return false;
             ActiveDrag = new CageDrag(Cursor.Handle, state.TargetOffsets);
+            DragAxis = axis;
             Changed?.Invoke();
             return true;
         }
 
         /// <param name="totalDelta">Building-space delta since <see cref="BeginDrag"/>.</param>
-        public DeformRequestResult UpdateDrag(float3 totalDelta) =>
-            ActiveDrag == null
-                ? DeformRequestResult.NotDeformable
-                : Record(null, _service.SetOffsets(Target, ActiveDrag.OffsetsFor(totalDelta)));
+        /// <returns>The service's answer, or the last one while the offsets stay on the same grid step.</returns>
+        public DeformRequestResult UpdateDrag(float3 totalDelta)
+        {
+            if (ActiveDrag == null)
+                return DeformRequestResult.NotDeformable;
+            if (!ActiveDrag.TryAdvance(totalDelta, out var offsets))
+                return LastResult ?? DeformRequestResult.Accepted;
+            return Record(null, _service.SetOffsets(Target, offsets));
+        }
 
         public void EndDrag()
         {
             if (ActiveDrag == null)
                 return;
             ActiveDrag = null;
-            Log($"Drag of {Cursor} ended");
+            DragAxis = -1;
+            Log($"Drag of {Cursor} ended -> {LastResult?.ToString() ?? "unchanged"}");
             Changed?.Invoke();
         }
 
@@ -112,6 +160,7 @@ namespace Unsquare.UI.Editing
                 return;
             var start = ActiveDrag.StartOffsets;
             ActiveDrag = null;
+            DragAxis = -1;
             Record($"Drag of {Cursor} cancelled", _service.SetOffsets(Target, start));
         }
 
@@ -120,6 +169,8 @@ namespace Unsquare.UI.Editing
 
         public int ResetAll()
         {
+            if (!IsEnabled)
+                return 0;
             int count = _service.ResetAll();
             Log($"Reset all: {count} buildings");
             return count;
@@ -134,9 +185,10 @@ namespace Unsquare.UI.Editing
                    $"applied [{state.AppliedOffsets}], target [{state.TargetOffsets}]";
         }
 
+        // The selection never changes mid-drag (e.g. Ctrl+click), so a drag always moves what it grabbed.
         private void SetCursor(CageHandleCursor cursor)
         {
-            if (cursor.Equals(Cursor))
+            if (!IsEnabled || ActiveDrag != null || cursor.Equals(Cursor))
                 return;
             Cursor = cursor;
             Changed?.Invoke();
