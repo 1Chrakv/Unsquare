@@ -21,6 +21,8 @@ read the session. Nothing runs outside Unsquare mode (tool active): the session 
 Selection is two-step (building, then a handle of the pick mode, `HandleSelection`); a selected handle locks the
 building until right-click (`CageEditSession.StepBack`).
 Picking and gizmo math (`CagePicker`, `AxisDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
+Undo/redo (`EditHistory`, Core) is one global history of cage edits; the session records nudges, whole drags and
+resets, and undo makes the edited building the target. Selection changes are not undoable.
 
 Dependencies only point downwards (UI → Api → Integration → Core); `UI/` never references `Integration/`.
 Never reference `Game`, `Colossal.*`, `UnityEngine` or `Unity.Entities` from `Core/`; the test project would stop

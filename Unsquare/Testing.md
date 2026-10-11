@@ -50,6 +50,7 @@ leave Unsquare mode.
 | Move up / down | Alt+PageUp / Alt+PageDown |
 | Cycle step 0.1 / 0.5 / 2 m | Alt+S |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
+| Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
@@ -109,6 +110,12 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 46 | With an edge selected, click ~1 m beside the cage, then a few metres away, then again far away on the ground | Near click: nothing; far click: `Selection cleared` (cage stays); second far click: `Target cleared` (cage gone) |
 | 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its previous size (6 % of the view height, at least 1 m) |
 | 48 | Press Esc in the mode (also during a drag); press Esc outside the mode | Mode off (`Unsquare mode off`, button not highlighted, drag cancelled); outside the mode Esc behaves as usual. Note whether the pause menu opens too |
+| 49 | Select a face, Alt+PageUp ×3, Ctrl+Z ×3, Ctrl+Y ×1 | Each undo takes back one nudge (`[Edit] Undo on …`), redo repeats the first; selection stays |
+| 50 | Drag an arrow over several metres, Ctrl+Z | The whole drag is undone in one step |
+| 51 | Deform house A, select house B (lock it on a handle), Ctrl+Z | House A is reverted and becomes the target; B's selection is dropped |
+| 52 | Deform house A, then house B, bulldoze B, Ctrl+Z | B's edit is skipped silently; A's edit is undone |
+| 53 | Ctrl+Z after Alt+Shift+Delete or after loading another save | `[Edit] Nothing to undo` |
+| 54 | Mode off: press Ctrl+Z / Ctrl+Y | Nothing happens (no `[Edit]` log) |
 
 ## Reporting problems
 
