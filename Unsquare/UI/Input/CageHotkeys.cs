@@ -14,6 +14,7 @@ namespace Unsquare.UI.Input
         public const string ToggleMode = "UnsquareToggleMode";
         public const string ToggleModeLabel = "Toggle Unsquare mode";
 
+        public const string CyclePickKind = "UnsquareCyclePickKind";
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";
         public const string KindFace = "UnsquareKindFace";
@@ -32,15 +33,17 @@ namespace Unsquare.UI.Input
 
         public static readonly IReadOnlyList<HotkeyDefinition> All = new[]
         {
-            new HotkeyDefinition(KindCorner, nameof(UnsquareSettings.KindCornerBinding), "Select corner handles",
+            new HotkeyDefinition(CyclePickKind, nameof(UnsquareSettings.CyclePickKindBinding),
+                "Cycle pick mode (edges, faces, corners)", s => s.CyclePickKind()),
+            new HotkeyDefinition(KindCorner, nameof(UnsquareSettings.KindCornerBinding), "Pick corners",
                 s => s.SelectKind(CageHandleKind.Corner)),
-            new HotkeyDefinition(KindEdge, nameof(UnsquareSettings.KindEdgeBinding), "Select edge handles",
+            new HotkeyDefinition(KindEdge, nameof(UnsquareSettings.KindEdgeBinding), "Pick edges",
                 s => s.SelectKind(CageHandleKind.Edge)),
-            new HotkeyDefinition(KindFace, nameof(UnsquareSettings.KindFaceBinding), "Select face handles",
+            new HotkeyDefinition(KindFace, nameof(UnsquareSettings.KindFaceBinding), "Pick faces",
                 s => s.SelectKind(CageHandleKind.Face)),
-            new HotkeyDefinition(PreviousHandle, nameof(UnsquareSettings.PreviousHandleBinding), "Previous handle",
-                s => s.PreviousHandle()),
-            new HotkeyDefinition(NextHandle, nameof(UnsquareSettings.NextHandleBinding), "Next handle",
+            new HotkeyDefinition(PreviousHandle, nameof(UnsquareSettings.PreviousHandleBinding),
+                "Select previous handle", s => s.PreviousHandle()),
+            new HotkeyDefinition(NextHandle, nameof(UnsquareSettings.NextHandleBinding), "Select next handle",
                 s => s.NextHandle()),
             new HotkeyDefinition(MoveNegX, nameof(UnsquareSettings.MoveNegXBinding), "Move handle -X (width)",
                 s => s.Nudge(new float3(-1, 0, 0))),
