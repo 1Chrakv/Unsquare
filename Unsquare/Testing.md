@@ -107,7 +107,7 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 44 | Mode on, no building selected: move the mouse over several houses and the ground | Each house shows a dim cage while hovered; none over the ground |
 | 45 | Select a house (no handle): hover other houses; then select an edge and hover them again | Other houses are previewed; with the edge selected no preview appears |
 | 46 | With an edge selected, click ~1 m beside the cage, then a few metres away, then again far away on the ground | Near click: nothing; far click: `Selection cleared` (cage stays); second far click: `Target cleared` (cage gone) |
-| 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its 0.8 size (6 % of the view height, at least 1 m) |
+| 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its previous size (6 % of the view height, at least 1 m) |
 | 48 | Press Esc in the mode (also during a drag); press Esc outside the mode | Mode off (`Unsquare mode off`, button not highlighted, drag cancelled); outside the mode Esc behaves as usual. Note whether the pause menu opens too |
 
 ## Reporting problems
