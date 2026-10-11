@@ -11,11 +11,14 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `Unsquare/Core/` | Pure logic: cage model, deformation math, naming, debouncing, persistence, prune planning | `Unity.Mathematics`, `Newtonsoft.Json` only |
 | `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
-| `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), hotkeys, cage overlay, options page | Core + Api + game input/render/tool systems |
+| `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
+| `UiModule/` | React UI module (game template): bottom-bar mode button, talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
-Inputs (hotkeys, later mouse tool and panels) only call `CageEditSession` commands; views only read the session.
+Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageEditSession` commands; views only
+read the session. Nothing runs outside Unsquare mode (tool active): the session is disabled and hotkeys are ignored.
+Picking and gizmo math (`CagePicker`, `AxisDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
 
 Dependencies only point downwards (UI → Api → Integration → Core); `UI/` never references `Integration/`.
 Never reference `Game`, `Colossal.*`, `UnityEngine` or `Unity.Entities` from `Core/`; the test project would stop
@@ -30,6 +33,7 @@ dotnet test Unsquare.Tests
 
 The mod project imports `Mod.props`/`Mod.targets` from `%CSII_TOOLPATH%` (net48, C# 9). Game DLLs are resolved
 from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare`; with the game running the deploy fails (locked DLLs).
+After the deploy the build runs `npm run build` in `UiModule/` (needs Node.js; skip with `-p:SkipUiModule=true`).
 
 ## Versioning
 
