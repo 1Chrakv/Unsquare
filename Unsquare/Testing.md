@@ -40,8 +40,8 @@ leave Unsquare mode.
 
 While a building is selected, a small window floats above its roof: pick corners / edges / faces (the active one is
 highlighted), reset the selected corner, edge or face (disabled without a selection), reset the whole building and
-lift the terrain with the building (highlighted while on, disabled while undeformed).
-The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+Backspace and Alt+T.
+lift the terrain with the building (highlighted while on, disabled while undeformed) and fit the bottom corners to
+the original ground. The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+Backspace, Alt+T and Alt+G.
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
@@ -59,6 +59,7 @@ The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+Backspace and Alt+T.
 | Reset selected corner / edge / face | Alt+R |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off for the selected building | Alt+T |
+| Fit bottom corners to the original ground | Alt+G |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
@@ -144,6 +145,10 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 71 | Deform a building, then press Alt+T (or the terrain button) twice | Button highlighted after the deform; first press flattens the lot (`[Edit] Terrain lift off`, bake with 0 new assets), second lifts it again |
 | 72 | Two buildings with the same deformation, terrain lift off on one; save and reload | Only that one stays flat, also after the reload; Ctrl+Z / Ctrl+Y step through the toggles |
 | 73 | Alt+T on an undeformed building | Button greyed out; log `[Edit] Terrain lift on -> Rejected` |
+| 74 | On sloped terrain, select a placed building and press Alt+G (or the fit button) | A frame later the bottom corners sit on the original slope, building height unchanged; log `[Fit] Building …: original ground at the corners …` and `[Edit] Fit to ground on … -> Accepted` |
+| 75 | Compare the `[Fit]` corner heights with the visible slope (e.g. a corner on a hillside) | Higher corners get the larger values; the fitted corners touch the natural ground |
+| 76 | After a fit, Ctrl+Z | The shape before the fit returns in one step |
+| 77 | Fit with terrain lift on, then Alt+T | Lifted: the lot follows the slope; flat: the pad stays level |
 
 ## Reporting problems
 

@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Options;
+using Unsquare.Core.Terrain;
 using Unsquare.Integration.Systems;
 
 namespace Unsquare.Api
@@ -12,10 +13,12 @@ namespace Unsquare.Api
     internal sealed class DeformService : IBuildingDeformService
     {
         private readonly IVariantPipeline _pipeline;
+        private readonly BaseTerrainSystem _terrain;
 
-        public DeformService(IVariantPipeline pipeline)
+        public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain)
         {
             _pipeline = pipeline;
+            _terrain = terrain;
             _pipeline.BuildingChanged += building => CageChanged?.Invoke(building);
         }
 
@@ -55,6 +58,26 @@ namespace Unsquare.Api
             if (!state.IsDeformed)
                 return DeformRequestResult.Rejected;
             return Apply(building, state.TargetSpec.WithFlatTerrain(!lift));
+        }
+
+        public bool TryFitToGround(Entity building, Action<DeformSpec, DeformRequestResult> done)
+        {
+            if (done == null)
+                throw new ArgumentNullException(nameof(done));
+            if (!TryGetCage(building, out var state))
+                return false;
+            var points = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
+            return _terrain.TryRequest(building, points, heights =>
+            {
+                // The cage may have changed while the terrain was read; fit what it is now.
+                if (heights == null || !TryGetCage(building, out var now))
+                {
+                    done(state.TargetSpec, DeformRequestResult.Rejected);
+                    return;
+                }
+                var fitted = GroundFit.Fit(now.Box, now.TargetOffsets, heights);
+                done(now.TargetSpec, SetOffsets(building, fitted));
+            });
         }
 
         public DeformRequestResult Apply(Entity building, DeformSpec spec)

@@ -41,6 +41,7 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ToolWindow.ResetHandle", "Reset the selected corner, edge or face (Alt+R)" },
                 { "Unsquare.ToolWindow.ResetBuilding", "Reset the whole building (Alt+Backspace)" },
                 { "Unsquare.ToolWindow.TerrainLift", "Lift the terrain with the building (Alt+T)" },
+                { "Unsquare.ToolWindow.FitToGround", "Fit the bottom corners to the original ground (Alt+G)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),

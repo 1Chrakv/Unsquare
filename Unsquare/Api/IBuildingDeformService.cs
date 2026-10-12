@@ -27,6 +27,13 @@ namespace Unsquare.Api
         /// <summary>Switches whether the lot terrain follows the cage; rejected while the building is undeformed.</summary>
         DeformRequestResult SetTerrainLift(Entity building, bool lift);
 
+        /// <summary>
+        /// Moves each bottom corner (with the top corner above it) onto the original terrain, before lots and roads
+        /// flattened it. Asynchronous: <paramref name="done"/> gets the deformation before the fit and the result.
+        /// </summary>
+        /// <returns>False if the building is not deformable or the terrain cannot be read.</returns>
+        bool TryFitToGround(Entity building, Action<DeformSpec, DeformRequestResult> done);
+
         /// <summary>Requests offsets and terrain flag together, e.g. to replay an undo step.</summary>
         DeformRequestResult Apply(Entity building, DeformSpec spec);
 

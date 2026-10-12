@@ -12,7 +12,8 @@ namespace Unsquare.Api
         public static IBuildingDeformService GetDeformService(World world)
         {
             var system = world.GetOrCreateSystemManaged<VariantSystem>();
-            return Services.GetValue(system, s => new DeformService(s.Pipeline));
+            var terrain = world.GetOrCreateSystemManaged<BaseTerrainSystem>();
+            return Services.GetValue(system, s => new DeformService(s.Pipeline, terrain));
         }
     }
 }

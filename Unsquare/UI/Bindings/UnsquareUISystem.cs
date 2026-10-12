@@ -47,6 +47,7 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "canLiftTerrain",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsDeformed));
             AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
+            AddBinding(new TriggerBinding(Group, "fitToGround", () => _editor.Session.FitToGround()));
         }
 
         private void SelectPickKind(string kind)

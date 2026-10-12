@@ -34,6 +34,7 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.ResetSelected, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleTerrainLift, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.FitToGround, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.Undo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.Redo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -119,6 +120,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.T, CageHotkeys.ToggleTerrainLift, alt: true)]
         public ProxyBinding ToggleTerrainLiftBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.G, CageHotkeys.FitToGround, alt: true)]
+        public ProxyBinding FitToGroundBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]

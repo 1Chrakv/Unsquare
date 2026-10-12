@@ -239,6 +239,23 @@ namespace Unsquare.UI.Editing
             return Record("Reset", result);
         }
 
+        /// <summary>Puts the target's bottom corners on the original terrain; applied a frame or two later.</summary>
+        public DeformRequestResult FitToGround()
+        {
+            if (!TryGetCage(out _))
+                return Record("Fit to ground", DeformRequestResult.NotDeformable);
+            var building = Target;
+            bool started = _service.TryFitToGround(building, (before, result) =>
+            {
+                RememberEdit(building, before, result);
+                Record($"Fit to ground on {building}", result);
+            });
+            if (!started)
+                return Record("Fit to ground", DeformRequestResult.Rejected);
+            Log("Fit to ground: sampling terrain");
+            return DeformRequestResult.Accepted;
+        }
+
         /// <summary>Switches whether the target's lot terrain follows the cage; only for deformed buildings.</summary>
         public DeformRequestResult ToggleTerrainLift()
         {
@@ -331,11 +348,15 @@ namespace Unsquare.UI.Editing
             return Record(command, result);
         }
 
+        private void RememberEdit(DeformSpec before, DeformRequestResult result) =>
+            RememberEdit(Target, before, result);
+
         // The request is read back, so clamping is part of the edit.
-        private void RememberEdit(DeformSpec before, DeformRequestResult result)
+        private void RememberEdit(Entity building, DeformSpec before, DeformRequestResult result)
         {
-            if ((result is DeformRequestResult.Accepted or DeformRequestResult.Clamped) && TryGetCage(out var state))
-                _history.Record(Target, before, state.TargetSpec);
+            if ((result is DeformRequestResult.Accepted or DeformRequestResult.Clamped) &&
+                _service.TryGetCage(building, out var state))
+                _history.Record(building, before, state.TargetSpec);
         }
 
         private void SetPickKind(HandleSelection selection)

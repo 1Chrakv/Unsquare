@@ -1,6 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import cornerIcon from "images/pick-corner.svg";
+import fitGroundIcon from "images/fit-ground.svg";
 import edgeIcon from "images/pick-edge.svg";
 import faceIcon from "images/pick-face.svg";
 import resetBuildingIcon from "images/reset-building.svg";
@@ -84,6 +85,15 @@ const ToolWindow = () => {
                     disabled={!canLiftTerrain}
                     focusKey={focusDisabled}
                     onSelect={() => trigger(group, "toggleTerrainLift")}
+                />
+                <ToolButton
+                    src={fitGroundIcon}
+                    tooltip={translate("Unsquare.ToolWindow.FitToGround", "Fit the bottom corners to the original ground")}
+                    selected={false}
+                    multiSelect={false}
+                    disabled={false}
+                    focusKey={focusDisabled}
+                    onSelect={() => trigger(group, "fitToGround")}
                 />
             </div>
         </div>

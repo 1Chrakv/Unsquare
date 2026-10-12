@@ -34,6 +34,7 @@ namespace Unsquare.UI.Input
         public const string ResetHandle = "UnsquareResetHandle";
         public const string ResetSelected = "UnsquareResetSelected";
         public const string ToggleTerrainLift = "UnsquareToggleTerrainLift";
+        public const string FitToGround = "UnsquareFitToGround";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
         public const string Undo = "UnsquareUndo";
@@ -73,6 +74,8 @@ namespace Unsquare.UI.Input
                 s => s.Reset()),
             new HotkeyDefinition(ToggleTerrainLift, nameof(UnsquareSettings.ToggleTerrainLiftBinding),
                 "Toggle terrain lift", s => s.ToggleTerrainLift()),
+            new HotkeyDefinition(FitToGround, nameof(UnsquareSettings.FitToGroundBinding), "Fit to original ground",
+                s => s.FitToGround()),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",
                 s => s.ResetAll()),
             new HotkeyDefinition(Undo, nameof(UnsquareSettings.UndoBinding), "Undo cage edit", s => s.Undo()),
