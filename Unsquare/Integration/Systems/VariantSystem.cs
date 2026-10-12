@@ -233,10 +233,14 @@ namespace Unsquare.Integration.Systems
                 (lotBox, buildingBox) = boxes;
                 return true;
             }
-            buildingBox = default;
-            if (!CageBoxMeasurer.TryMeasureLot(basePrefab, out lotBox) ||
-                !CageBoxMeasurer.TryMeasureMeshes(basePrefab, out buildingBox))
+            if (!CageBoxMeasurer.TryMeasureLot(basePrefab, out lotBox))
+            {
+                buildingBox = default;
                 return false;
+            }
+            // Flat or meshless lots (parks) have no facades; props then align to the lot edges.
+            if (!CageBoxMeasurer.TryMeasureMeshes(basePrefab, out buildingBox))
+                buildingBox = lotBox;
             _boxes[basePrefab] = (lotBox, buildingBox);
             return true;
         }

@@ -93,7 +93,8 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 - The cage is always the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
   (`CageBoxMeasurer.TryMeasureLot`). Prefabs without a lot are not deformable. A building-only cage was removed
   (0.6.0): it left garden props, ground and paths misplaced.
-- The building's mesh box (`TryMeasureMeshes`) is only used as the facade-alignment box for props.
+- The building's mesh box (`TryMeasureMeshes`) is only used as the facade-alignment box for props. Flat or
+  meshless lots (parks) fall back to the lot box. The Unsquare tool raycasts building lots, so parks are pickable.
 - All attachments (`IAttachmentDeformer`, per kind switchable in `AttachmentOptions`) are deformed in the clone's
   prefab data: props (`ObjectSubObjects`), areas (`ObjectSubAreas`), lanes (`ObjectSubLanes`), nets (`ObjectSubNets`).
 - How the game keeps them, and what that means:

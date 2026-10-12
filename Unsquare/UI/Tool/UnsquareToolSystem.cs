@@ -1,6 +1,7 @@
 using System;
 using Colossal.Entities;
 using Game;
+using Game.Areas;
 using Game.Buildings;
 using Game.Common;
 using Game.Prefabs;
@@ -57,7 +58,10 @@ namespace Unsquare.UI.Tool
         public override void InitializeRaycast()
         {
             base.InitializeRaycast();
-            m_ToolRaycastSystem.typeMask = TypeMask.StaticObjects;
+            // Like the default tool, also hit lots: parks are mostly flat ground without a mesh to click.
+            m_ToolRaycastSystem.typeMask = TypeMask.StaticObjects | TypeMask.Areas;
+            m_ToolRaycastSystem.areaTypeMask = AreaTypeMask.Lots;
+            m_ToolRaycastSystem.raycastFlags |= RaycastFlags.BuildingLots;
             m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground;
         }
 
