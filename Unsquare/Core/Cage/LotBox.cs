@@ -10,8 +10,8 @@ namespace Unsquare.Core.Cage
         /// <summary>Zone cell size in meters; a lot is cells × 8 m around the building origin.</summary>
         public const float CellSize = 8f;
 
-        /// <summary>Minimum box height so flat lots (e.g. parks) still have a usable cage.</summary>
-        public const float MinHeight = 1f;
+        /// <summary>Minimum box height (one cell): flat lots like parks need vertical edges long enough to pick.</summary>
+        public const float MinHeight = 8f;
 
         public static CageBox FromLot(int2 lotCells, MinMaxBounds meshBounds)
         {

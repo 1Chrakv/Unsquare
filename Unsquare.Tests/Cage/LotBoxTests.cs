@@ -43,6 +43,13 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void FromLot_LowMesh_RaisesTopToMinimumHeight()
+        {
+            var kiosk = new MinMaxBounds(new float3(-2, 0, -2), new float3(2, 5, 2));
+            Assert.That(LotBox.FromLot(new int2(2, 2), kiosk).Max.y, Is.EqualTo(8f));
+        }
+
+        [Test]
         public void FromLot_NonPositiveCells_Throws()
         {
             Assert.That(() => LotBox.FromLot(new int2(0, 2), MinMaxBounds.Empty), Throws.ArgumentException);

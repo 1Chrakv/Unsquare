@@ -91,7 +91,8 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 ## Lot deformation
 
 - The cage is always the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
-  (`CageBoxMeasurer.TryMeasureLot`). Prefabs without a lot are not deformable. A building-only cage was removed
+  (`CageBoxMeasurer.TryMeasureLot`), at least 8 m tall (`LotBox.MinHeight`) so flat lots have pickable vertical
+  edges. Prefabs without a lot are not deformable. A building-only cage was removed
   (0.6.0): it left garden props, ground and paths misplaced.
 - The building's mesh box (`TryMeasureMeshes`) is only used as the facade-alignment box for props. Flat or
   meshless lots (parks) fall back to the lot box. The Unsquare tool raycasts building lots, so parks are pickable.

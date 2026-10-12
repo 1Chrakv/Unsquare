@@ -150,7 +150,7 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 76 | After a fit, Ctrl+Z | The shape before the fit returns in one step |
 | 77 | Fit with terrain lift on, then Alt+T | Lifted: the lot follows the slope; flat: the pad stays level |
 | 78 | Alt+Shift+G on the same building; then raise its front corners and press Alt+G | All four corners follow the original ground (`Fit to ground (all corners)`); Alt+G brings the street side back to road level |
-| 79 | Mode on: hover and click a park's grass, raise a top edge, pull a bottom corner out | Park previewed and selected from its lot; benches, trees and paths follow the cage; no `has no lot cage` log |
+| 79 | Mode on: hover and click a park's grass, raise a top edge, pull a bottom corner out | Park previewed and selected from its lot; cage about 8 m tall, vertical edges easy to pick; benches, trees and paths follow the cage; no `has no lot cage` log |
 | 80 | Click a house's garden (away from the house mesh) | The house is selected |
 
 ## Reporting problems
