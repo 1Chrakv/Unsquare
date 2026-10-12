@@ -101,8 +101,17 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   - **Areas and nets** are saved entities created once by the placement tool. `LotInstanceSync` (called from
     `PrefabSwapper`) rewrites the existing instances from the old to the new prefab layout. Instances are matched
     by ground distance; nodes linked to outside nets (roads) never move.
-- Ground items keep their heights (the game projects them on the terrain). Lot size, zone cells and terrain
-  flattening stay rectangular; a lot outline leaving its plot only warns (`LotBounds`).
+- Ground items keep their heights (the game projects them on the terrain). Lot size, zone cells and the terrain
+  flattening outline stay rectangular; a lot outline leaving its plot only warns (`LotBounds`).
+- **Terrain lift:** the game flattens the footprint (`BuildingTerraformData` flat area) to one height; `Lot` edge
+  heights only shape the strip to the lot edge (`BuildingUtils.SampleHeight`). So for each lifted variant prefab,
+  `LotLiftSystem` (after `LotHeightSystem`, Modification5) does two things:
+  - It collapses the flat area to the lot centre at the centre lift (`TerrainSlopePlanner`, `TerrainSlopeApplier`).
+  - It adds the edge lift, relative to that, to every instance's `Lot`. The game interpolates in between; diagonal
+    creases come from its blend.
+  - Runtime only: `Lot` is not saved and variant prefabs are rebuilt on load. `LotHeightSystem` rewrites lots near
+    changed objects/nets: compare with the written value, never add twice.
+  - Stepped `AdditionalBuildingTerraformElement` cells had no visible effect in game; don't retry them.
 - Effects (`EffectSource`) are not deformed yet.
 
 ## Props: rigid placement, full deformation later

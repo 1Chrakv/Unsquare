@@ -133,6 +133,12 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 62 | Window: reset-building button on a deformed building | Original shape (`[Edit] Reset -> …`); undoable with Ctrl+Z |
 | 63 | Click a window button while a handle is selected | Selection and target stay; the click reaches neither the building nor the ground |
 | 64 | Right-click until the target is cleared, then leave the mode | The window hides with the target and stays hidden outside the mode |
+| 65 | Raise the front bottom edge of a building by ~10 m | Ground rises from back to front across the whole lot, no ridge at the lot border; log `Terrain slope for prefab …` |
+| 66 | Raise only one bottom corner by 4 m | Ground slopes up towards that corner; the other corners stay at ground level |
+| 67 | Raise the whole bottom face by 3 m | The ground under the whole lot rises evenly by 3 m |
+| 68 | Lower a bottom corner by 2 m | Ground sinks towards that corner |
+| 69 | Reset a lifted building; save and reload a lifted one | Flat again after reset; the slope comes back after the reload |
+| 70 | Next to a sloped building, build or remove a road | The slope stays; the lot edge still blends to the road |
 
 ## Reporting problems
 

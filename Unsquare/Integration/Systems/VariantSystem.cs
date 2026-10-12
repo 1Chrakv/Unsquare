@@ -198,6 +198,20 @@ namespace Unsquare.Integration.Systems
             return count;
         }
 
+        /// <summary>Lot cage and offsets a variant prefab was baked from; false for base prefabs and unknown variants.</summary>
+        internal bool TryGetVariantCage(Entity prefabEntity, out CageBox lotBox, out CageOffsets offsets)
+        {
+            lotBox = default;
+            offsets = null;
+            if (!_prefabSystem.TryGetPrefab(prefabEntity, out PrefabBase prefab) || prefab == null ||
+                !VariantNaming.IsVariantName(prefab.name) ||
+                !_resolver.TryGetVariant(prefab.name, out var info) ||
+                !TryGetBoxes(info.BasePrefab, out lotBox, out _))
+                return false;
+            offsets = info.Offsets;
+            return true;
+        }
+
         private bool TryDescribe(Entity building, out BuildingDescription description)
         {
             description = default;

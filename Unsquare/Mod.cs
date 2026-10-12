@@ -1,6 +1,7 @@
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
 using Game;
+using Game.Buildings;
 using Game.Modding;
 using Game.Prefabs;
 using Game.SceneFlow;
@@ -36,6 +37,8 @@ namespace Unsquare
 
             // Before PrefabInitializeSystem, so prefabs added by the variant system initialize in the same frame.
             updateSystem.UpdateBefore<VariantSystem, PrefabInitializeSystem>(SystemUpdatePhase.PrefabUpdate);
+            // After LotHeightSystem rewrote lot heights, before TerrainSystem draws them (ModificationEnd).
+            updateSystem.UpdateAfter<LotLiftSystem, LotHeightSystem>(SystemUpdatePhase.Modification5);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageHotkeySystem, UnsquareToolSystem>(SystemUpdatePhase.ToolUpdate);

@@ -361,7 +361,7 @@ namespace Unsquare.UI.Editing
         {
             bool exceeds = TryGetCage(out var state) && state.ExceedsLot;
             if (exceeds && !_warnedLeavingLot)
-                Mod.Log.Warn("[Edit] Lot outline leaves its plot: zone cells and terrain stay rectangular, neighbours may overlap.");
+                Mod.Log.Warn("[Edit] Lot outline leaves its plot: zone cells and the terrain outline stay rectangular, neighbours may overlap.");
             _warnedLeavingLot = exceeds;
         }
 
