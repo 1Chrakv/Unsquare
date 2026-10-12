@@ -55,6 +55,17 @@ namespace Unsquare.Tests.Naming
             Assert.That(VariantNaming.VariantName("Base", Offsets), Is.EqualTo(expected));
         }
 
+        [Test]
+        public void VariantName_FlatTerrain_DiffersAndKeepsShape()
+        {
+            string lifted = VariantNaming.VariantName("Base", Offsets);
+            string flat = VariantNaming.VariantName("Base", Offsets, flatTerrain: true);
+            Assert.That(flat, Is.Not.EqualTo(lifted));
+            Assert.That(VariantNaming.TryParse(flat, out var baseName), Is.True);
+            Assert.That(baseName, Is.EqualTo("Base"));
+            Assert.That(VariantNaming.VariantName("Base", Offsets, flatTerrain: false), Is.EqualTo(lifted));
+        }
+
         [TestCase("Plain_Building")]
         [TestCase("Base__uq123")]
         [TestCase("Base__uqZZZZZZZZZZZZ")]

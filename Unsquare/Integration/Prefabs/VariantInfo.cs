@@ -6,13 +6,13 @@ namespace Unsquare.Integration.Prefabs
     /// <summary>What a variant prefab was made from.</summary>
     internal sealed class VariantInfo
     {
-        public VariantInfo(ObjectGeometryPrefab basePrefab, CageOffsets offsets)
+        public VariantInfo(ObjectGeometryPrefab basePrefab, DeformSpec spec)
         {
             BasePrefab = basePrefab;
-            Offsets = offsets;
+            Spec = spec;
         }
 
         public ObjectGeometryPrefab BasePrefab { get; }
-        public CageOffsets Offsets { get; }
+        public DeformSpec Spec { get; }
     }
 }

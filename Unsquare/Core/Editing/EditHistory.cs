@@ -39,7 +39,7 @@ namespace Unsquare.Core.Editing
         public bool CanRedo => _redo.Count > 0;
 
         /// <summary>Adds an edit unless it changed nothing.</summary>
-        public void Record(TKey building, CageOffsets before, CageOffsets after)
+        public void Record(TKey building, DeformSpec before, DeformSpec after)
         {
             var edit = new CageEdit<TKey>(building, before, after);
             if (before.Equals(after))

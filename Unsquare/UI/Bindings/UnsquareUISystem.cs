@@ -42,6 +42,11 @@ namespace Unsquare.UI.Bindings
             AddBinding(new TriggerBinding<string>(Group, "selectPickKind", SelectPickKind));
             AddBinding(new TriggerBinding(Group, "resetHandle", () => _editor.Session.ResetHandle()));
             AddBinding(new TriggerBinding(Group, "resetBuilding", () => _editor.Session.Reset()));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "terrainLift",
+                () => _editor.Session.TryGetCage(out var cage) && cage.TerrainLift));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canLiftTerrain",
+                () => _editor.Session.TryGetCage(out var cage) && cage.IsDeformed));
+            AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
         }
 
         private void SelectPickKind(string kind)

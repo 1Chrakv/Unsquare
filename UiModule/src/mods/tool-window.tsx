@@ -5,6 +5,7 @@ import edgeIcon from "images/pick-edge.svg";
 import faceIcon from "images/pick-face.svg";
 import resetBuildingIcon from "images/reset-building.svg";
 import resetHandleIcon from "images/reset-handle.svg";
+import terrainLiftIcon from "images/terrain-lift.svg";
 import { Guard } from "mods/guard";
 import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./tool-window.module.scss";
@@ -21,6 +22,8 @@ interface ToolWindowAnchor {
 const toolWindow$ = bindValue<ToolWindowAnchor>(group, "toolWindow", { visible: false, x: 0, y: 0 });
 const pickKind$ = bindValue<string>(group, "pickKind", "Edge");
 const hasHandle$ = bindValue<boolean>(group, "hasHandle", false);
+const terrainLift$ = bindValue<boolean>(group, "terrainLift", false);
+const canLiftTerrain$ = bindValue<boolean>(group, "canLiftTerrain", false);
 
 // Values are the C# CageHandleKind names.
 const pickKinds = [
@@ -33,6 +36,8 @@ const ToolWindow = () => {
     const anchor = useValue(toolWindow$);
     const pickKind = useValue(pickKind$);
     const hasHandle = useValue(hasHandle$);
+    const terrainLift = useValue(terrainLift$);
+    const canLiftTerrain = useValue(canLiftTerrain$);
     const { translate } = useLocalization();
     if (!ToolButton || !anchor.visible)
         return null;
@@ -69,6 +74,16 @@ const ToolWindow = () => {
                     disabled={false}
                     focusKey={focusDisabled}
                     onSelect={() => trigger(group, "resetBuilding")}
+                />
+                <div className={styles.divider} />
+                <ToolButton
+                    src={terrainLiftIcon}
+                    tooltip={translate("Unsquare.ToolWindow.TerrainLift", "Lift the terrain with the building")}
+                    selected={terrainLift}
+                    multiSelect={false}
+                    disabled={!canLiftTerrain}
+                    focusKey={focusDisabled}
+                    onSelect={() => trigger(group, "toggleTerrainLift")}
                 />
             </div>
         </div>

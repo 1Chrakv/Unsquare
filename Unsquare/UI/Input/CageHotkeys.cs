@@ -33,6 +33,7 @@ namespace Unsquare.UI.Input
         public const string CycleStep = "UnsquareCycleStep";
         public const string ResetHandle = "UnsquareResetHandle";
         public const string ResetSelected = "UnsquareResetSelected";
+        public const string ToggleTerrainLift = "UnsquareToggleTerrainLift";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
         public const string Undo = "UnsquareUndo";
@@ -70,6 +71,8 @@ namespace Unsquare.UI.Input
                 "Reset selected corner, edge or face", s => s.ResetHandle()),
             new HotkeyDefinition(ResetSelected, nameof(UnsquareSettings.ResetSelectedBinding), "Reset selected building",
                 s => s.Reset()),
+            new HotkeyDefinition(ToggleTerrainLift, nameof(UnsquareSettings.ToggleTerrainLiftBinding),
+                "Toggle terrain lift", s => s.ToggleTerrainLift()),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",
                 s => s.ResetAll()),
             new HotkeyDefinition(Undo, nameof(UnsquareSettings.UndoBinding), "Undo cage edit", s => s.Undo()),

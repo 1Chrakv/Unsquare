@@ -43,15 +43,33 @@ namespace Unsquare.Api
         {
             if (offsets == null)
                 throw new ArgumentNullException(nameof(offsets));
+            if (!TryGetCage(building, out var state))
+                return DeformRequestResult.NotDeformable;
+            return Apply(building, state.TargetSpec.WithOffsets(offsets));
+        }
+
+        public DeformRequestResult SetTerrainLift(Entity building, bool lift)
+        {
+            if (!TryGetCage(building, out var state))
+                return DeformRequestResult.NotDeformable;
+            if (!state.IsDeformed)
+                return DeformRequestResult.Rejected;
+            return Apply(building, state.TargetSpec.WithFlatTerrain(!lift));
+        }
+
+        public DeformRequestResult Apply(Entity building, DeformSpec spec)
+        {
+            if (spec == null)
+                throw new ArgumentNullException(nameof(spec));
             if (!_pipeline.TryDescribe(building, out var description))
                 return DeformRequestResult.NotDeformable;
 
             var box = description.LotBox;
-            var clamped = CageValidator.Clamp(box, offsets, Options.Limits);
+            var clamped = CageValidator.Clamp(box, spec.Offsets, Options.Limits);
             if (CageValidator.Validate(box, clamped, Options.Limits) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
-            _pipeline.Request(building, clamped);
-            return clamped.Equals(offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
+            _pipeline.Request(building, spec.WithOffsets(clamped));
+            return clamped.Equals(spec.Offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
         }
 
         public DeformRequestResult MoveHandle(Entity building, CageHandle handle, float3 delta)
@@ -61,16 +79,16 @@ namespace Unsquare.Api
             return SetOffsets(building, state.TargetOffsets.Move(handle, delta));
         }
 
-        public DeformRequestResult Reset(Entity building) => SetOffsets(building, CageOffsets.Identity);
+        public DeformRequestResult Reset(Entity building) => Apply(building, DeformSpec.Identity);
 
         public int ResetAll() => _pipeline.ResetAll();
 
-        private static DeformStatus MapStatus(VariantStatus status, CageOffsets applied) => status switch
+        private static DeformStatus MapStatus(VariantStatus status, DeformSpec applied) => status switch
         {
             VariantStatus.Pending => DeformStatus.Pending,
             VariantStatus.WaitingForPrefab => DeformStatus.Applying,
             VariantStatus.Failed => DeformStatus.Failed,
-            _ => applied.IsIdentity ? DeformStatus.Undeformed : DeformStatus.Applied,
+            _ => applied.Offsets.IsIdentity ? DeformStatus.Undeformed : DeformStatus.Applied,
         };
     }
 }

@@ -35,6 +35,7 @@ namespace Unsquare.Core.Persistence
                 foreach (var asset in entry.Assets)
                     AddUnique(existing.Assets, asset);
                 existing.Offsets = entry.Offsets;
+                existing.FlatTerrain = entry.FlatTerrain;
                 entry = existing;
             }
             else

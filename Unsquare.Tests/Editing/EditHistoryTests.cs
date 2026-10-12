@@ -8,8 +8,8 @@ namespace Unsquare.Tests.Editing
 {
     public class EditHistoryTests
     {
-        private static CageOffsets Up(float meters) =>
-            CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, meters, 0));
+        private static DeformSpec Up(float meters) =>
+            new(CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, meters, 0)), false);
 
         [Test]
         public void Record_SameOffsets_IsIgnored()
@@ -20,13 +20,23 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void Record_FlagOnlyChange_IsRecorded()
+        {
+            var history = new EditHistory<int>(10);
+            history.Record(1, Up(1), Up(1).WithFlatTerrain(true));
+            Assert.That(history.TryUndo(out var edit), Is.True);
+            Assert.That(edit.Before.FlatTerrain, Is.False);
+            Assert.That(edit.After.FlatTerrain, Is.True);
+        }
+
+        [Test]
         public void TryUndo_AfterRecord_ReturnsEditAndEnablesRedo()
         {
             var history = new EditHistory<int>(10);
-            history.Record(1, CageOffsets.Identity, Up(1));
+            history.Record(1, DeformSpec.Identity, Up(1));
             Assert.That(history.TryUndo(out var edit), Is.True);
             Assert.That(edit.Building, Is.EqualTo(1));
-            Assert.That(edit.Before, Is.EqualTo(CageOffsets.Identity));
+            Assert.That(edit.Before, Is.EqualTo(DeformSpec.Identity));
             Assert.That(edit.After, Is.EqualTo(Up(1)));
             Assert.That(history.CanUndo, Is.False);
             Assert.That(history.CanRedo, Is.True);
@@ -44,9 +54,9 @@ namespace Unsquare.Tests.Editing
         public void Record_AfterUndo_ClearsRedo()
         {
             var history = new EditHistory<int>(10);
-            history.Record(1, CageOffsets.Identity, Up(1));
+            history.Record(1, DeformSpec.Identity, Up(1));
             history.TryUndo(out _);
-            history.Record(1, CageOffsets.Identity, Up(2));
+            history.Record(1, DeformSpec.Identity, Up(2));
             Assert.That(history.CanRedo, Is.False);
             Assert.That(history.UndoCount, Is.EqualTo(1));
         }
@@ -55,8 +65,8 @@ namespace Unsquare.Tests.Editing
         public void UndoRedo_RoundTrip_RestoresOrder()
         {
             var history = new EditHistory<int>(10);
-            history.Record(1, CageOffsets.Identity, Up(1));
-            history.Record(2, CageOffsets.Identity, Up(2));
+            history.Record(1, DeformSpec.Identity, Up(1));
+            history.Record(2, DeformSpec.Identity, Up(2));
             history.TryUndo(out var first);
             history.TryUndo(out var second);
             Assert.That(first.Building, Is.EqualTo(2));
@@ -71,9 +81,9 @@ namespace Unsquare.Tests.Editing
         public void Record_BeyondCapacity_DropsOldest()
         {
             var history = new EditHistory<int>(2);
-            history.Record(1, CageOffsets.Identity, Up(1));
-            history.Record(2, CageOffsets.Identity, Up(1));
-            history.Record(3, CageOffsets.Identity, Up(1));
+            history.Record(1, DeformSpec.Identity, Up(1));
+            history.Record(2, DeformSpec.Identity, Up(1));
+            history.Record(3, DeformSpec.Identity, Up(1));
             Assert.That(history.UndoCount, Is.EqualTo(2));
             history.TryUndo(out _);
             history.TryUndo(out var oldest);
@@ -85,7 +95,7 @@ namespace Unsquare.Tests.Editing
         {
             var history = new EditHistory<int>(5);
             for (int i = 0; i < 5; i++)
-                history.Record(i, CageOffsets.Identity, Up(1));
+                history.Record(i, DeformSpec.Identity, Up(1));
             history.Capacity = 2;
             Assert.That(history.UndoCount, Is.EqualTo(2));
             history.TryUndo(out var newest);
@@ -96,8 +106,8 @@ namespace Unsquare.Tests.Editing
         public void Forget_RemovesOnlyThatBuilding()
         {
             var history = new EditHistory<int>(10);
-            history.Record(1, CageOffsets.Identity, Up(1));
-            history.Record(2, CageOffsets.Identity, Up(1));
+            history.Record(1, DeformSpec.Identity, Up(1));
+            history.Record(2, DeformSpec.Identity, Up(1));
             history.Record(1, Up(1), Up(2));
             history.TryUndo(out _);
             history.Forget(1);

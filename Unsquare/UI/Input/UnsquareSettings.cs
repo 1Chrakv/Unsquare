@@ -32,6 +32,8 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.CycleStep, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetHandle, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetSelected, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.ToggleTerrainLift, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.Undo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.Redo, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -113,6 +115,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Backspace, CageHotkeys.ResetSelected, alt: true)]
         public ProxyBinding ResetSelectedBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.T, CageHotkeys.ToggleTerrainLift, alt: true)]
+        public ProxyBinding ToggleTerrainLiftBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]

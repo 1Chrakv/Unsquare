@@ -3,10 +3,10 @@ using Unsquare.Core.Cage;
 
 namespace Unsquare.Core.Editing
 {
-    /// <summary>One undoable cage edit: a building's target offsets before and after the change.</summary>
+    /// <summary>One undoable cage edit: a building's target deformation before and after the change.</summary>
     public readonly struct CageEdit<TKey>
     {
-        public CageEdit(TKey building, CageOffsets before, CageOffsets after)
+        public CageEdit(TKey building, DeformSpec before, DeformSpec after)
         {
             Building = building;
             Before = before ?? throw new ArgumentNullException(nameof(before));
@@ -14,7 +14,7 @@ namespace Unsquare.Core.Editing
         }
 
         public TKey Building { get; }
-        public CageOffsets Before { get; }
-        public CageOffsets After { get; }
+        public DeformSpec Before { get; }
+        public DeformSpec After { get; }
     }
 }

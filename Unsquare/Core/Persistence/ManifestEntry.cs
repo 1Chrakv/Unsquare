@@ -14,6 +14,9 @@ namespace Unsquare.Core.Persistence
         /// <summary>Corner offsets in grid steps, see <see cref="Cage.CageOffsets.ToArray"/>.</summary>
         public int[] Offsets { get; set; }
 
+        /// <summary>Whether the variant keeps the flat lot terrain; missing in older files, meaning lifted.</summary>
+        public bool FlatTerrain { get; set; }
+
         public DateTime LastUsedUtc { get; set; }
 
         /// <summary>Cities (by name) that used the variant when they were last loaded.</summary>

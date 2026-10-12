@@ -212,7 +212,7 @@ namespace Unsquare.UI.Editing
                 return;
             var handle = ActiveDrag.Handle;
             if (TryGetCage(out var state))
-                _history.Record(Target, ActiveDrag.StartOffsets, state.TargetOffsets); // one step per drag
+                _history.Record(Target, state.TargetSpec.WithOffsets(ActiveDrag.StartOffsets), state.TargetSpec);
             ActiveDrag = null;
             DragAxis = -1;
             Log($"Drag of {handle} ended -> {LastResult?.ToString() ?? "unchanged"}");
@@ -235,8 +235,19 @@ namespace Unsquare.UI.Editing
             if (!TryGetCage(out var state))
                 return Record("Reset", DeformRequestResult.NotDeformable);
             var result = _service.Reset(Target);
-            RememberEdit(state.TargetOffsets, result);
+            RememberEdit(state.TargetSpec, result);
             return Record("Reset", result);
+        }
+
+        /// <summary>Switches whether the target's lot terrain follows the cage; only for deformed buildings.</summary>
+        public DeformRequestResult ToggleTerrainLift()
+        {
+            if (!TryGetCage(out var state))
+                return Record("Terrain lift", DeformRequestResult.NotDeformable);
+            bool lift = !state.TerrainLift;
+            var result = _service.SetTerrainLift(Target, lift);
+            RememberEdit(state.TargetSpec, result);
+            return Record($"Terrain lift {(lift ? "on" : "off")}", result);
         }
 
         /// <summary>Not undoable (uninstall path), so it also clears the history.</summary>
@@ -265,7 +276,7 @@ namespace Unsquare.UI.Editing
             if (!TryGetCage(out var state))
                 return HasTarget ? $"Building {Target}: not deformable" : "No building selected";
             return $"Building {Target}: {state.Status}, {Selection}, step {Step}, lot box {state.Box}, " +
-                   $"applied [{state.AppliedOffsets}], target [{state.TargetOffsets}]";
+                   $"applied [{state.AppliedSpec}], target [{state.TargetSpec}]";
         }
 
         // A new target starts without a selected handle; the pick mode stays.
@@ -299,7 +310,7 @@ namespace Unsquare.UI.Editing
                 }
                 SetTarget(edit.Building);
                 Record($"{(undo ? "Undo" : "Redo")} on {edit.Building}",
-                    _service.SetOffsets(edit.Building, undo ? edit.Before : edit.After));
+                    _service.Apply(edit.Building, undo ? edit.Before : edit.After));
                 return;
             }
             Log(undo ? "Nothing to undo" : "Nothing to redo");
@@ -316,15 +327,15 @@ namespace Unsquare.UI.Editing
             if (!TryGetCage(out var state))
                 return Record(command, DeformRequestResult.NotDeformable);
             var result = _service.SetOffsets(Target, change(state.TargetOffsets));
-            RememberEdit(state.TargetOffsets, result);
+            RememberEdit(state.TargetSpec, result);
             return Record(command, result);
         }
 
-        // The requested offsets are read back, so clamping is part of the edit.
-        private void RememberEdit(CageOffsets before, DeformRequestResult result)
+        // The request is read back, so clamping is part of the edit.
+        private void RememberEdit(DeformSpec before, DeformRequestResult result)
         {
             if ((result is DeformRequestResult.Accepted or DeformRequestResult.Clamped) && TryGetCage(out var state))
-                _history.Record(Target, before, state.TargetOffsets);
+                _history.Record(Target, before, state.TargetSpec);
         }
 
         private void SetPickKind(HandleSelection selection)

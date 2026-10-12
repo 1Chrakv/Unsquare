@@ -3,11 +3,11 @@ using Unsquare.Core.Cage;
 
 namespace Unsquare.Integration.Systems
 {
-    /// <summary>A building's base prefab, its undeformed lot cage and mesh box, and the offsets currently applied.</summary>
+    /// <summary>A building's base prefab, its undeformed lot cage and mesh box, and the deformation currently applied.</summary>
     internal readonly struct BuildingDescription
     {
         public BuildingDescription(ObjectGeometryPrefab basePrefab, CageBox lotBox, CageBox buildingBox,
-            CageOffsets applied)
+            DeformSpec applied)
         {
             BasePrefab = basePrefab;
             LotBox = lotBox;
@@ -23,6 +23,6 @@ namespace Unsquare.Integration.Systems
         /// <summary>Render mesh bounds; props align to its faces.</summary>
         public CageBox BuildingBox { get; }
 
-        public CageOffsets Applied { get; }
+        public DeformSpec Applied { get; }
     }
 }

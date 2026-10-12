@@ -39,8 +39,9 @@ leave Unsquare mode.
 ## Tool window (in Unsquare mode)
 
 While a building is selected, a small window floats above its roof: pick corners / edges / faces (the active one is
-highlighted), reset the selected corner, edge or face (disabled without a selection) and reset the whole building.
-The buttons run the same commands as Alt+1/2/3, Alt+R and Alt+Backspace.
+highlighted), reset the selected corner, edge or face (disabled without a selection), reset the whole building and
+lift the terrain with the building (highlighted while on, disabled while undeformed).
+The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+Backspace and Alt+T.
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
@@ -57,6 +58,7 @@ The buttons run the same commands as Alt+1/2/3, Alt+R and Alt+Backspace.
 | Cycle step 0.1 / 0.5 / 2 m | Alt+S |
 | Reset selected corner / edge / face | Alt+R |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
+| Terrain lift on / off for the selected building | Alt+T |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
@@ -139,6 +141,9 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 68 | Lower a bottom corner by 2 m | Ground sinks towards that corner |
 | 69 | Reset a lifted building; save and reload a lifted one | Flat again after reset; the slope comes back after the reload |
 | 70 | Next to a sloped building, build or remove a road | The slope stays; the lot edge still blends to the road |
+| 71 | Deform a building, then press Alt+T (or the terrain button) twice | Button highlighted after the deform; first press flattens the lot (`[Edit] Terrain lift off`, bake with 0 new assets), second lifts it again |
+| 72 | Two buildings with the same deformation, terrain lift off on one; save and reload | Only that one stays flat, also after the reload; Ctrl+Z / Ctrl+Y step through the toggles |
+| 73 | Alt+T on an undeformed building | Button greyed out; log `[Edit] Terrain lift on -> Rejected` |
 
 ## Reporting problems
 

@@ -130,6 +130,33 @@ namespace Unsquare.Tests.Persistence
         }
 
         [Test]
+        public void Register_Existing_UpdatesFlatTerrain()
+        {
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V"), "City", Now);
+            var flat = Entry("V");
+            flat.FlatTerrain = true;
+            manifest.Register(flat, "City", Now);
+            Assert.That(manifest.TryGet("BuildingPrefab/V", out var entry), Is.True);
+            Assert.That(entry.FlatTerrain, Is.True);
+        }
+
+        [Test]
+        public void Load_MissingFlatTerrain_DefaultsToLifted()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("m.json");
+            System.IO.File.WriteAllText(path,
+                "{\"Version\":" + VariantManifest.FormatVersion + ",\"Entries\":[{\"BaseType\":\"BuildingPrefab\"," +
+                "\"BaseName\":\"B\",\"VariantName\":\"B__uq000000000001\",\"Offsets\":[],\"Assets\":[]}]}");
+
+            VariantManifest.Load(path, out var manifest);
+
+            Assert.That(manifest.TryGet("BuildingPrefab/B__uq000000000001", out var entry), Is.True);
+            Assert.That(entry.FlatTerrain, Is.False);
+        }
+
+        [Test]
         public void Remove_MarksDirty()
         {
             using var temp = new TempDirectory();

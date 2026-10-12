@@ -19,10 +19,16 @@ namespace Unsquare.Api
         bool TryGetCage(Entity building, out CageState state);
 
         /// <summary>
-        /// Requests absolute offsets (debounced). For drags, keep the offsets from drag start and pass
-        /// <c>start.Move(handle, totalDelta)</c> to avoid rounding drift.
+        /// Requests absolute offsets (debounced), keeping the terrain flag. For drags, keep the offsets from drag
+        /// start and pass <c>start.Move(handle, totalDelta)</c> to avoid rounding drift.
         /// </summary>
         DeformRequestResult SetOffsets(Entity building, CageOffsets offsets);
+
+        /// <summary>Switches whether the lot terrain follows the cage; rejected while the building is undeformed.</summary>
+        DeformRequestResult SetTerrainLift(Entity building, bool lift);
+
+        /// <summary>Requests offsets and terrain flag together, e.g. to replay an undo step.</summary>
+        DeformRequestResult Apply(Entity building, DeformSpec spec);
 
         /// <summary>Nudges a handle relative to the current target offsets, e.g. for +/- buttons.</summary>
         DeformRequestResult MoveHandle(Entity building, CageHandle handle, float3 delta);
