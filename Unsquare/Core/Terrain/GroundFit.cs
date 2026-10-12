@@ -7,7 +7,7 @@ namespace Unsquare.Core.Terrain
 {
     /// <summary>
     /// Fits a cage to the terrain: each corner column (bottom corner and the top corner above it) moves up or down so
-    /// that its ground point sits on the given terrain height. Column heights and horizontal offsets stay.
+    /// that its ground point sits on its target height. Column heights and horizontal offsets stay.
     /// </summary>
     public static class GroundFit
     {
@@ -15,6 +15,10 @@ namespace Unsquare.Core.Terrain
         public static readonly IReadOnlyList<int> GroundCorners = new[] { 0, 1, 4, 5 };
 
         private const int TopBit = 2;
+        private const int StreetSideBit = 4;
+
+        /// <summary>Whether a ground corner's column is on the street side (+z).</summary>
+        public static bool IsFrontColumn(int groundCorner) => (groundCorner & StreetSideBit) != 0;
 
         /// <summary>Building-space xz where the ground plane (y = 0) cuts each deformed column.</summary>
         public static float2[] GroundPoints(CageBox box, CageOffsets offsets)
@@ -28,7 +32,9 @@ namespace Unsquare.Core.Terrain
         }
 
         /// <param name="groundHeights">Terrain height per column relative to the building's ground (y = 0).</param>
-        public static CageOffsets Fit(CageBox box, CageOffsets offsets, IReadOnlyList<float> groundHeights)
+        /// <param name="mode">With <see cref="GroundFitMode.BackOnly"/> the street side goes to road level instead.</param>
+        public static CageOffsets Fit(CageBox box, CageOffsets offsets, IReadOnlyList<float> groundHeights,
+            GroundFitMode mode)
         {
             if (offsets == null)
                 throw new ArgumentNullException(nameof(offsets));
@@ -39,7 +45,8 @@ namespace Unsquare.Core.Terrain
             for (int i = 0; i < GroundCorners.Count; i++)
             {
                 int bottom = GroundCorners[i], top = bottom | TopBit;
-                float delta = groundHeights[i] - GroundPoint(box, offsets, bottom).y;
+                float target = mode == GroundFitMode.BackOnly && IsFrontColumn(bottom) ? 0f : groundHeights[i];
+                float delta = target - GroundPoint(box, offsets, bottom).y;
                 // One shift in grid steps for both corners keeps the column height exact.
                 var shift = new int3(0, CageOffsets.Quantize(delta), 0);
                 fitted = fitted.WithCornerSteps(bottom, offsets.Steps(bottom) + shift)

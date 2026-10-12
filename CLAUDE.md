@@ -115,8 +115,9 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   - Per building: `DeformSpec` (offsets + `FlatTerrain`) is the variant identity. Flat variants hash the v1 seed plus
     `|flat-terrain` (lifted names are unchanged) and the manifest stores `FlatTerrain`. The toggle is
     `CageEditSession.ToggleTerrainLift` (Alt+T, tool window) and is undoable like any cage edit.
-- **Fit to ground** (`CageEditSession.FitToGround`, Alt+G, tool window): `GroundFit` moves each corner column so its
-  ground point sits on the original terrain and keeps the column height. Only the GPU `TerrainSystem.heightmap` has
+- **Fit to ground** (`CageEditSession.FitToGround`): `GroundFit` moves each corner column so its ground point sits
+  on its target and keeps the column height. By default (Alt+G, tool window) the back columns follow the original
+  terrain and the street side goes to road level (`GroundFitMode.BackOnly`); Alt+Shift+G fits all four. Only the GPU `TerrainSystem.heightmap` has
   the terrain before lots/roads (CPU heights are read from the modified cascade), so `BaseTerrainSystem` reads a small
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
 - Effects (`EffectSource`) are not deformed yet.

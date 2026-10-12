@@ -60,7 +60,7 @@ namespace Unsquare.Api
             return Apply(building, state.TargetSpec.WithFlatTerrain(!lift));
         }
 
-        public bool TryFitToGround(Entity building, Action<DeformSpec, DeformRequestResult> done)
+        public bool TryFitToGround(Entity building, GroundFitMode mode, Action<DeformSpec, DeformRequestResult> done)
         {
             if (done == null)
                 throw new ArgumentNullException(nameof(done));
@@ -75,7 +75,7 @@ namespace Unsquare.Api
                     done(state.TargetSpec, DeformRequestResult.Rejected);
                     return;
                 }
-                var fitted = GroundFit.Fit(now.Box, now.TargetOffsets, heights);
+                var fitted = GroundFit.Fit(now.Box, now.TargetOffsets, heights, mode);
                 done(now.TargetSpec, SetOffsets(building, fitted));
             });
         }

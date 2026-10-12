@@ -88,7 +88,7 @@ const ToolWindow = () => {
                 />
                 <ToolButton
                     src={fitGroundIcon}
-                    tooltip={translate("Unsquare.ToolWindow.FitToGround", "Fit the bottom corners to the original ground")}
+                    tooltip={translate("Unsquare.ToolWindow.FitToGround", "Fit the back corners to the original ground")}
                     selected={false}
                     multiSelect={false}
                     disabled={false}

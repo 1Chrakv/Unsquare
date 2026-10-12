@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unsquare.Api;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
+using Unsquare.Core.Terrain;
 
 namespace Unsquare.UI.Editing
 {
@@ -240,19 +241,20 @@ namespace Unsquare.UI.Editing
         }
 
         /// <summary>Puts the target's bottom corners on the original terrain; applied a frame or two later.</summary>
-        public DeformRequestResult FitToGround()
+        public DeformRequestResult FitToGround(GroundFitMode mode)
         {
+            string command = mode == GroundFitMode.BackOnly ? "Fit to ground (back)" : "Fit to ground (all corners)";
             if (!TryGetCage(out _))
-                return Record("Fit to ground", DeformRequestResult.NotDeformable);
+                return Record(command, DeformRequestResult.NotDeformable);
             var building = Target;
-            bool started = _service.TryFitToGround(building, (before, result) =>
+            bool started = _service.TryFitToGround(building, mode, (before, result) =>
             {
                 RememberEdit(building, before, result);
-                Record($"Fit to ground on {building}", result);
+                Record($"{command} on {building}", result);
             });
             if (!started)
-                return Record("Fit to ground", DeformRequestResult.Rejected);
-            Log("Fit to ground: sampling terrain");
+                return Record(command, DeformRequestResult.Rejected);
+            Log($"{command}: sampling terrain");
             return DeformRequestResult.Accepted;
         }
 

@@ -59,7 +59,7 @@ the original ground. The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+
 | Reset selected corner / edge / face | Alt+R |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off for the selected building | Alt+T |
-| Fit bottom corners to the original ground | Alt+G |
+| Fit back corners to the original ground (street side to road level) / all corners | Alt+G / Alt+Shift+G |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
@@ -145,10 +145,11 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 71 | Deform a building, then press Alt+T (or the terrain button) twice | Button highlighted after the deform; first press flattens the lot (`[Edit] Terrain lift off`, bake with 0 new assets), second lifts it again |
 | 72 | Two buildings with the same deformation, terrain lift off on one; save and reload | Only that one stays flat, also after the reload; Ctrl+Z / Ctrl+Y step through the toggles |
 | 73 | Alt+T on an undeformed building | Button greyed out; log `[Edit] Terrain lift on -> Rejected` |
-| 74 | On sloped terrain, select a placed building and press Alt+G (or the fit button) | A frame later the bottom corners sit on the original slope, building height unchanged; log `[Fit] Building …: original ground at the corners …` and `[Edit] Fit to ground on … -> Accepted` |
+| 74 | On a slope falling away from the road, select a placed building and press Alt+G (or the fit button) | A frame later the back corners sit on the original slope and the street side at road level, building height unchanged; log `[Fit] Building …: original ground at the corners …` and `[Edit] Fit to ground on … -> Accepted` |
 | 75 | Compare the `[Fit]` corner heights with the visible slope (e.g. a corner on a hillside) | Higher corners get the larger values; the fitted corners touch the natural ground |
 | 76 | After a fit, Ctrl+Z | The shape before the fit returns in one step |
 | 77 | Fit with terrain lift on, then Alt+T | Lifted: the lot follows the slope; flat: the pad stays level |
+| 78 | Alt+Shift+G on the same building; then raise its front corners and press Alt+G | All four corners follow the original ground (`Fit to ground (all corners)`); Alt+G brings the street side back to road level |
 
 ## Reporting problems
 

@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unsquare.Api;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
+using Unsquare.Core.Terrain;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Tool;
 
@@ -47,7 +48,8 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "canLiftTerrain",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsDeformed));
             AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
-            AddBinding(new TriggerBinding(Group, "fitToGround", () => _editor.Session.FitToGround()));
+            AddBinding(new TriggerBinding(Group, "fitToGround",
+                () => _editor.Session.FitToGround(GroundFitMode.BackOnly)));
         }
 
         private void SelectPickKind(string kind)
