@@ -1,6 +1,7 @@
 using Game.Common;
 using Game.Prefabs;
 using Unity.Entities;
+using Unsquare.Core.Deformation;
 
 namespace Unsquare.Integration.Entities
 {
@@ -11,14 +12,14 @@ namespace Unsquare.Integration.Entities
     internal static class PrefabSwapper
     {
         public static bool Swap(EntityManager entityManager, Entity building, Entity targetPrefab,
-            SyncTolerances tolerances)
+            float areaMatchMeters, LotRemap netRemap)
         {
             var current = entityManager.GetComponentData<PrefabRef>(building);
             if (current.m_Prefab == targetPrefab)
                 return false;
 
             entityManager.SetComponentData(building, new PrefabRef(targetPrefab));
-            LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab, tolerances);
+            LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab, areaMatchMeters, netRemap);
             // Updated: simulation systems re-evaluate; BatchesUpdated: renderer rebuilds mesh batches.
             if (!entityManager.HasComponent<Updated>(building))
                 entityManager.AddComponent<Updated>(building);

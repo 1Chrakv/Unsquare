@@ -101,8 +101,9 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 - How the game keeps them, and what that means:
   - **Props and lanes** are rebuilt from the prefab when the building is `Updated`, so the swap is enough.
   - **Areas and nets** are saved entities created once by the placement tool. `LotInstanceSync` (called from
-    `PrefabSwapper`) rewrites the existing instances from the old to the new prefab layout. Instances are matched
-    by ground distance; nodes linked to outside nets (roads) never move.
+    `PrefabSwapper`) rewrites the existing instances from the old to the new prefab layout. Areas are matched by
+    ground distance. Nets are remapped point by point (`LotRemap`: invert the old cage, apply the new one), since
+    the game splits prefab curves at junctions; nodes linked to outside nets (roads) never move.
 - Ground items keep their heights (the game projects them on the terrain). Lot size, zone cells and the terrain
   flattening outline stay rectangular; a lot outline leaving its plot only warns (`LotBounds`).
 - **Terrain lift:** the game flattens the footprint (`BuildingTerraformData` flat area) to one height; `Lot` edge

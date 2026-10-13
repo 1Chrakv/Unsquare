@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using Unity.Mathematics;
-using Unsquare.Core.Deformation;
 using Unsquare.Core.Matching;
 
 namespace Unsquare.Tests.Matching
@@ -28,15 +27,6 @@ namespace Unsquare.Tests.Matching
         public void Polygon_DifferentCounts_IsNaN()
         {
             Assert.That(float.IsNaN(ShapeDistance.Polygon(new[] { Square[0], Square[1], Square[2] }, Square)), Is.True);
-        }
-
-        [Test]
-        public void Curve_ReversedMatch_IsDetected()
-        {
-            var expected = new CubicCurve(new float3(0, 0, 0), new float3(1, 0, 0), new float3(2, 0, 0), new float3(3, 0, 0));
-            float distance = ShapeDistance.Curve(expected.Reversed(), expected, out bool reversed);
-            Assert.That(distance, Is.EqualTo(0f).Within(1e-5f));
-            Assert.That(reversed, Is.True);
         }
 
         [Test]

@@ -68,8 +68,6 @@ namespace Unsquare.Integration.Systems
             }
         }
 
-        private SyncTolerances Tolerances => new(_options.AreaMatchMeters, _options.NetMatchMeters);
-
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -190,7 +188,8 @@ namespace Unsquare.Integration.Systems
                     !_resolver.TryResolveBase(current, out var basePrefab, out _) ||
                     !_prefabSystem.TryGetEntity(basePrefab, out var baseEntity))
                     continue;
-                if (PrefabSwapper.Swap(EntityManager, building, baseEntity, Tolerances))
+                var netRemap = BuildNetRemap(current, basePrefab, DeformSpec.Identity);
+                if (PrefabSwapper.Swap(EntityManager, building, baseEntity, _options.AreaMatchMeters, netRemap))
                 {
                     count++;
                     _buildingChanged?.Invoke(building);
@@ -213,6 +212,24 @@ namespace Unsquare.Integration.Systems
             spec = info.Spec;
             return true;
         }
+
+        // Same deformations the variants were baked with; null if the current variant's cage is unknown.
+        private LotRemap BuildNetRemap(PrefabBase current, ObjectGeometryPrefab basePrefab, DeformSpec target)
+        {
+            if (!TryGetBoxes(basePrefab, out var lotBox, out _))
+                return null;
+            IDeformation from = null;
+            if (VariantNaming.IsVariantName(current.name))
+            {
+                if (!_resolver.TryGetVariant(current.name, out var info))
+                    return null;
+                from = Deformation(lotBox, info.Spec);
+            }
+            return new LotRemap(from, Deformation(lotBox, target));
+        }
+
+        private static IDeformation Deformation(CageBox lotBox, DeformSpec spec) =>
+            spec == null || spec.Offsets.IsIdentity ? null : new TrilinearCageDeformation(lotBox, spec.Offsets);
 
         private bool TryDescribe(Entity building, out BuildingDescription description)
         {
@@ -354,7 +371,10 @@ namespace Unsquare.Integration.Systems
             {
                 if (_prefabSystem.TryGetEntity(swap.BasePrefab, out var donor) && donor != swap.TargetPrefab)
                     SimDataCopier.CopyMissing(EntityManager, donor, swap.TargetPrefab);
-                PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab, Tolerances);
+                var netRemap = _resolver.TryGetPrefab(EntityManager, building, out var currentPrefab)
+                    ? BuildNetRemap(currentPrefab, swap.BasePrefab, swap.Spec)
+                    : null;
+                PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab, _options.AreaMatchMeters, netRemap);
                 return true;
             }
             catch (Exception e)

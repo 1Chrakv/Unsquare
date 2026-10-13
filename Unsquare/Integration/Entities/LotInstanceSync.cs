@@ -1,6 +1,7 @@
 using System;
 using Colossal.Entities;
 using Unity.Entities;
+using Unsquare.Core.Deformation;
 using Transform = Game.Objects.Transform;
 
 namespace Unsquare.Integration.Entities
@@ -11,19 +12,24 @@ namespace Unsquare.Integration.Entities
     /// </summary>
     internal static class LotInstanceSync
     {
+        /// <param name="netRemap">Old to new cage; null if the old cage is unknown, then nets stay put.</param>
         public static void Sync(EntityManager entityManager, Entity building, Entity oldPrefab, Entity newPrefab,
-            SyncTolerances tolerances)
+            float areaMatchMeters, LotRemap netRemap)
         {
             if (oldPrefab == newPrefab || !entityManager.TryGetComponent(building, out Transform transform))
                 return;
             try
             {
                 int areas = AreaInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab,
-                    tolerances.AreaMeters);
-                int nets = NetInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab,
-                    tolerances.NetMeters);
+                    areaMatchMeters);
+                int nets = 0, failed = 0;
+                if (netRemap != null)
+                    nets = NetInstanceSync.Sync(entityManager, building, transform, netRemap, out failed);
+                else
+                    Mod.Log.Warn($"Lot sync for building {building}: old cage unknown, lot nets keep their layout.");
                 if (areas > 0 || nets > 0)
-                    Mod.Log.Info($"Lot sync for building {building}: {areas} areas, {nets} net edges moved.");
+                    Mod.Log.Info($"Lot sync for building {building}: {areas} areas, {nets} net edges moved" +
+                                 (failed > 0 ? $", {failed} net parts could not be remapped." : "."));
             }
             catch (Exception e)
             {

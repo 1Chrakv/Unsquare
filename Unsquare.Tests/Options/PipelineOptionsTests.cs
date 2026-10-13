@@ -20,25 +20,23 @@ namespace Unsquare.Tests.Options
             Assert.That(options.PruneUnused, Is.True);
             Assert.That(options.PruneAfter, Is.EqualTo(TimeSpan.FromDays(14)));
             Assert.That(options.AreaMatchMeters, Is.EqualTo(1f));
-            Assert.That(options.NetMatchMeters, Is.EqualTo(1.5f));
         }
 
-        [TestCase(-0.1, 14, 1f, 1f)]
-        [TestCase(0.4, 0, 1f, 1f)]
-        [TestCase(0.4, 14, 0f, 1f)]
-        [TestCase(0.4, 14, 1f, -1f)]
-        public void Constructor_InvalidValues_Throw(double delay, int days, float areaMatch, float netMatch)
+        [TestCase(-0.1, 14, 1f)]
+        [TestCase(0.4, 0, 1f)]
+        [TestCase(0.4, 14, 0f)]
+        public void Constructor_InvalidValues_Throw(double delay, int days, float areaMatch)
         {
             Assert.That(() => new PipelineOptions(CageLimits.Default, AttachmentOptions.Default, delay, true, days,
-                areaMatch, netMatch), Throws.ArgumentException);
+                areaMatch), Throws.ArgumentException);
         }
 
         [Test]
         public void Constructor_NullParts_Throw()
         {
-            Assert.That(() => new PipelineOptions(null, AttachmentOptions.Default, 0.4, true, 14, 1f, 1f),
+            Assert.That(() => new PipelineOptions(null, AttachmentOptions.Default, 0.4, true, 14, 1f),
                 Throws.InstanceOf<ArgumentNullException>());
-            Assert.That(() => new PipelineOptions(CageLimits.Default, null, 0.4, true, 14, 1f, 1f),
+            Assert.That(() => new PipelineOptions(CageLimits.Default, null, 0.4, true, 14, 1f),
                 Throws.InstanceOf<ArgumentNullException>());
         }
     }

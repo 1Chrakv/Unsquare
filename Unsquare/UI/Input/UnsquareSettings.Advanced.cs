@@ -82,10 +82,6 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
         public float AreaMatchDistance { get; set; }
 
-        [SettingsUISection(AdvancedTab, LotSyncGroup)]
-        [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
-        public float NetMatchDistance { get; set; }
-
         [SettingsUISection(AdvancedTab, OverlayGroup)]
         [SettingsUISlider(min = 0.02f, max = 0.5f, step = 0.02f, unit = Unit.kFloatTwoFractions)]
         public float LineRadius { get; set; }
@@ -142,7 +138,7 @@ namespace Unsquare.UI.Input
                 Clamped(FacadeReach, nameof(FacadeReach)));
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
                 (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
-                Clamped(AreaMatchDistance, nameof(AreaMatchDistance)), Clamped(NetMatchDistance, nameof(NetMatchDistance)));
+                Clamped(AreaMatchDistance, nameof(AreaMatchDistance)));
         }
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
@@ -175,7 +171,6 @@ namespace Unsquare.UI.Input
             AttachedProps = pipeline.Attachments.AttachedPropMode;
             FacadeReach = pipeline.Attachments.FacadeReachMeters;
             AreaMatchDistance = pipeline.AreaMatchMeters;
-            NetMatchDistance = pipeline.NetMatchMeters;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;
             PruneUnused = pipeline.PruneUnused;
             PruneAfterDays = pipeline.PruneAfterDays;

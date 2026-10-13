@@ -11,10 +11,10 @@ namespace Unsquare.Core.Options
     public sealed class PipelineOptions
     {
         public static readonly PipelineOptions Default = new(CageLimits.Default, AttachmentOptions.Default, 0.4, true,
-            (int)PrunePlanner.DefaultMaxUnusedAge.TotalDays, 1f, 1.5f);
+            (int)PrunePlanner.DefaultMaxUnusedAge.TotalDays, 1f);
 
         public PipelineOptions(CageLimits limits, AttachmentOptions attachments, double rebakeDelaySeconds,
-            bool pruneUnused, int pruneAfterDays, float areaMatchMeters, float netMatchMeters)
+            bool pruneUnused, int pruneAfterDays, float areaMatchMeters)
         {
             if (!(rebakeDelaySeconds >= 0))
                 throw new ArgumentException("Rebake delay must not be negative.", nameof(rebakeDelaySeconds));
@@ -22,15 +22,12 @@ namespace Unsquare.Core.Options
                 throw new ArgumentException("Prune age must be at least one day.", nameof(pruneAfterDays));
             if (!(areaMatchMeters > 0f))
                 throw new ArgumentException("Area match distance must be positive.", nameof(areaMatchMeters));
-            if (!(netMatchMeters > 0f))
-                throw new ArgumentException("Net match distance must be positive.", nameof(netMatchMeters));
             Limits = limits ?? throw new ArgumentNullException(nameof(limits));
             Attachments = attachments ?? throw new ArgumentNullException(nameof(attachments));
             RebakeDelaySeconds = rebakeDelaySeconds;
             PruneUnused = pruneUnused;
             PruneAfterDays = pruneAfterDays;
             AreaMatchMeters = areaMatchMeters;
-            NetMatchMeters = netMatchMeters;
         }
 
         public CageLimits Limits { get; }
@@ -47,11 +44,8 @@ namespace Unsquare.Core.Options
         /// <summary>How far saved lot areas may be from their expected layout and still be matched.</summary>
         public float AreaMatchMeters { get; }
 
-        /// <summary>How far saved lot nets may be from their expected layout and still be matched.</summary>
-        public float NetMatchMeters { get; }
-
         public override string ToString() =>
             $"limits [{Limits}], attachments [{Attachments}], rebake {RebakeDelaySeconds} s, " +
-            $"prune {(PruneUnused ? $"after {PruneAfterDays} d" : "off")}, match areas {AreaMatchMeters} m, nets {NetMatchMeters} m";
+            $"prune {(PruneUnused ? $"after {PruneAfterDays} d" : "off")}, match areas {AreaMatchMeters} m";
     }
 }

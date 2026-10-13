@@ -107,8 +107,6 @@ namespace Unsquare.UI.Input
 
             Option(entries, nameof(UnsquareSettings.AreaMatchDistance), "Area match distance (m)",
                 "Saved lot areas further from their expected outline count as edited by you and are not moved.");
-            Option(entries, nameof(UnsquareSettings.NetMatchDistance), "Net match distance (m)",
-                "Saved lot paths further from their expected course count as edited by you and are not moved.");
 
             Option(entries, nameof(UnsquareSettings.LineRadius), "Line thickness (m)",
                 "Radius of the cage lines.");

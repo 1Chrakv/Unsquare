@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
-using Unsquare.Core.Deformation;
 
 namespace Unsquare.Core.Matching
 {
@@ -29,15 +28,6 @@ namespace Unsquare.Core.Matching
                 best = math.min(best, sum / n);
             }
             return best;
-        }
-
-        /// <summary>Mean endpoint distance of two curves; <paramref name="reversed"/> if they match end-to-start.</summary>
-        public static float Curve(CubicCurve actual, CubicCurve expected, out bool reversed)
-        {
-            float forward = (math.distance(actual.A.xz, expected.A.xz) + math.distance(actual.D.xz, expected.D.xz)) * 0.5f;
-            float backward = (math.distance(actual.A.xz, expected.D.xz) + math.distance(actual.D.xz, expected.A.xz)) * 0.5f;
-            reversed = backward < forward;
-            return math.min(forward, backward);
         }
     }
 }
