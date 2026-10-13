@@ -153,6 +153,7 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 79 | Mode on: hover and click a park's grass, raise a top edge, pull a bottom corner out | Park previewed and selected from its lot; cage about 8 m tall, vertical edges easy to pick; benches, trees and paths follow the cage; no `has no lot cage` log |
 | 80 | Click a house's garden (away from the house mesh) | The house is selected |
 | 81 | Freshly placed park with curved paths: deform it twice, then Reset | Paths stay connected and bend smoothly, the road entrance stays attached; after Reset the layout equals a fresh park; `Lot sync … N net edges moved` without unmapped parts |
+| 82 | Park at a road: drag a street-side corner or edge sideways, then Reset | Path ends slide along the sidewalk and stay connected (pedestrians still walk in); Reset brings them back; log `… M road ends slid`, no warnings |
 
 ## Reporting problems
 

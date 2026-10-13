@@ -22,13 +22,14 @@ namespace Unsquare.Integration.Entities
             {
                 int areas = AreaInstanceSync.Sync(entityManager, building, transform, oldPrefab, newPrefab,
                     areaMatchMeters);
-                int nets = 0, failed = 0;
+                int nets = 0, failed = 0, slid = 0;
                 if (netRemap != null)
-                    nets = NetInstanceSync.Sync(entityManager, building, transform, netRemap, out failed);
+                    nets = NetInstanceSync.Sync(entityManager, building, transform, netRemap, out failed, out slid);
                 else
                     Mod.Log.Warn($"Lot sync for building {building}: old cage unknown, lot nets keep their layout.");
                 if (areas > 0 || nets > 0)
-                    Mod.Log.Info($"Lot sync for building {building}: {areas} areas, {nets} net edges moved" +
+                    Mod.Log.Info($"Lot sync for building {building}: {areas} areas, {nets} net edges moved, " +
+                                 $"{slid} road ends slid" +
                                  (failed > 0 ? $", {failed} net parts could not be remapped." : "."));
             }
             catch (Exception e)

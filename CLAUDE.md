@@ -103,7 +103,9 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   - **Areas and nets** are saved entities created once by the placement tool. `LotInstanceSync` (called from
     `PrefabSwapper`) rewrites the existing instances from the old to the new prefab layout. Areas are matched by
     ground distance. Nets are remapped point by point (`LotRemap`: invert the old cage, apply the new one), since
-    the game splits prefab curves at junctions; nodes linked to outside nets (roads) never move.
+    the game splits prefab curves at junctions. Path ends side-connected to a road (the road edge's
+    `ConnectedNode` buffer) slide along it (`LotRemap.TryRemapAlong`, distance to the road kept) and get their
+    curve position updated; nodes that are the start or end of an outside edge never move.
 - Ground items keep their heights (the game projects them on the terrain). Lot size, zone cells and the terrain
   flattening outline stay rectangular; a lot outline leaving its plot only warns (`LotBounds`).
 - **Terrain lift:** the game flattens the footprint (`BuildingTerraformData` flat area) to one height; `Lot` edge
