@@ -51,6 +51,40 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void TryRemapAlong_StreetEdgeAlongX_FollowsCageXAndKeepsDepthAndHeight()
+        {
+            var to = DeformationInverseTests.Skewed();
+            var end = new float3(5f, 0.4f, 12.5f); // just beyond the street edge (z = 12)
+            Assert.That(new LotRemap(null, to).TryRemapAlong(end, new float2(1f, 0f), out var result), Is.True);
+            float expectedX = to.Apply(new float3(end.x, LotRemap.GroundY, end.z), out _).x;
+            Assert.That(result.x, Is.EqualTo(expectedX).Within(1e-4f));
+            Assert.That(result.y, Is.EqualTo(0.4f));
+            Assert.That(result.z, Is.EqualTo(12.5f));
+        }
+
+        [Test]
+        public void TryRemapAlong_DeformThenReset_ReturnsOriginal()
+        {
+            var d = DeformationInverseTests.Skewed();
+            var end = new float3(-7f, 0f, 11f);
+            var road = new float2(0.8f, 0.6f);
+            Assert.That(new LotRemap(null, d).TryRemapAlong(end, road, out var deformed), Is.True);
+            Assert.That(new LotRemap(d, null).TryRemapAlong(deformed, road, out var back), Is.True);
+            Assert.That(TrilinearCageDeformationTests.Near(back, end, 1e-3f), Is.True, $"{back}");
+        }
+
+        [Test]
+        public void TryRemapAlong_KeepsDistanceAcrossDirection()
+        {
+            var road = math.normalize(new float2(0.8f, 0.6f));
+            var normal = new float2(-road.y, road.x);
+            var end = new float3(-7f, 0f, 11f);
+            Assert.That(new LotRemap(null, DeformationInverseTests.Skewed()).TryRemapAlong(end, road, out var result),
+                Is.True);
+            Assert.That(math.dot(normal, result.xz), Is.EqualTo(math.dot(normal, end.xz)).Within(1e-4f));
+        }
+
+        [Test]
         public void TryRemap_Curve_RoundTripsThroughDeformAndReset()
         {
             var d = DeformationInverseTests.Skewed();

@@ -42,6 +42,29 @@ namespace Unsquare.Core.Deformation
             return true;
         }
 
+        /// <summary>
+        /// Slides a ground point along <paramref name="directionXz"/> (e.g. a road) as the cage moves it there; its
+        /// distance across that direction and its height stay. False (unchanged) if it cannot be inverted.
+        /// </summary>
+        public bool TryRemapAlong(float3 point, float2 directionXz, out float3 result)
+        {
+            result = point;
+            var direction = math.normalizesafe(new float3(directionXz.x, 0f, directionXz.y));
+            if (math.all(direction == float3.zero))
+                return false;
+            var ground = new float3(point.x, GroundY, point.z);
+            float along = math.dot(direction, ground);
+            var across = ground - direction * along;
+
+            float lambda = along;
+            if (_from != null && !DeformationInverse.TryInvertAlong(_from, across, direction, along, out lambda))
+                return false;
+            float moved = _to == null ? lambda : math.dot(direction, _to.Apply(across + direction * lambda, out _));
+            var position = across + direction * moved;
+            result = new float3(position.x, point.y, position.z);
+            return true;
+        }
+
         /// <summary>Remaps all control points, as <see cref="CurveDeformer"/> bakes them; unchanged on failure.</summary>
         public bool TryRemap(CubicCurve curve, bool onGround, out CubicCurve result)
         {

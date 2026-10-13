@@ -55,6 +55,31 @@ namespace Unsquare.Core.Deformation
             return math.lengthsq(Residual(deformation, xz, y, targetXz, out _)) <= ToleranceMeters * ToleranceMeters;
         }
 
+        /// <summary>
+        /// Finds <paramref name="lambda"/> on the line <c>origin + direction·λ</c> whose deformed point has the
+        /// coordinate <paramref name="target"/> along the unit <paramref name="direction"/>.
+        /// </summary>
+        public static bool TryInvertAlong(IDeformation deformation, float3 origin, float3 direction, float target,
+            out float lambda)
+        {
+            if (deformation == null)
+                throw new ArgumentNullException(nameof(deformation));
+            lambda = target - math.dot(direction, origin);
+            for (int i = 0; i < MaxIterations; i++)
+            {
+                float residual = math.dot(direction, deformation.Apply(origin + direction * lambda, out var jacobian)) -
+                                 target;
+                if (math.abs(residual) <= ToleranceMeters)
+                    return true;
+                float slope = math.dot(direction, math.mul(jacobian, direction));
+                if (!(math.abs(slope) > MinDeterminant))
+                    return false;
+                lambda -= residual / slope;
+            }
+            return math.abs(math.dot(direction, deformation.Apply(origin + direction * lambda, out _)) - target) <=
+                   ToleranceMeters;
+        }
+
         private static float2 Residual(IDeformation deformation, float2 xz, float y, float2 targetXz,
             out float3x3 jacobian) =>
             deformation.Apply(new float3(xz.x, y, xz.y), out jacobian).xz - targetXz;

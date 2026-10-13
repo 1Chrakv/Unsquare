@@ -40,6 +40,21 @@ namespace Unsquare.Tests.Deformation
             Assert.That(TrilinearCageDeformationTests.Near(back, p), Is.True);
         }
 
+        [TestCase(1f, 0f)]
+        [TestCase(0.6f, 0.8f)]
+        public void TryInvertAlong_SkewedCage_RoundTrips(float dx, float dz)
+        {
+            var d = Skewed();
+            var direction = new float3(dx, 0f, dz);
+            var origin = new float3(-3f, 0f, 9f);
+            foreach (float lambda in new[] { -14f, 0f, 6.5f, 17f })
+            {
+                float target = math.dot(direction, d.Apply(origin + direction * lambda, out _));
+                Assert.That(DeformationInverse.TryInvertAlong(d, origin, direction, target, out var back), Is.True);
+                Assert.That(back, Is.EqualTo(lambda).Within(1e-3f));
+            }
+        }
+
         [Test]
         public void TryInvertAtHeight_SkewedCage_RoundTripsGroundPoints()
         {
