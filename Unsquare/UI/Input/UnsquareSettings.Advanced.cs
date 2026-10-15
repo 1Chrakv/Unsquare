@@ -40,6 +40,10 @@ namespace Unsquare.UI.Input
         public float PickRadius { get; set; }
 
         [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISlider(min = 1f, max = 20f, step = 1f, unit = Unit.kInteger)]
+        public float DragThreshold { get; set; }
+
+        [SettingsUISection(AdvancedTab, EditingGroup)]
         [SettingsUISlider(min = 0f, max = 50f, step = 1f, unit = Unit.kPercentage)]
         public float FarClickMargin { get; set; }
 
@@ -143,7 +147,8 @@ namespace Unsquare.UI.Input
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
             Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)),
-            Clamped(PickRadius, nameof(PickRadius)), Clamped(FarClickMargin, nameof(FarClickMargin)) / 100f,
+            Clamped(PickRadius, nameof(PickRadius)), Clamped(DragThreshold, nameof(DragThreshold)),
+            Clamped(FarClickMargin, nameof(FarClickMargin)) / 100f,
             (int)Clamped(UndoSteps, nameof(UndoSteps)));
 
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
@@ -157,6 +162,7 @@ namespace Unsquare.UI.Input
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;
             PickRadius = edit.PickRadiusPixels;
+            DragThreshold = edit.DragThresholdPixels;
             FarClickMargin = edit.FarClickMarginFraction * 100f;
             UndoSteps = edit.HistoryDepth;
 

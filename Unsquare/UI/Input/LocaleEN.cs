@@ -75,6 +75,9 @@ namespace Unsquare.UI.Input
                 "Largest step of the step-size hotkey. Snapped to 0.1 m.");
             Option(entries, nameof(UnsquareSettings.PickRadius), "Mouse pick radius (px)",
                 "How close the mouse must be to an edge, a corner or a gizmo arrow to grab it.");
+            Option(entries, nameof(UnsquareSettings.DragThreshold), "Drag threshold (px)",
+                "How far the mouse must move after pressing on an edge, face or corner before it is dragged " +
+                "sideways. Shorter presses only select it.");
             Option(entries, nameof(UnsquareSettings.FarClickMargin), "Far-click margin",
                 "A click outside the selected building's cage grown by this share of its size steps back: " +
                 "first the selected edge, face or corner is deselected, then the building.");

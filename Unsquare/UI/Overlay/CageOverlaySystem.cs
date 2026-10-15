@@ -154,7 +154,8 @@ namespace Unsquare.UI.Overlay
         private static CageSegment FaceSide(in CageState cage, int a, int b) =>
             new(cage.CornerPosition(a), cage.CornerPosition(b));
 
-        // Arrows along the building axes, i.e. exactly what a drag (and the move hotkeys) moves along.
+        // Arrows along the building axes, i.e. exactly what a drag (and the move hotkeys) moves along, and the
+        // square for horizontal drags.
         private void DrawGizmo(OverlayRenderSystem.Buffer buffer, in Transform transform, float3 origin,
             in CameraView view, int activeAxis)
         {
@@ -171,6 +172,16 @@ namespace Unsquare.UI.Overlay
                 DrawSegment(buffer, transform, new CageSegment(origin, tip), color, axisRadius);
                 DrawSegment(buffer, transform, new CageSegment(tip - direction * (length * 0.2f), tip), color,
                     axisRadius * 2.2f);
+            }
+
+            bool planeActive = activeAxis == GizmoAxes.PlaneXZ;
+            var planeColor = planeActive ? _style.ActiveAxis(GizmoAxes.PlaneXZ) : _style.Axis(GizmoAxes.PlaneXZ);
+            float planeRadius = planeActive ? radius * _style.ActiveAxisRadiusFactor : radius;
+            for (int corner = 0; corner < 4; corner++)
+            {
+                var segment = new CageSegment(GizmoAxes.PlaneCorner(origin, length, corner),
+                    GizmoAxes.PlaneCorner(origin, length, (corner + 1) % 4));
+                DrawSegment(buffer, transform, segment, planeColor, planeRadius);
             }
         }
 

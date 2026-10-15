@@ -10,6 +10,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unsquare.Api;
+using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Overlay;
@@ -18,7 +19,8 @@ namespace Unsquare.UI.Tool
 {
     /// <summary>
     /// Unsquare mode: a game tool that owns the mouse. A first click picks the building, a second one a handle of
-    /// the pick mode; dragging a gizmo arrow moves it; right-click steps back. Only talks to the session.
+    /// the pick mode; dragging a gizmo arrow moves it along that axis, dragging the gizmo square or the handle
+    /// itself moves it horizontally; right-click steps back. Only talks to the session.
     /// </summary>
     public partial class UnsquareToolSystem : ToolBaseSystem
     {
@@ -26,7 +28,12 @@ namespace Unsquare.UI.Tool
 
         private CageEditorSystem _editor;
         private CageOverlaySystem _overlay;
-        private AxisDrag _axisDrag;
+        private IHandleDrag _drag;
+
+        // A press on a handle drags it horizontally once the mouse moved past the threshold; until then it's a click.
+        private PlaneDrag _pendingDrag;
+        private CageHandle _pendingHandle;
+        private float3 _pressDirection;
         private bool _loggedFailure;
 
         public override string toolID => "Unsquare";
@@ -70,7 +77,7 @@ namespace Unsquare.UI.Tool
             base.OnStartRunning();
             applyAction.shouldBeEnabled = true;
             cancelAction.shouldBeEnabled = true;
-            _axisDrag = null;
+            ResetDrags();
             _loggedFailure = false;
             var session = _editor.Session;
             session.SetEnabled(true);
@@ -80,7 +87,7 @@ namespace Unsquare.UI.Tool
 
         protected override void OnStopRunning()
         {
-            _axisDrag = null;
+            ResetDrags();
             _editor.Session.SetEnabled(false);
             base.OnStopRunning();
         }
@@ -91,14 +98,16 @@ namespace Unsquare.UI.Tool
             var session = _editor.Session;
             try
             {
-                if (_axisDrag != null)
+                if (_drag != null)
                     UpdateDrag(session);
+                else if (_pendingDrag != null)
+                    UpdatePendingDrag(session);
                 else
                     UpdatePointer(session);
             }
             catch (Exception e)
             {
-                _axisDrag = null;
+                ResetDrags();
                 session.CancelDrag();
                 if (!_loggedFailure)
                     Mod.Log.Error(e, "Unsquare tool update failed");
@@ -118,7 +127,8 @@ namespace Unsquare.UI.Tool
             }
 
             bool hasContext = TryGetPickContext(session, out var context);
-            var hover = hasContext ? FindHover(session, context) : CageHover.None;
+            float along = 0f;
+            var hover = hasContext ? FindHover(session, context, out along) : CageHover.None;
             session.SetHover(hover);
 
             // Only an unlocked editor can switch buildings, so only then is the building under the mouse previewed.
@@ -141,7 +151,7 @@ namespace Unsquare.UI.Tool
             if (hover.HasAxis)
                 StartDrag(session, context, hover.Axis);
             else if (hover.HasHandle)
-                session.SelectHandle(hover.Handle);
+                PressHandle(session, context, hover.Handle, along);
             else if (session.IsLocked)
             {
                 if (hasContext && !IsNearCage(session, context))
@@ -157,46 +167,101 @@ namespace Unsquare.UI.Tool
             CageProximity.IsNear(context.Cage.Box, context.Cage.TargetOffsets, context.Ray,
                 session.Options.FarClickMarginFraction);
 
-        // Arrows only exist with a selected handle; cage parts only of the current pick mode.
-        private static CageHover FindHover(CageEditSession session, in PickContext context)
+        // The gizmo only exists with a selected handle (arrows win over the square); cage parts only of the
+        // current pick mode. along: ray distance to the grabbed spot on a handle.
+        private static CageHover FindHover(CageEditSession session, in PickContext context, out float along)
         {
-            if (context.HasGizmo && GizmoAxes.TryPickAxis(context.GizmoOrigin, context.GizmoLength, context.Ray,
-                    context.Tolerance, out int axis))
-                return CageHover.OnAxis(axis);
+            along = 0f;
+            if (context.HasGizmo)
+            {
+                if (GizmoAxes.TryPickAxis(context.GizmoOrigin, context.GizmoLength, context.Ray, context.Tolerance,
+                        out int axis))
+                    return CageHover.OnAxis(axis);
+                if (GizmoAxes.TryPickPlane(context.GizmoOrigin, context.GizmoLength, context.Ray))
+                    return CageHover.OnAxis(GizmoAxes.PlaneXZ);
+            }
             var cage = context.Cage;
             return CagePicker.TryPick(cage.Box, cage.TargetOffsets, context.Ray, context.Tolerance,
-                session.Selection.PickKind, out var handle)
+                session.Selection.PickKind, out var handle, out along)
                 ? CageHover.OnHandle(handle)
                 : CageHover.None;
         }
 
         private void StartDrag(CageEditSession session, in PickContext context, int axis)
         {
-            if (context.HasGizmo && AxisDrag.TryStart(context.GizmoOrigin, axis, context.Ray, out var drag) && session.BeginDrag(axis))
-                _axisDrag = drag;
+            if (!context.HasGizmo)
+                return;
+            IHandleDrag drag = null;
+            if (axis == GizmoAxes.PlaneXZ)
+            {
+                if (PlaneDrag.TryStart(context.GizmoOrigin.y, context.Ray, out var planeDrag))
+                    drag = planeDrag;
+            }
+            else if (AxisDrag.TryStart(context.GizmoOrigin, axis, context.Ray, out var axisDrag))
+                drag = axisDrag;
+            if (drag != null && session.BeginDrag(axis))
+                _drag = drag;
+        }
+
+        // Selects the handle and arms a horizontal drag through the grabbed spot, so the spot stays under the mouse.
+        private void PressHandle(CageEditSession session, in PickContext context, CageHandle handle, float along)
+        {
+            session.SelectHandle(handle);
+            if (!session.Selection.HasHandle || session.Selection.Handle != handle ||
+                !PlaneDrag.TryStart(context.Ray.PointAt(along).y, context.Ray, out var drag))
+                return;
+            _pendingDrag = drag;
+            _pendingHandle = handle;
+            _pressDirection = context.Ray.Direction;
+        }
+
+        private void UpdatePendingDrag(CageEditSession session)
+        {
+            if (cancelAction.WasPressedThisFrame() || !applyAction.IsPressed() || !session.Selection.HasHandle ||
+                session.Selection.Handle != _pendingHandle)
+            {
+                _pendingDrag = null; // a click: the handle just stays selected
+                return;
+            }
+            if (!TryGetPickContext(session, out var context) ||
+                !DragThreshold.IsExceeded(_pressDirection, context.Ray.Direction, context.DragThreshold))
+                return;
+            var drag = _pendingDrag;
+            _pendingDrag = null;
+            if (!session.BeginDrag(GizmoAxes.PlaneXZ))
+                return;
+            _drag = drag;
+            if (drag.TryDelta(context.Ray, out var delta))
+                session.UpdateDrag(delta);
         }
 
         private void UpdateDrag(CageEditSession session)
         {
             if (cancelAction.WasPressedThisFrame())
             {
-                _axisDrag = null;
+                _drag = null;
                 session.CancelDrag();
                 return;
             }
             if (session.ActiveDrag == null)
             {
-                _axisDrag = null; // target vanished or mode left
+                _drag = null; // target vanished or mode left
                 return;
             }
             if (!applyAction.IsPressed())
             {
-                _axisDrag = null;
+                _drag = null;
                 session.EndDrag();
                 return;
             }
-            if (TryGetPickContext(session, out var context) && _axisDrag.TryDelta(context.Ray, out var delta))
+            if (TryGetPickContext(session, out var context) && _drag.TryDelta(context.Ray, out var delta))
                 session.UpdateDrag(delta);
+        }
+
+        private void ResetDrags()
+        {
+            _drag = null;
+            _pendingDrag = null;
         }
 
         private static void SelectBuilding(CageEditSession session, Entity building)
@@ -238,27 +303,30 @@ namespace Unsquare.UI.Tool
             var ray = new CageRay(BuildingSpace.PointToBuilding(transform, line.a), direction);
 
             float tolerance = view.Scale.AngularSizeOfPixels(session.Options.PickRadiusPixels);
+            float dragThreshold = view.Scale.AngularSizeOfPixels(session.Options.DragThresholdPixels);
             var selection = session.Selection;
             if (!selection.HasHandle)
             {
-                context = new PickContext(cage, ray, tolerance, false, float3.zero, 0f);
+                context = new PickContext(cage, ray, tolerance, dragThreshold, false, float3.zero, 0f);
                 return true;
             }
             float3 origin = cage.HandlePosition(selection.Handle);
             float distance = math.distance(view.Position, BuildingSpace.PointToWorld(transform, origin));
-            context = new PickContext(cage, ray, tolerance, true, origin, _overlay.Style.GizmoLength(distance, view.Scale));
+            context = new PickContext(cage, ray, tolerance, dragThreshold, true, origin,
+                _overlay.Style.GizmoLength(distance, view.Scale));
             return true;
         }
 
         /// <summary>Everything needed to pick in building space for one frame.</summary>
         private readonly struct PickContext
         {
-            public PickContext(CageState cage, CageRay ray, float tolerance, bool hasGizmo, float3 gizmoOrigin,
-                float gizmoLength)
+            public PickContext(CageState cage, CageRay ray, float tolerance, float dragThreshold, bool hasGizmo,
+                float3 gizmoOrigin, float gizmoLength)
             {
                 Cage = cage;
                 Ray = ray;
                 Tolerance = tolerance;
+                DragThreshold = dragThreshold;
                 HasGizmo = hasGizmo;
                 GizmoOrigin = gizmoOrigin;
                 GizmoLength = gizmoLength;
@@ -267,6 +335,9 @@ namespace Unsquare.UI.Tool
             public CageState Cage { get; }
             public CageRay Ray { get; }
             public float Tolerance { get; }
+
+            /// <summary>Angle the mouse ray must turn after a press on a handle before it drags.</summary>
+            public float DragThreshold { get; }
             public bool HasGizmo { get; }
             public float3 GizmoOrigin { get; }
             public float GizmoLength { get; }

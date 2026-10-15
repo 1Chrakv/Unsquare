@@ -20,7 +20,9 @@ Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageE
 read the session. Nothing runs outside Unsquare mode (tool active): the session is disabled and hotkeys are ignored.
 Selection is two-step (building, then a handle of the pick mode, `HandleSelection`); a selected handle locks the
 building until right-click (`CageEditSession.StepBack`).
-Picking and gizmo math (`CagePicker`, `AxisDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
+Picking and gizmo math (`CagePicker`, `AxisDrag`, `PlaneDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
+Drags are axis-constrained (gizmo arrows) or horizontal (gizmo square `GizmoAxes.PlaneXZ`, or pressing on a handle,
+which selects it and drags once past `DragThreshold`); horizontal drags keep heights.
 Undo/redo (`EditHistory`, Core) is one global history of cage edits; the session records nudges, whole drags and
 resets, and undo makes the edited building the target. Selection changes are not undoable.
 

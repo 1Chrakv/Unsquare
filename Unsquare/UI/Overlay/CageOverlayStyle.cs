@@ -36,6 +36,9 @@ namespace Unsquare.UI.Overlay
         public Color AxisY { get; } = new(0.2f, 0.9f, 0.2f, 1f);
         public Color AxisZ { get; } = new(0.25f, 0.45f, 1f, 1f);
 
+        /// <summary>Square of the gizmo that moves the handle in the horizontal plane.</summary>
+        public Color PlaneXZ { get; } = new(1f, 0.85f, 0.15f, 1f);
+
         /// <summary>Lot cage whose ground outline leaves the original lot (allowed, but may overlap neighbours).</summary>
         public Color LotWarning { get; } = new(1f, 0.2f, 0.8f, 0.9f);
 
@@ -66,14 +69,16 @@ namespace Unsquare.UI.Overlay
         public float GizmoLength(float cameraDistance, ViewScale scale) =>
             GizmoAxes.AxisLength(cameraDistance, scale.AngularSizeOfViewFraction(GizmoScreenSize), AxisLength);
 
+        /// <param name="axis">Gizmo part: axis 0..2 or <see cref="GizmoAxes.PlaneXZ"/>.</param>
         public Color Axis(int axis) => axis switch
         {
             0 => AxisX,
             1 => AxisY,
+            GizmoAxes.PlaneXZ => PlaneXZ,
             _ => AxisZ,
         };
 
-        /// <summary>Hovered or dragged arrows are lifted towards white.</summary>
+        /// <summary>Hovered or dragged gizmo parts are lifted towards white.</summary>
         public Color ActiveAxis(int axis) => Color.Lerp(Axis(axis), Color.white, 0.45f);
 
         public Color Cage(DeformStatus status) => status switch

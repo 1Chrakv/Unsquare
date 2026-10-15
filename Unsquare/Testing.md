@@ -28,7 +28,8 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 | Preview | Hovering a building shows its cage dimmed (while no handle is selected) |
 | 1. Select a building | Click it (outside the current cage); no handle is selected yet |
 | 2. Select a handle | Click an edge, face or corner, depending on the pick mode (default edges; Alt+W cycles) |
-| Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue) |
+| Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue), or the yellow square to move it horizontally |
+| Move a handle sideways | Press on an edge, face or corner and drag: it is selected and moves horizontally (height kept); a click without moving only selects |
 | Step back | Right-click: cancels a drag, else clears the handle, else the building; never leaves the mode |
 
 Clicks close to the selected building's cage never change the selection. A click far away (outside the cage grown by
@@ -66,7 +67,7 @@ the original ground. The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
 applied, red failed, magenta = lot outline leaves its plot); orange = selected handle (thick edge, face outline and
 dot, or corner dot), cyan = hovered handle of the pick mode; gizmo (only with a selected handle) on it with arrows along the building axes X (red),
-Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
+Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; the hovered or dragged part is brighter and thicker.
 
 ## Checklist
 
@@ -154,6 +155,11 @@ Y (green), Z (blue); the hovered or dragged arrow is brighter and thicker.
 | 80 | Click a house's garden (away from the house mesh) | The house is selected |
 | 81 | Freshly placed park with curved paths: deform it twice, then Reset | Paths stay connected and bend smoothly, the road entrance stays attached; after Reset the layout equals a fresh park; `Lot sync … N net edges moved` without unmapped parts |
 | 82 | Park at a road: drag a street-side corner or edge sideways, then Reset | Path ends slide along the sidewalk and stay connected (pedestrians still walk in); Reset brings them back; log `… M road ends slid`, no warnings |
+| 83 | Edge pick mode: press on an unselected vertical edge and drag | Edge is selected and follows the mouse sideways; its height never changes; one Ctrl+Z restores it |
+| 84 | Click an edge without moving the mouse | Only selects it; no drag log, nothing to undo |
+| 85 | With a handle selected, hover and drag the yellow gizmo square; right-click mid-drag | Square brighter on hover; handle moves in the horizontal plane; right-click snaps back |
+| 86 | Repeat 83 with a corner and a face (Alt+W), also at a flat camera angle | Same horizontal move; no jumps when the view is nearly level |
+| 87 | Options → Advanced: raise the drag threshold to 20 px | Small mouse jitter on a press no longer drags |
 
 ## Reporting problems
 
