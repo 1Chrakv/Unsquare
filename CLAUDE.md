@@ -107,7 +107,9 @@ Feature branches only bump the patch version; the minor version goes up once, wh
     `ConnectedNode` buffer) slide along it (`LotRemap.TryRemapAlong`, distance to the road kept) and get their
     curve position updated; nodes that are the start or end of an outside edge never move.
 - Ground items keep their heights (the game projects them on the terrain). Lot size, zone cells and the terrain
-  flattening outline stay rectangular; a lot outline leaving its plot only warns (`LotBounds`).
+  flattening outline stay rectangular; a lot outline leaving its plot only warns (`LotBounds`). Deforming the
+  terraform footprint was researched and tried without success: see `Unsquare/LotFootprint.md` before retrying.
+  `LotHeightSystem` takes `Lot` edge heights only from neighbouring lots and roads (never the terrain).
 - **Terrain lift:** the game flattens the footprint (`BuildingTerraformData` flat area) to one height; `Lot` edge
   heights only shape the strip to the lot edge (`BuildingUtils.SampleHeight`). So for each lifted variant prefab,
   `LotLiftSystem` (after `LotHeightSystem`, Modification5) does two things:
