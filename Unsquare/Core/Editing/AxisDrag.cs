@@ -6,7 +6,7 @@ namespace Unsquare.Core.Editing
     /// Maps mouse rays onto a gizmo axis: the delta is the movement of the ray's closest point on the axis
     /// line since the press, so the grabbed spot stays under the mouse.
     /// </summary>
-    public sealed class AxisDrag
+    public sealed class AxisDrag : IHandleDrag
     {
         // Below ~3° between ray and axis the projection explodes; such frames are skipped.
         private const float MinSine = 0.05f;

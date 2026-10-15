@@ -27,6 +27,9 @@ namespace Unsquare.Core.Editing
         public int Index { get; private set; }
         public bool Found => Index >= 0;
 
+        /// <summary>Distance along the ray to the picked candidate's closest point.</summary>
+        public float Along => _along;
+
         /// <param name="distance">Distance between ray and candidate in metres.</param>
         /// <param name="along">Distance along the ray to the closest point.</param>
         public void Offer(int index, float distance, float along)

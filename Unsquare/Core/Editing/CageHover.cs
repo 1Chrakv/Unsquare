@@ -3,7 +3,7 @@ using Unsquare.Core.Cage;
 
 namespace Unsquare.Core.Editing
 {
-    /// <summary>What the mouse is over: nothing, a cage handle or a gizmo axis. Immutable.</summary>
+    /// <summary>What the mouse is over: nothing, a cage handle or a gizmo part (axis or plane). Immutable.</summary>
     public readonly struct CageHover : IEquatable<CageHover>
     {
         private CageHover(bool hasHandle, CageHandle handle, int axis)
@@ -18,7 +18,7 @@ namespace Unsquare.Core.Editing
         public bool HasHandle { get; }
         public CageHandle Handle { get; }
 
-        /// <summary>Gizmo axis (0..2), or -1.</summary>
+        /// <summary>Gizmo part: axis 0..2 or <see cref="GizmoAxes.PlaneXZ"/>, or -1.</summary>
         public int Axis { get; }
 
         public bool HasAxis => Axis >= 0;
@@ -27,7 +27,7 @@ namespace Unsquare.Core.Editing
 
         public static CageHover OnAxis(int axis)
         {
-            if (axis < 0 || axis >= GizmoAxes.AxisCount)
+            if (axis < 0 || axis > GizmoAxes.PlaneXZ)
                 throw new ArgumentOutOfRangeException(nameof(axis), axis, null);
             return new CageHover(false, default, axis);
         }
@@ -37,6 +37,7 @@ namespace Unsquare.Core.Editing
 
         public override bool Equals(object obj) => obj is CageHover other && Equals(other);
         public override int GetHashCode() => (HasHandle, Handle, Axis).GetHashCode();
-        public override string ToString() => HasHandle ? Handle.ToString() : HasAxis ? $"Axis{Axis}" : "None";
+        public override string ToString() =>
+            HasHandle ? Handle.ToString() : Axis == GizmoAxes.PlaneXZ ? "PlaneXZ" : HasAxis ? $"Axis{Axis}" : "None";
     }
 }

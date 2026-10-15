@@ -77,6 +77,17 @@ namespace Unsquare.Tests.Editing
         }
     
         [Test]
+        public void Drag_HorizontalDeltaOnVerticalEdge_KeepsCornerHeights()
+        {
+            // Edge 6 is the vertical edge from corner 4 to corner 6.
+            var drag = new CageDrag(CageHandle.Edge(6), CageOffsets.Identity);
+            var offsets = drag.OffsetsFor(new float3(1.5f, 0, -2));
+            Assert.That(offsets.Steps(4), Is.EqualTo(new int3(15, 0, -20)));
+            Assert.That(offsets.Steps(6), Is.EqualTo(new int3(15, 0, -20)));
+            Assert.That(offsets.Steps(0), Is.EqualTo(int3.zero));
+        }
+
+        [Test]
         public void TryAdvance_WithinOneGridStep_ReportsNoChange()
         {
             var drag = new CageDrag(CageHandle.Face(3), CageOffsets.Identity);

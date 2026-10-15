@@ -15,7 +15,7 @@ namespace Unsquare.Tests.Editing
         private static readonly float3 Back = new(0, 0, -1);
 
         private static CageHandle? Pick(CageRay ray, CageHandleKind kind, CageOffsets offsets = null) =>
-            CagePicker.TryPick(Box, offsets ?? CageOffsets.Identity, ray, Tolerance, kind, out var handle)
+            CagePicker.TryPick(Box, offsets ?? CageOffsets.Identity, ray, Tolerance, kind, out var handle, out _)
                 ? handle
                 : null;
 
@@ -64,7 +64,7 @@ namespace Unsquare.Tests.Editing
         {
             // Top corner 7 hides bottom corner 5 when looking straight down.
             var ray = new CageRay(new float3(10.2f, 100, 20.1f), Down);
-            Assert.That(CagePicker.TryPickCorner(Box, CageOffsets.Identity, ray, Tolerance, out var handle), Is.True);
+            Assert.That(CagePicker.TryPickCorner(Box, CageOffsets.Identity, ray, Tolerance, out var handle, out _), Is.True);
             Assert.That(handle, Is.EqualTo(CageHandle.Corner(7)));
         }
 
@@ -89,12 +89,34 @@ namespace Unsquare.Tests.Editing
         public void TryPickFace_SkewedFace_HitsBothTriangles()
         {
             var skewed = CageOffsets.Identity.Move(CageHandle.Corner(7), new float3(0, 4, 0));
-            Assert.That(CagePicker.TryPickFace(Box, skewed, new CageRay(new float3(9, 9, 100), Back), out var a),
+            Assert.That(CagePicker.TryPickFace(Box, skewed, new CageRay(new float3(9, 9, 100), Back), out var a,
+                out _),
                 Is.True);
             Assert.That(a, Is.EqualTo(CageHandle.Face(5)));
-            Assert.That(CagePicker.TryPickFace(Box, skewed, new CageRay(new float3(1, 5, 100), Back), out var b),
+            Assert.That(CagePicker.TryPickFace(Box, skewed, new CageRay(new float3(1, 5, 100), Back), out var b,
+                out _),
                 Is.True);
             Assert.That(b, Is.EqualTo(CageHandle.Face(5)));
+        }
+    
+        [Test]
+        public void TryPickEdge_RayNearVerticalEdge_ReportsGrabbedHeight()
+        {
+            // Looking along -z at the front left vertical edge (x = 0, z = 20) at 3 m height.
+            var ray = new CageRay(new float3(0.1f, 3, 100), Back);
+            Assert.That(CagePicker.TryPick(Box, CageOffsets.Identity, ray, Tolerance, CageHandleKind.Edge,
+                out var handle, out float along), Is.True);
+            Assert.That(CageTopology.EdgeAxis(handle.Index), Is.EqualTo(1));
+            Assert.That(ray.PointAt(along).y, Is.EqualTo(3f).Within(1e-4f));
+            Assert.That(along, Is.EqualTo(80f).Within(1e-3f));
+        }
+
+        [Test]
+        public void TryPickFace_Hit_ReportsHitDistance()
+        {
+            Assert.That(CagePicker.TryPickFace(Box, CageOffsets.Identity, new CageRay(new float3(5, 100, 10), Down),
+                out _, out float along), Is.True);
+            Assert.That(along, Is.EqualTo(92f).Within(1e-3f));
         }
     }
 }

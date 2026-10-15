@@ -48,6 +48,17 @@ namespace Unsquare.Core.Editing
             return math.distance(ray.PointAt(along), a + segment * u);
         }
 
+        /// <summary>Where the ray crosses the horizontal plane y = <paramref name="height"/>; false if parallel or behind.</summary>
+        public static bool IntersectHorizontalPlane(CageRay ray, float height, out float along)
+        {
+            along = 0f;
+            float dy = ray.Direction.y;
+            if (math.abs(dy) < Epsilon)
+                return false;
+            along = (height - ray.Origin.y) / dy;
+            return along > 0f;
+        }
+
         /// <summary>Two-sided ray–triangle test (Möller–Trumbore); hits behind the origin do not count.</summary>
         public static bool IntersectTriangle(CageRay ray, float3 a, float3 b, float3 c, out float along)
         {

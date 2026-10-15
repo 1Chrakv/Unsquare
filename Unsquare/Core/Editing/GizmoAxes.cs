@@ -4,12 +4,19 @@ using Unity.Mathematics;
 namespace Unsquare.Core.Editing
 {
     /// <summary>
-    /// The move gizmo: three arrows along the building axes X, Y, Z (0, 1, 2) starting at the selected handle.
-    /// Shared by picking and drawing so both agree on its size.
+    /// The move gizmo: three arrows along the building axes X, Y, Z (0, 1, 2) starting at the selected handle and
+    /// a square between the X and Z arrows (<see cref="PlaneXZ"/>). Shared by picking and drawing.
     /// </summary>
     public static class GizmoAxes
     {
         public const int AxisCount = 3;
+
+        /// <summary>Gizmo part id of the horizontal plane square, after the three axes.</summary>
+        public const int PlaneXZ = 3;
+
+        /// <summary>Square extent along +X and +Z, as fractions of the arrow length.</summary>
+        public const float PlaneInner = 0.25f;
+        public const float PlaneOuter = 0.55f;
 
         public static float3 Direction(int axis) => axis switch
         {
@@ -35,6 +42,25 @@ namespace Unsquare.Core.Editing
             }
             axis = pick.Index;
             return pick.Found;
+        }
+
+        /// <summary>Corner 0..3 of the plane square, walking around it.</summary>
+        public static float3 PlaneCorner(float3 origin, float length, int corner)
+        {
+            if (corner < 0 || corner > 3)
+                throw new ArgumentOutOfRangeException(nameof(corner), corner, null);
+            float x = corner == 1 || corner == 2 ? PlaneOuter : PlaneInner;
+            float z = corner >= 2 ? PlaneOuter : PlaneInner;
+            return origin + new float3(x, 0f, z) * length;
+        }
+
+        /// <summary>True if the ray crosses the plane square in front of the camera.</summary>
+        public static bool TryPickPlane(float3 origin, float length, CageRay ray)
+        {
+            if (!RayGeometry.IntersectHorizontalPlane(ray, origin.y, out float along))
+                return false;
+            float3 local = (ray.PointAt(along) - origin) / length;
+            return local.x >= PlaneInner && local.x <= PlaneOuter && local.z >= PlaneInner && local.z <= PlaneOuter;
         }
     }
 }

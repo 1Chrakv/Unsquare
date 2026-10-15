@@ -35,6 +35,41 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void TryPickPlane_RayThroughSquare_Picks()
+        {
+            // Square spans 0.5..1.1 m on x and z for a 2 m gizmo.
+            var ray = new CageRay(new float3(0.8f, 100, 0.8f), new float3(0, -1, 0));
+            Assert.That(GizmoAxes.TryPickPlane(float3.zero, 2f, ray), Is.True);
+        }
+
+        [Test]
+        public void TryPickPlane_RayBesideSquare_Misses()
+        {
+            var down = new float3(0, -1, 0);
+            Assert.That(GizmoAxes.TryPickPlane(float3.zero, 2f, new CageRay(new float3(0.2f, 100, 0.8f), down)),
+                Is.False);
+            Assert.That(GizmoAxes.TryPickPlane(float3.zero, 2f, new CageRay(new float3(0.8f, 100, 1.5f), down)),
+                Is.False);
+        }
+
+        [Test]
+        public void TryPickPlane_SquareBehindCamera_Misses()
+        {
+            var ray = new CageRay(new float3(0.8f, 100, 0.8f), new float3(0, 1, 0));
+            Assert.That(GizmoAxes.TryPickPlane(float3.zero, 2f, ray), Is.False);
+        }
+
+        [Test]
+        public void PlaneCorner_WalksAroundSquare()
+        {
+            var origin = new float3(1, 2, 3);
+            Assert.That(GizmoAxes.PlaneCorner(origin, 2f, 0), Is.EqualTo(origin + new float3(0.5f, 0, 0.5f)));
+            Assert.That(GizmoAxes.PlaneCorner(origin, 2f, 1), Is.EqualTo(origin + new float3(1.1f, 0, 0.5f)));
+            Assert.That(GizmoAxes.PlaneCorner(origin, 2f, 2), Is.EqualTo(origin + new float3(1.1f, 0, 1.1f)));
+            Assert.That(GizmoAxes.PlaneCorner(origin, 2f, 3), Is.EqualTo(origin + new float3(0.5f, 0, 1.1f)));
+        }
+
+        [Test]
         public void ViewScale_Fov90_ConvertsPixelsAndFractions()
         {
             var scale = new ViewScale(90f, 1000f);
@@ -79,7 +114,8 @@ namespace Unsquare.Tests.Editing
             Assert.That(CageHover.OnAxis(1).HasAxis, Is.True);
             Assert.That(CageHover.None.HasHandle || CageHover.None.HasAxis, Is.False);
             Assert.That(CageHover.OnAxis(0), Is.Not.EqualTo(CageHover.None));
-            Assert.Throws<ArgumentOutOfRangeException>(() => CageHover.OnAxis(3));
+            Assert.That(CageHover.OnAxis(GizmoAxes.PlaneXZ).HasAxis, Is.True);
+            Assert.Throws<ArgumentOutOfRangeException>(() => CageHover.OnAxis(GizmoAxes.PlaneXZ + 1));
         }
     }
 }
