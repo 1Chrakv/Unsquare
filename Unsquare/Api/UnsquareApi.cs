@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Unity.Entities;
+using Unsquare.Integration.Entities;
 using Unsquare.Integration.Systems;
 
 namespace Unsquare.Api
@@ -13,7 +14,10 @@ namespace Unsquare.Api
         {
             var system = world.GetOrCreateSystemManaged<VariantSystem>();
             var terrain = world.GetOrCreateSystemManaged<BaseTerrainSystem>();
-            return Services.GetValue(system, s => new DeformService(s.Pipeline, terrain));
+            var neighbours = new NeighbourQuery(world.EntityManager,
+                world.GetOrCreateSystemManaged<Game.Net.SearchSystem>(),
+                world.GetOrCreateSystemManaged<Game.Objects.SearchSystem>());
+            return Services.GetValue(system, s => new DeformService(s.Pipeline, terrain, neighbours, world.EntityManager));
         }
     }
 }

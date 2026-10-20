@@ -1,11 +1,16 @@
 using System;
+using System.Collections.Generic;
+using Colossal.Mathematics;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
+using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
 using Unsquare.Core.Terrain;
+using Unsquare.Integration.Entities;
 using Unsquare.Integration.Systems;
+using Transform = Game.Objects.Transform;
 
 namespace Unsquare.Api
 {
@@ -14,11 +19,18 @@ namespace Unsquare.Api
     {
         private readonly IVariantPipeline _pipeline;
         private readonly BaseTerrainSystem _terrain;
+        private readonly NeighbourQuery _neighbours;
+        private readonly EntityManager _entityManager;
+        private readonly List<NeighbourEdge> _edges = new();
+        private readonly List<Entity> _buildings = new();
 
-        public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain)
+        public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain, NeighbourQuery neighbours,
+            EntityManager entityManager)
         {
             _pipeline = pipeline;
             _terrain = terrain;
+            _neighbours = neighbours;
+            _entityManager = entityManager;
             _pipeline.BuildingChanged += building => CageChanged?.Invoke(building);
         }
 
@@ -79,6 +91,56 @@ namespace Unsquare.Api
                 done(now.TargetSpec, SetOffsets(building, fitted));
             });
         }
+
+        public DeformRequestResult AlignToNeighbour(Entity building, AlignSide side, AlignMode mode,
+            NeighbourAlignOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+            if (!TryGetCage(building, out var state) ||
+                !BuildingSpace.TryGetTransform(_entityManager, building, out var transform))
+                return DeformRequestResult.NotDeformable;
+
+            var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
+            var area = new Bounds2(float.MaxValue, float.MinValue);
+            foreach (var point in ground)
+                area |= ToWorld(transform, point);
+            area = MathUtils.Expand(area, options.SearchMeters);
+
+            _edges.Clear();
+            _buildings.Clear();
+            _neighbours.CollectRoadEdges(transform, area, _edges);
+            _neighbours.CollectBuildings(building, area, _buildings);
+            foreach (var other in _buildings)
+                AddLotEdges(transform, other);
+            if (!NeighbourAlign.TryFindNeighbour(state.Box, state.TargetOffsets, side, _edges, options,
+                    out var neighbour))
+                return DeformRequestResult.Rejected;
+            Mod.Log.Info($"Aligning {side} of building {building} to {neighbour} ({mode}).");
+            return SetOffsets(building, NeighbourAlign.Align(state.Box, state.TargetOffsets, side, neighbour, mode));
+        }
+
+        // Ground outline of another lot (corners 0, 1, 5, 4 in turn), in the target's building space.
+        private void AddLotEdges(in Transform target, Entity other)
+        {
+            if (!TryGetCage(other, out var state) ||
+                !BuildingSpace.TryGetTransform(_entityManager, other, out var transform))
+                return;
+            var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
+            var outline = new[] { ground[0], ground[1], ground[3], ground[2] };
+            for (int i = 0; i < outline.Length; i++)
+            {
+                float2 a = ToBuilding(target, ToWorld(transform, outline[i]));
+                float2 b = ToBuilding(target, ToWorld(transform, outline[(i + 1) % outline.Length]));
+                _edges.Add(new NeighbourEdge(a, b, false));
+            }
+        }
+
+        private static float2 ToWorld(in Transform transform, float2 local) =>
+            BuildingSpace.PointToWorld(transform, new float3(local.x, 0f, local.y)).xz;
+
+        private static float2 ToBuilding(in Transform transform, float2 world) =>
+            BuildingSpace.PointToBuilding(transform, new float3(world.x, transform.m_Position.y, world.y)).xz;
 
         public DeformRequestResult Apply(Entity building, DeformSpec spec)
         {

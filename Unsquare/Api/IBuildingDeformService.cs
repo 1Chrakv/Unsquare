@@ -2,6 +2,7 @@ using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
+using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
 using Unsquare.Core.Terrain;
 
@@ -35,6 +36,13 @@ namespace Unsquare.Api
         /// </summary>
         /// <returns>False if the building is not deformable or the terrain cannot be read.</returns>
         bool TryFitToGround(Entity building, GroundFitMode mode, Action<DeformSpec, DeformRequestResult> done);
+
+        /// <summary>
+        /// Aligns the lot's left, back or right face to the nearest road edge or neighbouring lot edge
+        /// (see <see cref="AlignMode"/>); rejected when there is no neighbour within the options' reach.
+        /// </summary>
+        DeformRequestResult AlignToNeighbour(Entity building, AlignSide side, AlignMode mode,
+            NeighbourAlignOptions options);
 
         /// <summary>Requests offsets and terrain flag together, e.g. to replay an undo step.</summary>
         DeformRequestResult Apply(Entity building, DeformSpec spec);
