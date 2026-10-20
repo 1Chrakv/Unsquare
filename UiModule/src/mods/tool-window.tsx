@@ -18,6 +18,7 @@ import groundFitAllIcon from "images/ground-fit-all.svg";
 import groundFitBackIcon from "images/ground-fit-back.svg";
 import resetBuildingIcon from "images/reset-building.svg";
 import resetHandleIcon from "images/reset-handle.svg";
+import terrainFlatIcon from "images/terrain-flat.svg";
 import terrainLiftIcon from "images/terrain-lift.svg";
 import { Guard } from "mods/guard";
 import { SegmentedToggle, SegmentOption } from "mods/segmented-toggle";
@@ -67,6 +68,12 @@ const alignModes: ToggleEntry[] = [
     { value: "Full", icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
 ];
 
+// Lift is the C# terrain lift flag on; the toggle switches it with the existing toggleTerrainLift trigger.
+const terrainModes: ToggleEntry[] = [
+    { value: "Lift", icon: terrainLiftIcon, fallback: "Terrain follows the building (Alt+T)" },
+    { value: "Flat", icon: terrainFlatIcon, fallback: "Keep a flat pad under the building (Alt+T)" },
+];
+
 // Values are the C# GroundFitMode names.
 const groundFitModes: ToggleEntry[] = [
     { value: "BackOnly", icon: groundFitBackIcon, fallback: "Fit mode: back only, street side at road level (Alt+F)" },
@@ -87,33 +94,30 @@ const toOptions = (entries: ToggleEntry[], keyPrefix: string,
 
 interface SectionProps {
     title: string | null;
-    top: ReactNode;
-    bottom?: ReactNode;
-    // Rows start at the left edge, so controls in the bottom row sit under their top-row counterparts.
-    columns?: boolean;
+    toggles?: ReactNode;
+    buttons?: ReactNode;
 }
 
-// A labelled group of controls in two rows: toggles always go in the top row.
-const Section = ({ title, top, bottom, columns }: SectionProps) => (
+// A labelled group of controls: toggles in the top row, buttons in the bottom row.
+const Section = ({ title, toggles, buttons }: SectionProps) => (
     <div className={styles.section}>
         <div className={styles.sectionHeader}>{title}</div>
-        <div className={columns ? styles.rowColumns : styles.row}>{top}</div>
-        <div className={columns ? styles.rowColumns : styles.row}>{bottom}</div>
+        <div className={styles.row}>{toggles}</div>
+        <div className={styles.row}>{buttons}</div>
     </div>
 );
 
 // A vanilla tool button with the defaults every button in this window shares.
-const ActionButton = ({ icon, tooltip, disabled, selected, onSelect }: {
+const ActionButton = ({ icon, tooltip, disabled, onSelect }: {
     icon: string;
     tooltip: string | null;
     disabled?: boolean;
-    selected?: boolean;
     onSelect: () => void;
 }) => (
     <ToolButton
         src={icon}
         tooltip={tooltip}
-        selected={selected ?? false}
+        selected={false}
         multiSelect={false}
         disabled={disabled ?? false}
         focusKey={focusDisabled}
@@ -137,7 +141,7 @@ const ToolWindow = () => {
             <div className={styles.window}>
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Pick", "Pick")}
-                    top={<SegmentedToggle
+                    toggles={<SegmentedToggle
                         options={toOptions(pickKinds, "Unsquare.ToolWindow.", translate)}
                         value={pickKind}
                         onSelect={kind => trigger(group, "selectPickKind", kind)}
@@ -146,11 +150,10 @@ const ToolWindow = () => {
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Terrain", "Terrain")}
-                    top={<>
-                        <ActionButton
-                            icon={terrainLiftIcon}
-                            tooltip={translate("Unsquare.ToolWindow.TerrainLift", "Lift the terrain with the building")}
-                            selected={terrainLift}
+                    toggles={<>
+                        <SegmentedToggle
+                            options={toOptions(terrainModes, "Unsquare.ToolWindow.Terrain", translate)}
+                            value={terrainLift ? "Lift" : "Flat"}
                             disabled={!canLiftTerrain}
                             onSelect={() => trigger(group, "toggleTerrainLift")}
                         />
@@ -161,7 +164,7 @@ const ToolWindow = () => {
                             onSelect={mode => trigger(group, "selectGroundFitMode", mode)}
                         />
                     </>}
-                    bottom={<ActionButton
+                    buttons={<ActionButton
                         icon={fitGroundIcon}
                         tooltip={translate("Unsquare.ToolWindow.FitToGround",
                             "Fit the bottom corners to the original ground")}
@@ -171,8 +174,12 @@ const ToolWindow = () => {
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Align", "Align to neighbour")}
-                    columns
-                    top={<>
+                    toggles={<SegmentedToggle
+                        options={toOptions(alignModes, "Unsquare.ToolWindow.AlignMode", translate)}
+                        value={alignMode}
+                        onSelect={mode => trigger(group, "selectAlignMode", mode)}
+                    />}
+                    buttons={<>
                         {alignSides.map(({ side, icon, fallback }) => (
                             <ActionButton
                                 key={side}
@@ -182,35 +189,33 @@ const ToolWindow = () => {
                             />
                         ))}
                         <div className={styles.spacer} />
-                        <SegmentedToggle
-                            options={toOptions(alignModes, "Unsquare.ToolWindow.AlignMode", translate)}
-                            value={alignMode}
-                            onSelect={mode => trigger(group, "selectAlignMode", mode)}
-                        />
+                        {groundSides.map(({ side, icon, fallback }) => (
+                            <ActionButton
+                                key={side}
+                                icon={icon}
+                                tooltip={translate(`Unsquare.ToolWindow.AlignGround${side}`, fallback)}
+                                onSelect={() => trigger(group, "alignGroundToNeighbour", side)}
+                            />
+                        ))}
                     </>}
-                    bottom={groundSides.map(({ side, icon, fallback }) => (
-                        <ActionButton
-                            key={side}
-                            icon={icon}
-                            tooltip={translate(`Unsquare.ToolWindow.AlignGround${side}`, fallback)}
-                            onSelect={() => trigger(group, "alignGroundToNeighbour", side)}
-                        />
-                    ))}
                 />
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Reset", "Reset")}
-                    top={<ActionButton
-                        icon={resetHandleIcon}
-                        tooltip={translate("Unsquare.ToolWindow.ResetHandle", "Reset the selected corner, edge or face")}
-                        disabled={!hasHandle}
-                        onSelect={() => trigger(group, "resetHandle")}
-                    />}
-                    bottom={<ActionButton
-                        icon={resetBuildingIcon}
-                        tooltip={translate("Unsquare.ToolWindow.ResetBuilding", "Reset the whole building")}
-                        onSelect={() => trigger(group, "resetBuilding")}
-                    />}
+                    buttons={<>
+                        <ActionButton
+                            icon={resetHandleIcon}
+                            tooltip={translate("Unsquare.ToolWindow.ResetHandle",
+                                "Reset the selected corner, edge or face")}
+                            disabled={!hasHandle}
+                            onSelect={() => trigger(group, "resetHandle")}
+                        />
+                        <ActionButton
+                            icon={resetBuildingIcon}
+                            tooltip={translate("Unsquare.ToolWindow.ResetBuilding", "Reset the whole building")}
+                            onSelect={() => trigger(group, "resetBuilding")}
+                        />
+                    </>}
                 />
             </div>
         </div>

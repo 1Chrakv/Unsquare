@@ -44,18 +44,14 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-// Rows sit flush on each other; an empty bottom row collapses and its section stays top-aligned.
-.row,
-.rowColumns {
+// Rows sit flush on each other; an empty row collapses, and the button row stays at the bottom of the section.
+.row {
     display: flex;
     flex-direction: row;
     align-items: center;
-}
-
-.row {
     justify-content: center;
 }
 
-.rowColumns {
-    justify-content: flex-start;
+.row + .row {
+    margin-top: auto;
 }

@@ -44,7 +44,8 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ToolWindow.Face", "Pick faces (Alt+3)" },
                 { "Unsquare.ToolWindow.ResetHandle", "Reset the selected corner, edge or face (Alt+R)" },
                 { "Unsquare.ToolWindow.ResetBuilding", "Reset the whole building (Alt+Backspace)" },
-                { "Unsquare.ToolWindow.TerrainLift", "Lift the terrain with the building (Alt+T)" },
+                { "Unsquare.ToolWindow.TerrainLift", "Terrain follows the building (Alt+T)" },
+                { "Unsquare.ToolWindow.TerrainFlat", "Keep a flat pad under the building (Alt+T)" },
                 { "Unsquare.ToolWindow.FitToGround", "Fit the bottom corners to the original ground (Alt+G)" },
                 { "Unsquare.ToolWindow.GroundFitModeBackOnly",
                     "Fit mode: back only. The back follows the original ground, the street side goes to road level " +
