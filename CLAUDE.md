@@ -69,6 +69,10 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 - `Unity.Mathematics` (`float3`, `quaternion`, `math.*`) in Core; convert to `Vector3` only at the Mesh boundary.
 - `UnityEngine.Object` has overloaded `==`: never use `?.`, `??` or `is null` on Unity objects.
 - Never edit shared meshes; `Object.Instantiate` first and `Object.Destroy` every temporary mesh.
+- Game meshes pack normals (SNorm16×2) and tangents (Float32×1, sign bit = handedness) octahedrally. Never use
+  `mesh.normals`/`tangents` on them; go through `PackedVertexChannel` + `OctahedralPacking` (see `HowTo.md`).
+- Buildings have no impostors (CS2 only gives them to trees). The coarsest LOD is left out for twisted cages
+  (`CageTwist` > `PipelineOptions.CoarseLodTwistMeters`); it can't follow the bend.
 - Mesh and prefab APIs are main-thread only; keep hot loops allocation-free (no LINQ, no closures).
 - Wrap each game-API step (clone, AddPrefab, asset I/O, reflection) in try/catch, log, and degrade by not swapping.
 - Use `Mod.Log` (`Colossal.Logging.ILog`) for logging, never `Debug.Log`.
@@ -83,7 +87,7 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 ## Options (advanced settings tab)
 
 - Tunables are option objects with a `Default`, not consts: `PipelineOptions` (Core: `CageLimits`,
-  `AttachmentOptions`, rebake delay, pruning, sync tolerances), `CageEditOptions` and `CageOverlayStyle` (UI).
+  `AttachmentOptions`, rebake delay, pruning, sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
 - Flow: `UnsquareSettings` (Advanced tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
   `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
 - Slider attributes are the single source of ranges (mapping clamps to them); defaults come from the option types.
