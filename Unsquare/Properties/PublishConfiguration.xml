@@ -4,7 +4,7 @@
 	<!--Name of the mod to display to players-->
 	<DisplayName Value="Unsquare" />
 	<!--Short description of the mod-->
-	<ShortDescription Value="Freely deform buildings by moving the corners, edges and faces of their lot box." />
+	<ShortDescription Value="Unsquare your city! Bend, taper, twist and lean buildings to fit any plot, angle or slope." />
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>

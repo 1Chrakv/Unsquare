@@ -1,5 +1,7 @@
 # Unsquare
 
+**Unsquare your city! Bend, taper, twist and lean buildings to fit any plot, angle or slope.**
+
 A [Cities: Skylines II](https://www.paradoxinteractive.com/games/cities-skylines-ii) code mod that lets you freely
 deform individual buildings. Pick a building and drag the corners, edges or faces of its lot box: the building is
 reshaped by a trilinear cage deformation, so it can be tapered, skewed, twisted, raised or leaned to fit odd plots,
