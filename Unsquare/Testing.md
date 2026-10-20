@@ -43,6 +43,8 @@ While a building is selected, a small window floats above its roof: pick corners
 highlighted), reset the selected corner, edge or face (disabled without a selection), reset the whole building and
 lift the terrain with the building (highlighted while on, disabled while undeformed) and fit the bottom corners to
 the original ground. The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+Backspace, Alt+T and Alt+G.
+Then come the align buttons (left, back, right as seen from the street; Alt+Shift+arrows) and the align mode button
+(angle → flush → full; Alt+A).
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
@@ -61,6 +63,8 @@ the original ground. The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off for the selected building | Alt+T |
 | Fit back corners to the original ground (street side to road level) / all corners | Alt+G / Alt+Shift+G |
+| Align left / back / right side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → |
+| Cycle align mode (angle → flush → full) | Alt+A |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
@@ -160,6 +164,12 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 85 | With a handle selected, hover and drag the yellow gizmo square; right-click mid-drag | Square brighter on hover; handle moves in the horizontal plane; right-click snaps back |
 | 86 | Repeat 83 with a corner and a face (Alt+W), also at a flat camera angle | Same horizontal move; no jumps when the view is nearly level |
 | 87 | Options → Advanced: raise the drag threshold to 20 px | Small mouse jitter on a press no longer drags |
+| 88 | Building next to a turned neighbour lot, angle mode: Alt+Shift+← (or the left align button) | The left side (seen from the street) turns parallel to the neighbour's edge; the corner nearer the neighbour stays, the other slides along its front or back edge; log `Aligning Left of building … to lot …` |
+| 89 | Alt+A to flush, Ctrl+Z, align again | Tool window icon changes; the side turns parallel and moves onto the neighbour's edge (gap closed, depth line kept) |
+| 90 | Alt+A to full, align toward a lot | The side's corners sit on the neighbour lot's corners (shared edge), even if the side gets longer or shorter |
+| 91 | Back of a lot near a road (any mode), Alt+Shift+↑ | Back face turns to the road edge (sidewalk outline), full behaves like flush |
+| 92 | Align a side with nothing within the align reach | Nothing changes; log `[Edit] Align … -> Rejected` |
+| 93 | Undo / redo after each align | One step each; the target building stays selected |
 
 ## Reporting problems
 

@@ -23,6 +23,8 @@ angled streets and slopes.
   switched off per building to keep a flat pad.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street
   side goes to road level, or all four corners follow the terrain.
+- **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road
+  or neighbouring lot: only the angle, flush onto its edge, or fully onto the neighbour's edge and corners.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
@@ -58,8 +60,8 @@ While a handle is selected the building is locked; clicks on other buildings do 
 ### Tool window
 
 While a building is selected, a small window floats above its roof. It switches the pick mode (corners, edges,
-faces), resets the selected handle or the whole building, toggles the terrain lift and fits the building to the
-ground.
+faces), resets the selected handle or the whole building, toggles the terrain lift, fits the building to the
+ground and aligns its sides to their neighbours (with the align mode: angle, flush or full).
 
 ### Hotkeys
 
@@ -80,6 +82,8 @@ Defaults; all can be rebound in Options → Unsquare. Except Alt+U, they only wo
 | Reset building / reset all buildings | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off | Alt+T |
 | Fit to ground (back to terrain, street side to road) / all corners to terrain | Alt+G / Alt+Shift+G |
+| Align left / back / right side to its neighbour | Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→ |
+| Cycle align mode (angle → flush → full) | Alt+A |
 | Undo / redo | Ctrl+Z / Ctrl+Y |
 | Write the cage state to the log | Alt+L |
 
@@ -92,7 +96,7 @@ the hovered one cyan.
 ### Options
 
 Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment,
-nudge step sizes, picking and gizmo sizes, and overlay style.
+nudge step sizes, picking and gizmo sizes, neighbour alignment reach, and overlay style.
 
 ### Before uninstalling
 

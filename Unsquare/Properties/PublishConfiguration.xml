@@ -18,6 +18,7 @@ Unsquare lets you freely deform individual buildings. Pick a building and drag t
 - **The lot follows.** Props, sub-buildings, ground areas (paving, grass), lanes and paths on the lot move with the cage. Props stay rigid but follow position and rotation, and turn with the nearest facade; ground props stay upright. Path ends at the road slide along it and stay connected.
 - **Terrain lift.** When the bottom of the cage is raised or lowered, the ground under the lot follows. It can be switched off per building to keep a flat pad.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street side goes to road level, or all four corners follow the terrain.
+- **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road or neighbouring lot: only the angle, flush onto its edge, or fully onto the neighbour's edge and corners.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are restored when a save is loaded. Identical deformations share their assets.
 
@@ -30,7 +31,7 @@ Unsquare lets you freely deform individual buildings. Pick a building and drag t
 
 While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
 
-While a building is selected, a small tool window floats above its roof. It switches the pick mode (corners, edges, faces), resets the selected handle or the whole building, toggles the terrain lift and fits the building to the ground.
+While a building is selected, a small tool window floats above its roof. It switches the pick mode (corners, edges, faces), resets the selected handle or the whole building, toggles the terrain lift, fits the building to the ground and aligns its sides to their neighbours (with the align mode: angle, flush or full).
 
 **Hotkeys** (defaults; rebind them in Options → Unsquare. Except Alt+U, they only work in Unsquare mode)
 
@@ -47,12 +48,14 @@ While a building is selected, a small tool window floats above its roof. It swit
 - Reset building / reset all buildings: Alt+Backspace / Alt+Shift+Delete
 - Terrain lift on / off: Alt+T
 - Fit to ground (back to terrain, street side to road) / all corners to terrain: Alt+G / Alt+Shift+G
+- Align left / back / right side to its neighbour: Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→
+- Cycle align mode (angle → flush → full): Alt+A
 - Undo / redo: Ctrl+Z / Ctrl+Y
 - Write the cage state to the log: Alt+L
 
 **Overlay:** dashed lines show the original box. The cage colour shows its state: white undeformed, yellow pending, green applied, red failed, magenta when the lot outline leaves its plot (the edit still applies). The selected handle is orange, the hovered one cyan.
 
-**Options:** Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment, nudge step sizes, picking and gizmo sizes, and overlay style.
+**Options:** Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment, nudge step sizes, picking and gizmo sizes, neighbour alignment reach, and overlay style.
 
 **Limitations**
 
