@@ -4,6 +4,7 @@ using Game.Settings;
 using Game.UI;
 using Unity.Mathematics;
 using Unsquare.Core.Deformation;
+using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Overlay;
@@ -50,6 +51,14 @@ namespace Unsquare.UI.Input
         [SettingsUISection(AdvancedTab, EditingGroup)]
         [SettingsUISlider(min = 10f, max = 500f, step = 10f, unit = Unit.kInteger)]
         public int UndoSteps { get; set; }
+
+        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISlider(min = 2f, max = 50f, step = 1f, unit = Unit.kInteger)]
+        public float AlignReach { get; set; }
+
+        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISlider(min = 5f, max = 85f, step = 5f, unit = Unit.kAngle)]
+        public float AlignMaxAngle { get; set; }
 
         [SettingsUISection(AdvancedTab, LimitsGroup)]
         [SettingsUISlider(min = 0.5f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
@@ -154,7 +163,9 @@ namespace Unsquare.UI.Input
             Clamped(MediumStep, nameof(MediumStep)), Clamped(LargeStep, nameof(LargeStep)),
             Clamped(PickRadius, nameof(PickRadius)), Clamped(DragThreshold, nameof(DragThreshold)),
             Clamped(FarClickMargin, nameof(FarClickMargin)) / 100f,
-            (int)Clamped(UndoSteps, nameof(UndoSteps)));
+            (int)Clamped(UndoSteps, nameof(UndoSteps)),
+            new NeighbourAlignOptions(Clamped(AlignReach, nameof(AlignReach)),
+                Clamped(AlignMaxAngle, nameof(AlignMaxAngle))));
 
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
@@ -170,6 +181,8 @@ namespace Unsquare.UI.Input
             DragThreshold = edit.DragThresholdPixels;
             FarClickMargin = edit.FarClickMarginFraction * 100f;
             UndoSteps = edit.HistoryDepth;
+            AlignReach = edit.Align.SearchMeters;
+            AlignMaxAngle = edit.Align.MaxAngleDegrees;
 
             var pipeline = PipelineOptions.Default;
             MaxOffsetFactor = pipeline.Limits.MaxOffsetFactor;

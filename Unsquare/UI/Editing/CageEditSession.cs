@@ -29,7 +29,9 @@ namespace Unsquare.UI.Editing
             };
         }
 
-        /// <summary>Raised when mode, target, selection, hover, step, drag or the target's cage state changed.</summary>
+        /// <summary>
+        /// Raised when mode, target, selection, hover, step, align mode, drag or the target's cage state changed.
+        /// </summary>
         public event Action Changed;
 
         /// <summary>Unsquare mode is on; set by the tool. While off, every command does nothing.</summary>
@@ -50,6 +52,9 @@ namespace Unsquare.UI.Editing
         /// <summary>Nudge sizes and pick radius; set via <see cref="Configure"/>.</summary>
         public CageEditOptions Options { get; private set; } = CageEditOptions.Default;
         public NudgeStep Step { get; private set; } = NudgeStep.Default;
+
+        /// <summary>How <see cref="AlignToNeighbour"/> moves the face; kept while the game runs.</summary>
+        public AlignMode AlignMode { get; private set; } = AlignMode.Angle;
         public CageDrag ActiveDrag { get; private set; }
 
         /// <summary>Gizmo axis (0..2) of the active drag, or -1.</summary>
@@ -267,6 +272,32 @@ namespace Unsquare.UI.Editing
             var result = _service.SetTerrainLift(Target, lift);
             RememberEdit(state.TargetSpec, result);
             return Record($"Terrain lift {(lift ? "on" : "off")}", result);
+        }
+
+        /// <summary>Aligns the target's left, back or right lot face to its nearest neighbour (<see cref="AlignMode"/>).</summary>
+        public DeformRequestResult AlignToNeighbour(AlignSide side)
+        {
+            string command = $"Align {side} to neighbour ({AlignMode})";
+            if (!TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            var result = _service.AlignToNeighbour(Target, side, AlignMode, Options.Align);
+            RememberEdit(state.TargetSpec, result);
+            return Record(command, result);
+        }
+
+        /// <summary>Angle → Flush → Full → Angle.</summary>
+        public void CycleAlignMode()
+        {
+            if (!IsEnabled)
+                return;
+            AlignMode = AlignMode switch
+            {
+                AlignMode.Angle => AlignMode.Flush,
+                AlignMode.Flush => AlignMode.Full,
+                _ => AlignMode.Angle,
+            };
+            Log($"Align mode {AlignMode}");
+            Changed?.Invoke();
         }
 
         /// <summary>Not undoable (uninstall path), so it also clears the history.</summary>

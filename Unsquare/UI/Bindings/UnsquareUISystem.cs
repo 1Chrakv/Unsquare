@@ -50,6 +50,18 @@ namespace Unsquare.UI.Bindings
             AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
             AddBinding(new TriggerBinding(Group, "fitToGround",
                 () => _editor.Session.FitToGround(GroundFitMode.BackOnly)));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "alignMode",
+                () => _editor.Session.AlignMode.ToString()));
+            AddBinding(new TriggerBinding(Group, "cycleAlignMode", () => _editor.Session.CycleAlignMode()));
+            AddBinding(new TriggerBinding<string>(Group, "alignToNeighbour", AlignToNeighbour));
+        }
+
+        private void AlignToNeighbour(string side)
+        {
+            if (Enum.TryParse(side, out AlignSide parsed) && Enum.IsDefined(typeof(AlignSide), parsed))
+                _editor.Session.AlignToNeighbour(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown align side '{side}'.");
         }
 
         private void SelectPickKind(string kind)

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
+using Unsquare.Core.Editing;
 using Unsquare.Core.Terrain;
 
 namespace Unsquare.UI.Input
@@ -37,6 +38,10 @@ namespace Unsquare.UI.Input
         public const string ToggleTerrainLift = "UnsquareToggleTerrainLift";
         public const string FitToGround = "UnsquareFitToGround";
         public const string FitToGroundAll = "UnsquareFitToGroundAll";
+        public const string AlignLeft = "UnsquareAlignLeft";
+        public const string AlignBack = "UnsquareAlignBack";
+        public const string AlignRight = "UnsquareAlignRight";
+        public const string CycleAlignMode = "UnsquareCycleAlignMode";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
         public const string Undo = "UnsquareUndo";
@@ -80,6 +85,14 @@ namespace Unsquare.UI.Input
                 "Fit back corners to original ground", s => s.FitToGround(GroundFitMode.BackOnly)),
             new HotkeyDefinition(FitToGroundAll, nameof(UnsquareSettings.FitToGroundAllBinding),
                 "Fit all corners to original ground", s => s.FitToGround(GroundFitMode.AllCorners)),
+            new HotkeyDefinition(AlignLeft, nameof(UnsquareSettings.AlignLeftBinding),
+                "Align left side to neighbour (seen from the street)", s => s.AlignToNeighbour(AlignSide.Left)),
+            new HotkeyDefinition(AlignBack, nameof(UnsquareSettings.AlignBackBinding), "Align back to neighbour",
+                s => s.AlignToNeighbour(AlignSide.Back)),
+            new HotkeyDefinition(AlignRight, nameof(UnsquareSettings.AlignRightBinding),
+                "Align right side to neighbour (seen from the street)", s => s.AlignToNeighbour(AlignSide.Right)),
+            new HotkeyDefinition(CycleAlignMode, nameof(UnsquareSettings.CycleAlignModeBinding),
+                "Cycle align mode (angle, flush, full)", s => s.CycleAlignMode()),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",
                 s => s.ResetAll()),
             new HotkeyDefinition(Undo, nameof(UnsquareSettings.UndoBinding), "Undo cage edit", s => s.Undo()),

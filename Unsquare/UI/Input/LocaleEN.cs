@@ -44,6 +44,17 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ToolWindow.FitToGround",
                     "Fit the back corners to the original ground, street side at road level " +
                     "(Alt+G; all corners: Alt+Shift+G)" },
+                { "Unsquare.ToolWindow.AlignLeft",
+                    "Align the left side (seen from the street) to the nearest road or lot (Alt+Shift+Left)" },
+                { "Unsquare.ToolWindow.AlignBack", "Align the back to the nearest road or lot (Alt+Shift+Up)" },
+                { "Unsquare.ToolWindow.AlignRight",
+                    "Align the right side (seen from the street) to the nearest road or lot (Alt+Shift+Right)" },
+                { "Unsquare.ToolWindow.AlignModeAngle",
+                    "Align mode: angle. The corner nearer the neighbour stays, the face turns parallel (Alt+A)" },
+                { "Unsquare.ToolWindow.AlignModeFlush",
+                    "Align mode: flush. The face turns parallel and moves onto the neighbour's edge (Alt+A)" },
+                { "Unsquare.ToolWindow.AlignModeFull",
+                    "Align mode: full. The face takes the neighbour's edge and its corners (Alt+A)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),
@@ -83,6 +94,10 @@ namespace Unsquare.UI.Input
                 "first the selected edge, face or corner is deselected, then the building.");
             Option(entries, nameof(UnsquareSettings.UndoSteps), "Undo steps",
                 "How many cage edits (nudges, drags, resets) undo can take back, across all buildings.");
+            Option(entries, nameof(UnsquareSettings.AlignReach), "Align reach (m)",
+                "How far from a lot face a road or a neighbouring lot may be to align the face to it.");
+            Option(entries, nameof(UnsquareSettings.AlignMaxAngle), "Align max angle",
+                "How far a road or neighbouring lot edge may be turned against the face to align to it.");
 
             Option(entries, nameof(UnsquareSettings.MaxOffsetFactor), "Max corner offset (× box size)",
                 "How far a cage corner may move per axis, relative to the cage size on that axis.");
