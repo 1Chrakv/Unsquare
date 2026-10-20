@@ -136,12 +136,22 @@ namespace Unsquare.Api
                 !BuildingSpace.TryGetTransform(_entityManager, other, out var transform))
                 return;
             var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
-            var outline = new[] { ground[0], ground[1], ground[3], ground[2] };
+            var outline = new float2[4];
+            int[] order = { 0, 1, 3, 2 };
+            float2 centre = float2.zero;
             for (int i = 0; i < outline.Length; i++)
             {
-                float2 a = ToBuilding(target, ToWorld(transform, outline[i]));
-                float2 b = ToBuilding(target, ToWorld(transform, outline[(i + 1) % outline.Length]));
-                _edges.Add(new NeighbourEdge(a, b, false));
+                outline[i] = ToBuilding(target, ToWorld(transform, ground[order[i]]));
+                centre += outline[i] * 0.25f;
+            }
+            for (int i = 0; i < outline.Length; i++)
+            {
+                float2 a = outline[i], b = outline[(i + 1) % outline.Length];
+                float2 normal = math.normalizesafe(new float2(b.y - a.y, a.x - b.x));
+                // Facing away from the lot lets the search tell a neighbour's near side from its far side.
+                if (math.dot(normal, (a + b) * 0.5f - centre) < 0f)
+                    normal = -normal;
+                _edges.Add(new NeighbourEdge(a, b, false, normal));
             }
         }
 

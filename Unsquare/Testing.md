@@ -172,6 +172,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 91 | Back of a lot near a road (any mode), Alt+Shift+↑ | Back face turns to the road edge (sidewalk outline), full behaves like flush |
 | 92 | Align a side with nothing within the align reach | Nothing changes; log `[Edit] Align … -> Rejected` |
 | 93 | Undo / redo after each align | One step each; the target building stays selected |
+| 94 | Drag the left side a few metres into the neighbour lot, then align left (each mode) | The side goes back out onto the neighbour's facing edge, not to the neighbour's far side |
 
 ## Reporting problems
 

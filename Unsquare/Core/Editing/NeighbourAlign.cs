@@ -12,8 +12,9 @@ namespace Unsquare.Core.Editing
     /// </summary>
     public static class NeighbourAlign
     {
-        // Neighbouring lots may overlap a little, e.g. after earlier edits.
-        private const float OverlapToleranceMeters = 1f;
+        // A lot clipping into its neighbour may reach this share of its depth behind the face; deeper edges (e.g. the
+        // street in front, seen from the back face) belong to the other side.
+        private const float MaxOverlapDepthShare = 0.5f;
         private const float ParallelEpsilon = 1e-4f;
         private const int TopBit = 2;
 
@@ -26,7 +27,10 @@ namespace Unsquare.Core.Editing
             _ => throw new ArgumentException($"Unknown side {side}.", nameof(side)),
         };
 
-        /// <summary>Finds the edge outside the face, roughly parallel to it and overlapping it, nearest to it.</summary>
+        /// <summary>
+        /// Finds the edge nearest to the face that is roughly parallel to it and beside it: outside, or inside up to half
+        /// the lot depth when the lot clips into a neighbour. Lot edges must face the face.
+        /// </summary>
         public static bool TryFindNeighbour(CageBox box, CageOffsets offsets, AlignSide side,
             IReadOnlyList<NeighbourEdge> edges, NeighbourAlignOptions options, out NeighbourEdge neighbour) =>
             TryFindNeighbour(box, offsets, side, edges, options, out neighbour, out _);
@@ -48,6 +52,7 @@ namespace Unsquare.Core.Editing
                 return false;
 
             float minCos = math.cos(math.radians(options.MaxAngleDegrees));
+            float minDistance = -face.Depth * MaxOverlapDepthShare;
             float best = float.MaxValue;
             for (int i = 0; i < edges.Count; i++)
             {
@@ -56,12 +61,15 @@ namespace Unsquare.Core.Editing
                 float length = math.length(along);
                 if (length < ParallelEpsilon || math.abs(math.dot(along / length, face.Direction)) < minCos)
                     continue;
+                // An edge facing the same way is the far side of a lot (or a lot behind this one).
+                if (edge.HasOutward && math.dot(edge.Outward, face.Outward) >= 0f)
+                    continue;
                 if (!TryOverlapMidpoint(face, edge, out float2 mid))
                     continue;
                 float distance = math.dot(mid - face.Mid, face.Outward);
                 if (distance > options.SearchMeters)
                     nearestOutOfReach = math.min(nearestOutOfReach, distance);
-                if (distance < -OverlapToleranceMeters || distance > options.SearchMeters)
+                if (distance < minDistance || distance > options.SearchMeters)
                     continue;
                 if (math.abs(distance) < best)
                 {
@@ -166,6 +174,7 @@ namespace Unsquare.Core.Editing
                 float2 normal = new(-Direction.y, Direction.x);
                 float2 inside = (firstAnchor + secondAnchor) * 0.5f - Mid;
                 Outward = math.dot(normal, inside) > 0f ? -normal : normal;
+                Depth = math.abs(math.dot(inside, Outward));
             }
 
             public float2 First { get; }
@@ -176,6 +185,9 @@ namespace Unsquare.Core.Editing
             public float2 Direction { get; }
             public float2 Mid { get; }
             public float2 Outward { get; }
+
+            /// <summary>How far the lot reaches behind the face.</summary>
+            public float Depth { get; }
 
             public static Face Of(CageBox box, CageOffsets offsets, AlignSide side)
             {

@@ -45,6 +45,47 @@ namespace Unsquare.Tests.Editing
             Assert.That(Find(AlignSide.Left, LotEdge(10, 20, 10, 30)), Is.False);
         }
 
+        private static NeighbourEdge FacingX(float x, float outwardX) =>
+            new(new float2(x, -12), new float2(x, 12), false, new float2(outwardX, 0));
+
+        [Test]
+        public void TryFindNeighbour_ClippedIntoNeighbour_FindsItsFacingEdge()
+        {
+            Assert.That(Find(AlignSide.Left, FacingX(5, -1)), Is.True);
+            var aligned = NeighbourAlign.Align(Lot, CageOffsets.Identity, AlignSide.Left, FacingX(5, -1),
+                AlignMode.Flush);
+            AssertXz(aligned, 1, -3f, 0f);
+            AssertXz(aligned, 5, -3f, 0f);
+        }
+
+        [Test]
+        public void TryFindNeighbour_DeepClip_PrefersFacingEdgeOverNearerFarSide()
+        {
+            var facing = FacingX(2, -1);
+            var edges = new[] { FacingX(10, 1), facing };
+            Assert.That(NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, AlignSide.Left, edges, Options,
+                out var found), Is.True);
+            Assert.That(found.A, Is.EqualTo(facing.A));
+        }
+
+        [Test]
+        public void TryFindNeighbour_EdgeFacingAway_IsIgnored()
+        {
+            Assert.That(Find(AlignSide.Left, FacingX(10, 1)), Is.False);
+        }
+
+        [Test]
+        public void TryFindNeighbour_DeeperThanHalfTheLot_IsIgnored()
+        {
+            Assert.That(Find(AlignSide.Left, LotEdge(-1, -12, -1, 12)), Is.False);
+        }
+
+        [Test]
+        public void TryFindNeighbour_RoadInsideLot_IsFound()
+        {
+            Assert.That(Find(AlignSide.Left, new NeighbourEdge(new float2(5, -12), new float2(5, 12), true)), Is.True);
+        }
+
         [Test]
         public void TryFindNeighbour_ThreeCellsAway_IsWithinDefaultReach()
         {

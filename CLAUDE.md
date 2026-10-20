@@ -135,7 +135,8 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
 - Effects (`EffectSource`) are not deformed yet.
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
-  street, goes to the nearest roughly parallel road or lot edge outside it. `AlignMode`: angle keeps the nearer corner,
+  street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
+  clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,
   flush slides both corners along their edges onto the line, full takes a lot edge's end points (roads: like flush).
   `NeighbourQuery` (Integration) reads road `EdgeGeometry` and buildings from the game's search trees;
   `DeformService` turns other lots into edges via their cages. Alt+Shift+arrows align, Alt+A cycles the mode.
