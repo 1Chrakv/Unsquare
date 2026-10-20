@@ -9,8 +9,8 @@
 .window {
     display: flex;
     flex-direction: row;
-    align-items: center;
-    padding: 6rem;
+    align-items: stretch;
+    padding: 6rem 8rem 8rem;
     border-radius: 6rem;
     background-color: rgba(24, 33, 51, 0.85);
     backdrop-filter: blur(5px);
@@ -19,11 +19,33 @@
 
 .divider {
     width: 2rem;
-    height: 28rem;
-    margin: 0 6rem;
+    margin: 4rem 8rem;
     background-color: rgba(255, 255, 255, 0.2);
 }
 
 .spacer {
     width: 6rem;
+}
+
+// A labelled group: small header above a row of controls.
+.section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sectionHeader {
+    margin-bottom: 4rem;
+    font-size: 11rem;
+    letter-spacing: 1rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.sectionBody {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: 1;
 }

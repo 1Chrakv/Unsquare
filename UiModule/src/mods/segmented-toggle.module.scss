@@ -1,5 +1,4 @@
-// Segment size must match segmentRem in segmented-toggle.tsx.
-$segment: 30rem;
+// Segments are vanilla tool buttons; the thumb's size and position are measured from them (segmented-toggle.tsx).
 $inset: 2rem;
 $radius: 5rem;
 
@@ -7,6 +6,7 @@ $radius: 5rem;
     position: relative;
     display: flex;
     flex-direction: row;
+    align-items: center;
     padding: $inset;
     border-radius: $radius + $inset;
     background-color: rgba(0, 0, 0, 0.35);
@@ -15,10 +15,8 @@ $radius: 5rem;
 
 .thumb {
     position: absolute;
-    top: $inset;
-    left: $inset;
-    width: $segment;
-    height: $segment;
+    top: 0;
+    left: 0;
     border-radius: $radius;
     background-color: rgba(52, 166, 226, 0.9);
     box-shadow: 0 0 5rem rgba(52, 166, 226, 0.5);
@@ -28,32 +26,20 @@ $radius: 5rem;
 .segment,
 .segmentActive {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: $segment;
-    height: $segment;
-    padding: 0;
-    border: none;
     border-radius: $radius;
-    background-color: transparent;
+
+    // The tool button's own background would hide the thumb.
+    > * {
+        background-color: transparent !important;
+    }
 }
 
-.icon {
-    width: 20rem;
-    height: 20rem;
-    opacity: 0.55;
+// Inactive options dim their icon; the active one sits on the thumb at full brightness.
+.segment {
+    opacity: 0.6;
     transition: opacity 0.1s ease-out;
 }
 
 .segment:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-
-    .icon {
-        opacity: 0.9;
-    }
-}
-
-.segmentActive .icon {
     opacity: 1;
 }

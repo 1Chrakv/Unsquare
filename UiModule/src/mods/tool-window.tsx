@@ -1,5 +1,6 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
+import { ReactNode } from "react";
 import alignAngleIcon from "images/align-angle.svg";
 import alignBackIcon from "images/align-back.svg";
 import alignFlushIcon from "images/align-flush.svg";
@@ -54,6 +55,14 @@ const alignModes = [
     { value: "Full", icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
 ];
 
+// A labelled group of controls; the header sits above the row.
+const Section = ({ title, children }: { title: string | null; children: ReactNode }) => (
+    <div className={styles.section}>
+        <div className={styles.sectionHeader}>{title}</div>
+        <div className={styles.sectionBody}>{children}</div>
+    </div>
+);
+
 const ToolWindow = () => {
     const anchor = useValue(toolWindow$);
     const pickKind = useValue(pickKind$);
@@ -67,73 +76,82 @@ const ToolWindow = () => {
     return (
         <div className={styles.anchor} style={{ left: `${anchor.x * 100}vw`, top: `${anchor.y * 100}vh` }}>
             <div className={styles.window}>
-                <SegmentedToggle
-                    options={pickKinds.map(({ value, icon, fallback }) =>
-                        ({ value, icon, tooltip: translate(`Unsquare.ToolWindow.${value}`, fallback) ?? fallback }))}
-                    value={pickKind}
-                    onSelect={kind => trigger(group, "selectPickKind", kind)}
-                />
+                <Section title={translate("Unsquare.ToolWindow.Section.Pick", "Pick")}>
+                    <SegmentedToggle
+                        options={pickKinds.map(({ value, icon, fallback }) =>
+                            ({ value, icon, tooltip: translate(`Unsquare.ToolWindow.${value}`, fallback) ?? fallback }))}
+                        value={pickKind}
+                        onSelect={kind => trigger(group, "selectPickKind", kind)}
+                    />
+                </Section>
                 <div className={styles.divider} />
-                <ToolButton
-                    src={resetHandleIcon}
-                    tooltip={translate("Unsquare.ToolWindow.ResetHandle", "Reset the selected corner, edge or face")}
-                    selected={false}
-                    multiSelect={false}
-                    disabled={!hasHandle}
-                    focusKey={focusDisabled}
-                    onSelect={() => trigger(group, "resetHandle")}
-                />
-                <ToolButton
-                    src={resetBuildingIcon}
-                    tooltip={translate("Unsquare.ToolWindow.ResetBuilding", "Reset the whole building")}
-                    selected={false}
-                    multiSelect={false}
-                    disabled={false}
-                    focusKey={focusDisabled}
-                    onSelect={() => trigger(group, "resetBuilding")}
-                />
-                <div className={styles.divider} />
-                <ToolButton
-                    src={terrainLiftIcon}
-                    tooltip={translate("Unsquare.ToolWindow.TerrainLift", "Lift the terrain with the building")}
-                    selected={terrainLift}
-                    multiSelect={false}
-                    disabled={!canLiftTerrain}
-                    focusKey={focusDisabled}
-                    onSelect={() => trigger(group, "toggleTerrainLift")}
-                />
-                <ToolButton
-                    src={fitGroundIcon}
-                    tooltip={translate("Unsquare.ToolWindow.FitToGround", "Fit the back corners to the original ground")}
-                    selected={false}
-                    multiSelect={false}
-                    disabled={false}
-                    focusKey={focusDisabled}
-                    onSelect={() => trigger(group, "fitToGround")}
-                />
-                <div className={styles.divider} />
-                {alignSides.map(({ side, icon, fallback }) => (
+                <Section title={translate("Unsquare.ToolWindow.Section.Terrain", "Terrain")}>
                     <ToolButton
-                        key={side}
-                        src={icon}
-                        tooltip={translate(`Unsquare.ToolWindow.Align${side}`, fallback)}
+                        src={terrainLiftIcon}
+                        tooltip={translate("Unsquare.ToolWindow.TerrainLift", "Lift the terrain with the building")}
+                        selected={terrainLift}
+                        multiSelect={false}
+                        disabled={!canLiftTerrain}
+                        focusKey={focusDisabled}
+                        onSelect={() => trigger(group, "toggleTerrainLift")}
+                    />
+                    <ToolButton
+                        src={fitGroundIcon}
+                        tooltip={translate("Unsquare.ToolWindow.FitToGround",
+                            "Fit the back corners to the original ground")}
                         selected={false}
                         multiSelect={false}
                         disabled={false}
                         focusKey={focusDisabled}
-                        onSelect={() => trigger(group, "alignToNeighbour", side)}
+                        onSelect={() => trigger(group, "fitToGround")}
                     />
-                ))}
-                <div className={styles.spacer} />
-                <SegmentedToggle
-                    options={alignModes.map(({ value, icon, fallback }) => ({
-                        value,
-                        icon,
-                        tooltip: translate(`Unsquare.ToolWindow.AlignMode${value}`, fallback) ?? fallback,
-                    }))}
-                    value={alignMode}
-                    onSelect={mode => trigger(group, "selectAlignMode", mode)}
-                />
+                </Section>
+                <div className={styles.divider} />
+                <Section title={translate("Unsquare.ToolWindow.Section.Align", "Align to neighbour")}>
+                    {alignSides.map(({ side, icon, fallback }) => (
+                        <ToolButton
+                            key={side}
+                            src={icon}
+                            tooltip={translate(`Unsquare.ToolWindow.Align${side}`, fallback)}
+                            selected={false}
+                            multiSelect={false}
+                            disabled={false}
+                            focusKey={focusDisabled}
+                            onSelect={() => trigger(group, "alignToNeighbour", side)}
+                        />
+                    ))}
+                    <div className={styles.spacer} />
+                    <SegmentedToggle
+                        options={alignModes.map(({ value, icon, fallback }) => ({
+                            value,
+                            icon,
+                            tooltip: translate(`Unsquare.ToolWindow.AlignMode${value}`, fallback) ?? fallback,
+                        }))}
+                        value={alignMode}
+                        onSelect={mode => trigger(group, "selectAlignMode", mode)}
+                    />
+                </Section>
+                <div className={styles.divider} />
+                <Section title={translate("Unsquare.ToolWindow.Section.Reset", "Reset")}>
+                    <ToolButton
+                        src={resetHandleIcon}
+                        tooltip={translate("Unsquare.ToolWindow.ResetHandle", "Reset the selected corner, edge or face")}
+                        selected={false}
+                        multiSelect={false}
+                        disabled={!hasHandle}
+                        focusKey={focusDisabled}
+                        onSelect={() => trigger(group, "resetHandle")}
+                    />
+                    <ToolButton
+                        src={resetBuildingIcon}
+                        tooltip={translate("Unsquare.ToolWindow.ResetBuilding", "Reset the whole building")}
+                        selected={false}
+                        multiSelect={false}
+                        disabled={false}
+                        focusKey={focusDisabled}
+                        onSelect={() => trigger(group, "resetBuilding")}
+                    />
+                </Section>
             </div>
         </div>
     );

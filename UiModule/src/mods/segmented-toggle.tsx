@@ -1,5 +1,5 @@
-import { Button } from "cs2/ui";
-import { focusDisabled } from "mods/vanilla";
+import { useLayoutEffect, useRef, useState } from "react";
+import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./segmented-toggle.module.scss";
 
 export interface SegmentOption {
@@ -14,32 +14,71 @@ interface SegmentedToggleProps {
     onSelect: (value: string) => void;
 }
 
-// Segment width in rem; the thumb slides by whole segments, so it must match .segment in the stylesheet.
-const segmentRem = 30;
+interface ThumbBox {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+}
 
-/** A rounded track with one icon per option and a thumb that slides to the active one; clicks select directly. */
+/**
+ * A rounded track with one tool button per option and a thumb that slides to the active one; clicks select directly.
+ * The thumb is measured from the active button, so it fits whatever size the game gives tool buttons.
+ */
 export const SegmentedToggle = ({ options, value, onSelect }: SegmentedToggleProps) => {
     const index = options.findIndex(option => option.value === value);
+    const segments = useRef<(HTMLDivElement | null)[]>([]);
+    const [thumb, setThumb] = useState<ThumbBox | null>(null);
+
+    useLayoutEffect(() => {
+        let frame = 0;
+        const measure = () => {
+            const segment = index >= 0 ? segments.current[index] : null;
+            // The UI may not have laid the buttons out yet on the first frame; measure again on the next one.
+            if (segment && segment.offsetWidth === 0) {
+                frame = requestAnimationFrame(measure);
+                return;
+            }
+            setThumb(segment
+                ? { left: segment.offsetLeft, top: segment.offsetTop, width: segment.offsetWidth, height: segment.offsetHeight }
+                : null);
+        };
+        measure();
+        return () => cancelAnimationFrame(frame);
+    }, [index, options.length]);
+
     return (
         <div className={styles.track}>
-            {index >= 0 && (
-                <div className={styles.thumb} style={{ transform: `translateX(${index * segmentRem}rem)` }} />
-            )}
-            {options.map((option, i) => (
-                <Button
-                    key={option.value}
-                    variant="icon"
-                    src={option.icon}
-                    tinted={false}
-                    tooltipLabel={option.tooltip}
-                    focusKey={focusDisabled}
-                    selectSound="select-toggle"
-                    theme={{ button: i === index ? styles.segmentActive : styles.segment, icon: styles.icon }}
-                    onSelect={() => {
-                        if (i !== index)
-                            onSelect(option.value);
+            {thumb && (
+                <div
+                    className={styles.thumb}
+                    style={{
+                        transform: `translateX(${thumb.left}px)`,
+                        top: `${thumb.top}px`,
+                        width: `${thumb.width}px`,
+                        height: `${thumb.height}px`,
                     }}
                 />
+            )}
+            {options.map((option, i) => (
+                <div
+                    key={option.value}
+                    ref={element => { segments.current[i] = element; }}
+                    className={i === index ? styles.segmentActive : styles.segment}
+                >
+                    <ToolButton
+                        src={option.icon}
+                        tooltip={option.tooltip}
+                        selected={false}
+                        multiSelect={false}
+                        disabled={false}
+                        focusKey={focusDisabled}
+                        onSelect={() => {
+                            if (i !== index)
+                                onSelect(option.value);
+                        }}
+                    />
+                </div>
             ))}
         </div>
     );

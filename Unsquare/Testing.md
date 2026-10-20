@@ -39,12 +39,14 @@ leave Unsquare mode.
 
 ## Tool window (in Unsquare mode)
 
-While a building is selected, a small window floats above its roof: a 3-way toggle for corners / edges / faces (a
-highlight slides to the active one), reset the selected corner, edge or face (disabled without a selection), reset the whole building and
-lift the terrain with the building (highlighted while on, disabled while undeformed) and fit the bottom corners to
-the original ground. The buttons run the same commands as Alt+1/2/3, Alt+R, Alt+Backspace, Alt+T and Alt+G.
-Then come the align buttons (left, back, right as seen from the street; Alt+Shift+arrows) and the align mode toggle
-(angle / flush / full; clicking selects directly, Alt+A cycles).
+While a building is selected, a small window floats above its roof, in four sections with a header each:
+- **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
+- **Terrain:** lift the terrain with the building (highlighted while on, disabled while undeformed; Alt+T) and fit the
+  bottom corners to the original ground (Alt+G).
+- **Align to neighbour:** left, back, right (as seen from the street; Alt+Shift+arrows) and the align mode toggle
+  (angle / flush / full; clicking selects directly, Alt+A cycles).
+- **Reset:** the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
+  (Alt+Backspace).
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
