@@ -166,6 +166,8 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 - Comments: max 2 lines inside code; XML doc summaries max 3 lines. Explain *why*, not *what*.
 - Add NUnit tests for all Core logic; name them `Method_Condition_Expectation`.
 - Commit messages: one header line, one blank line, 1–3 summary lines. Keep commits well scoped.
+- `README.md` and the `LongDescription` in `Unsquare/Properties/PublishConfiguration.xml` describe the mod to
+  players: whenever one changes, update the other (the long description leaves out building, code and licensing).
 
 ## Other mods
 

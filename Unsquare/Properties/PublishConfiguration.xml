@@ -8,11 +8,67 @@
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>
-Unsquare lets you bend, taper and skew individual buildings. Switch to Unsquare mode (button next to the underground toggle), pick a building and drag the corners, edges or faces of its lot box. Props, paths, areas and lanes on the lot follow the deformation, and the terrain can be lifted to match.
+Unsquare lets you freely deform individual buildings. Pick a building and drag the corners, edges or faces of its lot box: the building is reshaped by a trilinear cage deformation, so it can be tapered, skewed, twisted, raised or leaned to fit odd plots, angled streets and slopes.
 
-Deformed buildings are saved as variant prefabs and restored on load. Saves that contain deformed buildings need the mod; reset buildings before uninstalling.
+**Deformation is cosmetic only.** It changes how a building and its lot look, not what the game simulates: lot size, zone cells and the building's simulation (residents, jobs, level, upkeep) stay those of the original rectangular building.
 
-Unofficial mod, not affiliated with or endorsed by Colossal Order or Paradox Interactive. Inspired by FlexIt.
+**Features**
+
+- **Cage deformation of the lot box.** The cage spans the whole lot, from the ground to the roof, with 8 corners, 12 edges and 6 faces as handles. All LODs of the building are deformed.
+- **The lot follows.** Props, sub-buildings, ground areas (paving, grass), lanes and paths on the lot move with the cage. Props stay rigid but follow position and rotation, and turn with the nearest facade; ground props stay upright. Path ends at the road slide along it and stay connected.
+- **Terrain lift.** When the bottom of the cage is raised or lowered, the ground under the lot follows. It can be switched off per building to keep a flat pad.
+- **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street side goes to road level, or all four corners follow the terrain.
+- **Undo / redo** of every cage edit, across all buildings.
+- **Saved with the city.** Deformed buildings are restored when a save is loaded. Identical deformations share their assets.
+
+**How to use**
+
+1. Turn on Unsquare mode with the button next to the underground toggle, or press Alt+U.
+2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
+3. Click a corner, edge or face (depending on the pick mode) to select it. Drag an arrow of the gizmo (X red, Y green, Z blue) to move along that axis, or drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
+4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Esc, Alt+U or the button leave the mode.
+
+While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
+
+While a building is selected, a small tool window floats above its roof. It switches the pick mode (corners, edges, faces), resets the selected handle or the whole building, toggles the terrain lift and fits the building to the ground.
+
+**Hotkeys** (defaults; rebind them in Options → Unsquare. Except Alt+U, they only work in Unsquare mode)
+
+- Unsquare mode on / off: Alt+U
+- Leave Unsquare mode: Esc
+- Cycle pick mode (edges → faces → corners): Alt+W
+- Pick corners / edges / faces: Alt+1 / Alt+2 / Alt+3
+- Select previous / next handle: Alt+Q / Alt+E
+- Move along X (width): Alt+← / Alt+→
+- Move along Z (+Z = street side): Alt+↑ / Alt+↓
+- Move up / down: Alt+PageUp / Alt+PageDown
+- Cycle step size (0.1 / 0.5 / 2 m): Alt+S
+- Reset selected handle: Alt+R
+- Reset building / reset all buildings: Alt+Backspace / Alt+Shift+Delete
+- Terrain lift on / off: Alt+T
+- Fit to ground (back to terrain, street side to road) / all corners to terrain: Alt+G / Alt+Shift+G
+- Undo / redo: Ctrl+Z / Ctrl+Y
+- Write the cage state to the log: Alt+L
+
+**Overlay:** dashed lines show the original box. The cage colour shows its state: white undeformed, yellow pending, green applied, red failed, magenta when the lot outline leaves its plot (the edit still applies). The selected handle is orange, the hovered one cyan.
+
+**Options:** Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment, nudge step sizes, picking and gizmo sizes, and overlay style.
+
+**Limitations**
+
+- **Terrain follows the original lot box.** The game flattens and blends the ground over the rectangular lot footprint; Unsquare only tilts that flat area and the lot edges. A lot pushed outside its rectangle gets no ground shaping there, and diagonal creases come from the game's blending.
+- **The lot itself stays rectangular.** Lot size, zone cells and the plot outline are not deformed; pulling the lot outside its plot only shows a warning (magenta cage) and may overlap neighbours.
+- **Props are placed rigidly.** They move and turn with the cage but their meshes are not bent, so large props on strongly bent lots can look stiff or clip.
+- **Effects** (lights, smoke and similar) are not moved with the deformation yet.
+- **Strong twists** drop the coarsest LOD, which can't follow the bend; very distant buildings may pop.
+- **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme moves are clamped.
+- **Saves depend on the mod.** Without Unsquare, deformed buildings can't be restored. While in early development, an update may also discard older deformations.
+
+**Before uninstalling:** reset deformed buildings (Alt+Shift+Delete resets all) and save before removing the mod.
+
+**Credits:** inspired by Flex It by Root Of Business. Unsquare is an independent implementation and contains no code from Flex It.
+
+**Disclaimer:** Unsquare is an unofficial fan-made mod. It is not affiliated with, endorsed by or supported by Colossal Order or Paradox Interactive. Cities: Skylines II is a trademark of its respective owners.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
