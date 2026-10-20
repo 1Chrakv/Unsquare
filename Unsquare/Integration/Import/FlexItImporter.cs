@@ -79,7 +79,7 @@ namespace Unsquare.Integration.Import
             if (action == FlexItImportAction.Skip)
                 return;
             string source = variant.HasValue ? current.name : $"{current.name} (shear {shear})";
-            if (!TryGetBase(current, variant, out var basePrefab, out var baseEntity))
+            if (!TryGetBase(building, current, variant, out var basePrefab, out var baseEntity, out var applied))
             {
                 batch.FailedCount++;
                 Mod.Log.Warn($"FlexIt import: no base prefab for {source} (building {building}).");
@@ -87,15 +87,17 @@ namespace Unsquare.Integration.Import
             }
 
             CageOffsets offsets = null;
-            if (action == FlexItImportAction.Convert && !TryConvert(basePrefab, baseEntity, variant, shear, out offsets))
+            if (action == FlexItImportAction.Convert &&
+                !TryConvert(basePrefab, baseEntity, applied.Offsets, variant, shear, out offsets))
             {
                 batch.FailedCount++;
                 Mod.Log.Warn($"FlexIt import: {basePrefab.name} has no lot, cannot convert {source}.");
                 return;
             }
 
+            // Only FlexIt variants need a rebase; Unsquare's own swap remaps its lot from the applied cage.
             // Rebase first: if that fails, the building keeps its FlexIt look completely.
-            if (baseEntity != prefabRef.m_Prefab && !_pipeline.TryRebase(building, basePrefab))
+            if (variant.HasValue && !_pipeline.TryRebase(building, basePrefab))
             {
                 batch.FailedCount++;
                 Mod.Log.Warn($"FlexIt import: could not move building {building} off {source}.");
@@ -111,31 +113,40 @@ namespace Unsquare.Integration.Import
             }
             else
             {
-                batch.Conversions.Add((building, new DeformSpec(offsets, false), source));
+                batch.Conversions.Add((building, applied.WithOffsets(offsets), source));
             }
         }
 
-        // Shear-only buildings are on their own prefab; one already deformed by Unsquare would stack two cages.
-        private bool TryGetBase(PrefabBase current, FlexItVariant? variant, out ObjectGeometryPrefab basePrefab,
-            out Entity baseEntity)
+        // A sheared building may already be on an Unsquare variant (both mods used): its cage is the starting point.
+        private bool TryGetBase(Entity building, PrefabBase current, FlexItVariant? variant,
+            out ObjectGeometryPrefab basePrefab, out Entity baseEntity, out DeformSpec applied)
         {
             baseEntity = Entity.Null;
             basePrefab = null;
+            applied = DeformSpec.Identity;
             if (variant.HasValue)
             {
                 var id = new PrefabID(current.GetType().Name, variant.Value.BaseName);
                 if (_prefabSystem.TryGetPrefab(id, out PrefabBase found))
                     basePrefab = found as ObjectGeometryPrefab;
             }
-            else if (!VariantNaming.IsVariantName(current.name))
+            else if (VariantNaming.IsVariantName(current.name))
+            {
+                if (_pipeline.TryDescribe(building, out var description))
+                {
+                    basePrefab = description.BasePrefab;
+                    applied = description.Applied;
+                }
+            }
+            else
             {
                 basePrefab = current as ObjectGeometryPrefab;
             }
             return basePrefab != null && _prefabSystem.TryGetEntity(basePrefab, out baseEntity);
         }
 
-        private bool TryConvert(ObjectGeometryPrefab basePrefab, Entity baseEntity, FlexItVariant? variant,
-            FlexItShear? shear, out CageOffsets offsets)
+        private bool TryConvert(ObjectGeometryPrefab basePrefab, Entity baseEntity, CageOffsets applied,
+            FlexItVariant? variant, FlexItShear? shear, out CageOffsets offsets)
         {
             offsets = null;
             if (!CageBoxMeasurer.TryMeasureLot(basePrefab, out var lotBox))
@@ -150,7 +161,7 @@ namespace Unsquare.Integration.Import
                 taper = new FlexItTaper(variant.Value, FlexItFootprint.HalfExtent(basePrefab, alongX: true),
                     halfDepth, pivotZ);
             }
-            offsets = FlexItCageConverter.ToOffsets(lotBox, taper, shear);
+            offsets = FlexItCageConverter.ToOffsets(lotBox, applied, taper, shear);
             return true;
         }
     }

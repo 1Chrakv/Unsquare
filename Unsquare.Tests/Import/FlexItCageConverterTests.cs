@@ -71,6 +71,24 @@ namespace Unsquare.Tests.Import
             }
         }
 
+        [Test]
+        public void ToOffsets_ShearOnAppliedCage_ShearsTheDeformedBuilding()
+        {
+            var applied = CageOffsets.Identity.Move(CageHandle.Corner(7), new float3(2, 3, -1));
+            var shear = new FlexItShear(15, false, 12);
+            var offsets = FlexItCageConverter.ToOffsets(Lot, applied, null, shear);
+
+            var before = new TrilinearCageDeformation(Lot, applied);
+            var after = new TrilinearCageDeformation(Lot, offsets);
+            var p = new float3(3, 14, 5);
+            float3 deformed = before.Apply(p, out _);
+            float2 want = shear.Map(deformed.xz);
+            float3 got = after.Apply(p, out _);
+            Assert.That(got.x, Is.EqualTo(want.x).Within(Tolerance));
+            Assert.That(got.z, Is.EqualTo(want.y).Within(Tolerance));
+            Assert.That(got.y, Is.EqualTo(deformed.y).Within(Tolerance));
+        }
+
         private static void AssertMatches(CageOffsets offsets, System.Func<float2, float2> expected)
         {
             var cage = new TrilinearCageDeformation(Lot, offsets);

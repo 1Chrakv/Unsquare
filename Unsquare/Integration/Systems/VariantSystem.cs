@@ -216,8 +216,9 @@ namespace Unsquare.Integration.Systems
             _swaps.Remove(building);
             try
             {
-                // Foreign variants never moved the lot's nets, so there is nothing to remap.
-                PrefabSwapper.Swap(EntityManager, building, baseEntity, _options.AreaMatchMeters, null);
+                // Foreign variants never moved the lot's nets: an identity remap keeps them in place.
+                PrefabSwapper.Swap(EntityManager, building, baseEntity, _options.AreaMatchMeters,
+                    new LotRemap(null, null));
                 SetStatus(building, VariantStatus.Idle);
                 return true;
             }
