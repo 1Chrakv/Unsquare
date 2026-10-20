@@ -1,5 +1,11 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
+import alignAngleIcon from "images/align-angle.svg";
+import alignBackIcon from "images/align-back.svg";
+import alignFlushIcon from "images/align-flush.svg";
+import alignFullIcon from "images/align-full.svg";
+import alignLeftIcon from "images/align-left.svg";
+import alignRightIcon from "images/align-right.svg";
 import cornerIcon from "images/pick-corner.svg";
 import fitGroundIcon from "images/fit-ground.svg";
 import edgeIcon from "images/pick-edge.svg";
@@ -25,6 +31,7 @@ const pickKind$ = bindValue<string>(group, "pickKind", "Edge");
 const hasHandle$ = bindValue<boolean>(group, "hasHandle", false);
 const terrainLift$ = bindValue<boolean>(group, "terrainLift", false);
 const canLiftTerrain$ = bindValue<boolean>(group, "canLiftTerrain", false);
+const alignMode$ = bindValue<string>(group, "alignMode", "Angle");
 
 // Values are the C# CageHandleKind names.
 const pickKinds = [
@@ -33,12 +40,26 @@ const pickKinds = [
     { kind: "Face", icon: faceIcon, fallback: "Pick faces" },
 ];
 
+// Values are the C# AlignSide and AlignMode names; sides as seen from the street.
+const alignSides = [
+    { side: "Left", icon: alignLeftIcon, fallback: "Align the left side to its neighbour (Alt+Shift+Left)" },
+    { side: "Back", icon: alignBackIcon, fallback: "Align the back to its neighbour (Alt+Shift+Up)" },
+    { side: "Right", icon: alignRightIcon, fallback: "Align the right side to its neighbour (Alt+Shift+Right)" },
+];
+
+const alignModes: Record<string, { icon: string; fallback: string }> = {
+    Angle: { icon: alignAngleIcon, fallback: "Align mode: angle only (Alt+A)" },
+    Flush: { icon: alignFlushIcon, fallback: "Align mode: flush (Alt+A)" },
+    Full: { icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
+};
+
 const ToolWindow = () => {
     const anchor = useValue(toolWindow$);
     const pickKind = useValue(pickKind$);
     const hasHandle = useValue(hasHandle$);
     const terrainLift = useValue(terrainLift$);
     const canLiftTerrain = useValue(canLiftTerrain$);
+    const alignMode = useValue(alignMode$);
     const { translate } = useLocalization();
     if (!ToolButton || !anchor.visible)
         return null;
@@ -94,6 +115,29 @@ const ToolWindow = () => {
                     disabled={false}
                     focusKey={focusDisabled}
                     onSelect={() => trigger(group, "fitToGround")}
+                />
+                <div className={styles.divider} />
+                {alignSides.map(({ side, icon, fallback }) => (
+                    <ToolButton
+                        key={side}
+                        src={icon}
+                        tooltip={translate(`Unsquare.ToolWindow.Align${side}`, fallback)}
+                        selected={false}
+                        multiSelect={false}
+                        disabled={false}
+                        focusKey={focusDisabled}
+                        onSelect={() => trigger(group, "alignToNeighbour", side)}
+                    />
+                ))}
+                <ToolButton
+                    src={(alignModes[alignMode] ?? alignModes.Angle).icon}
+                    tooltip={translate(`Unsquare.ToolWindow.AlignMode${alignMode}`,
+                        (alignModes[alignMode] ?? alignModes.Angle).fallback)}
+                    selected={false}
+                    multiSelect={false}
+                    disabled={false}
+                    focusKey={focusDisabled}
+                    onSelect={() => trigger(group, "cycleAlignMode")}
                 />
             </div>
         </div>
