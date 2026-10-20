@@ -140,6 +140,8 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   flush slides both corners along their edges onto the line, full takes a lot edge's end points (roads: like flush).
   `NeighbourQuery` (Integration) reads road `EdgeGeometry` and buildings from the game's search trees;
   `DeformService` turns other lots into edges via their cages. Alt+Shift+arrows align, Alt+A cycles the mode.
+  Edges carry ground heights (road surface, neighbour lot ground); `NeighbourAlign.FitHeight` (Ctrl+Alt+arrows)
+  moves the same side's two columns to the neighbour's height next to them via `GroundFit.Fit`.
 
 ## Props: rigid placement, full deformation later
 

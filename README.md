@@ -26,6 +26,8 @@ angled streets and slopes.
 - **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road
   or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
+- **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same
+  neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
@@ -61,7 +63,7 @@ While a handle is selected the building is locked; clicks on other buildings do 
 ### Tool window
 
 While a building is selected, a small window floats above its roof, in labelled sections: a 3-way toggle for the
-pick mode (corners, edges, faces); terrain lift and fit to ground; align the sides to their neighbours (a second
+pick mode (corners, edges, faces); terrain lift, fit to ground and level with neighbour; align the sides to their neighbours (a second
 toggle picks the align mode: angle, flush or full); and reset the selected handle or the whole building.
 
 ### Hotkeys
@@ -85,6 +87,7 @@ Defaults; all can be rebound in Options → Unsquare. Except Alt+U, they only wo
 | Fit to ground (back to terrain, street side to road) / all corners to terrain | Alt+G / Alt+Shift+G |
 | Align left / back / right side to its neighbour | Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→ |
 | Cycle align mode (angle → flush → full) | Alt+A |
+| Level left / back / right side with its neighbour | Ctrl+Alt+← / Ctrl+Alt+↑ / Ctrl+Alt+→ |
 | Undo / redo | Ctrl+Z / Ctrl+Y |
 | Write the cage state to the log | Alt+L |
 

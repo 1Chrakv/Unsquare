@@ -42,7 +42,8 @@ leave Unsquare mode.
 While a building is selected, a small window floats above its roof, in four sections with a header each:
 - **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
 - **Terrain:** lift the terrain with the building (highlighted while on, disabled while undeformed; Alt+T) and fit the
-  bottom corners to the original ground (Alt+G).
+  bottom corners to the original ground (Alt+G); level the left, back or right side with its neighbour's ground
+  (Ctrl+Alt+arrows).
 - **Align to neighbour:** left, back, right (as seen from the street; Alt+Shift+arrows) and the align mode toggle
   (angle / flush / full; clicking selects directly, Alt+A cycles).
 - **Reset:** the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
@@ -67,6 +68,7 @@ While a building is selected, a small window floats above its roof, in four sect
 | Fit back corners to the original ground (street side to road level) / all corners | Alt+G / Alt+Shift+G |
 | Align left / back / right side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → |
 | Cycle align mode (angle → flush → full) | Alt+A |
+| Level left / back / right side with its neighbour's ground | Ctrl+Alt+← / ↑ / → |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
@@ -173,6 +175,9 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 92 | Align a side with nothing within the align reach | Nothing changes; log `[Edit] Align … -> Rejected` |
 | 93 | Undo / redo after each align | One step each; the target building stays selected |
 | 94 | Drag the left side a few metres into the neighbour lot, then align left (each mode) | The side goes back out onto the neighbour's facing edge, not to the neighbour's far side |
+| 95 | Building next to a lot standing higher (or on a slope), Ctrl+Alt+← (or the left level button) | Only the left side's bottom corners move to the neighbour lot's ground; the building height and the other corners stay; log `Levelling Left of building … with lot …` |
+| 96 | Back of a lot at a sloped road, Ctrl+Alt+↑ | Each back corner goes to the road surface height next to it |
+| 97 | Level a side with nothing in reach; then Ctrl+Z after a level | Rejected with the `no neighbour within …` log line; undo restores the heights in one step |
 
 ## Reporting problems
 
