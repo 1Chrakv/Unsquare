@@ -286,16 +286,18 @@ namespace Unsquare.UI.Editing
         }
 
         /// <summary>Angle → Flush → Full → Angle.</summary>
-        public void CycleAlignMode()
+        public void CycleAlignMode() => SetAlignMode(AlignMode switch
         {
-            if (!IsEnabled)
+            AlignMode.Angle => AlignMode.Flush,
+            AlignMode.Flush => AlignMode.Full,
+            _ => AlignMode.Angle,
+        });
+
+        public void SetAlignMode(AlignMode mode)
+        {
+            if (!IsEnabled || mode == AlignMode)
                 return;
-            AlignMode = AlignMode switch
-            {
-                AlignMode.Angle => AlignMode.Flush,
-                AlignMode.Flush => AlignMode.Full,
-                _ => AlignMode.Angle,
-            };
+            AlignMode = mode;
             Log($"Align mode {AlignMode}");
             Changed?.Invoke();
         }

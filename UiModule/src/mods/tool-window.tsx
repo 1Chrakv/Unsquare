@@ -14,6 +14,7 @@ import resetBuildingIcon from "images/reset-building.svg";
 import resetHandleIcon from "images/reset-handle.svg";
 import terrainLiftIcon from "images/terrain-lift.svg";
 import { Guard } from "mods/guard";
+import { SegmentedToggle } from "mods/segmented-toggle";
 import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./tool-window.module.scss";
 
@@ -35,9 +36,9 @@ const alignMode$ = bindValue<string>(group, "alignMode", "Angle");
 
 // Values are the C# CageHandleKind names.
 const pickKinds = [
-    { kind: "Corner", icon: cornerIcon, fallback: "Pick corners" },
-    { kind: "Edge", icon: edgeIcon, fallback: "Pick edges" },
-    { kind: "Face", icon: faceIcon, fallback: "Pick faces" },
+    { value: "Corner", icon: cornerIcon, fallback: "Pick corners" },
+    { value: "Edge", icon: edgeIcon, fallback: "Pick edges" },
+    { value: "Face", icon: faceIcon, fallback: "Pick faces" },
 ];
 
 // Values are the C# AlignSide and AlignMode names; sides as seen from the street.
@@ -47,11 +48,11 @@ const alignSides = [
     { side: "Right", icon: alignRightIcon, fallback: "Align the right side to its neighbour (Alt+Shift+Right)" },
 ];
 
-const alignModes: Record<string, { icon: string; fallback: string }> = {
-    Angle: { icon: alignAngleIcon, fallback: "Align mode: angle only (Alt+A)" },
-    Flush: { icon: alignFlushIcon, fallback: "Align mode: flush (Alt+A)" },
-    Full: { icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
-};
+const alignModes = [
+    { value: "Angle", icon: alignAngleIcon, fallback: "Align mode: angle only (Alt+A)" },
+    { value: "Flush", icon: alignFlushIcon, fallback: "Align mode: flush (Alt+A)" },
+    { value: "Full", icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
+];
 
 const ToolWindow = () => {
     const anchor = useValue(toolWindow$);
@@ -66,18 +67,12 @@ const ToolWindow = () => {
     return (
         <div className={styles.anchor} style={{ left: `${anchor.x * 100}vw`, top: `${anchor.y * 100}vh` }}>
             <div className={styles.window}>
-                {pickKinds.map(({ kind, icon, fallback }) => (
-                    <ToolButton
-                        key={kind}
-                        src={icon}
-                        tooltip={translate(`Unsquare.ToolWindow.${kind}`, fallback)}
-                        selected={pickKind === kind}
-                        multiSelect={false}
-                        disabled={false}
-                        focusKey={focusDisabled}
-                        onSelect={() => trigger(group, "selectPickKind", kind)}
-                    />
-                ))}
+                <SegmentedToggle
+                    options={pickKinds.map(({ value, icon, fallback }) =>
+                        ({ value, icon, tooltip: translate(`Unsquare.ToolWindow.${value}`, fallback) ?? fallback }))}
+                    value={pickKind}
+                    onSelect={kind => trigger(group, "selectPickKind", kind)}
+                />
                 <div className={styles.divider} />
                 <ToolButton
                     src={resetHandleIcon}
@@ -129,15 +124,15 @@ const ToolWindow = () => {
                         onSelect={() => trigger(group, "alignToNeighbour", side)}
                     />
                 ))}
-                <ToolButton
-                    src={(alignModes[alignMode] ?? alignModes.Angle).icon}
-                    tooltip={translate(`Unsquare.ToolWindow.AlignMode${alignMode}`,
-                        (alignModes[alignMode] ?? alignModes.Angle).fallback)}
-                    selected={false}
-                    multiSelect={false}
-                    disabled={false}
-                    focusKey={focusDisabled}
-                    onSelect={() => trigger(group, "cycleAlignMode")}
+                <div className={styles.spacer} />
+                <SegmentedToggle
+                    options={alignModes.map(({ value, icon, fallback }) => ({
+                        value,
+                        icon,
+                        tooltip: translate(`Unsquare.ToolWindow.AlignMode${value}`, fallback) ?? fallback,
+                    }))}
+                    value={alignMode}
+                    onSelect={mode => trigger(group, "selectAlignMode", mode)}
                 />
             </div>
         </div>

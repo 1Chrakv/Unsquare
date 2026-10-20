@@ -52,8 +52,16 @@ namespace Unsquare.UI.Bindings
                 () => _editor.Session.FitToGround(GroundFitMode.BackOnly)));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "alignMode",
                 () => _editor.Session.AlignMode.ToString()));
-            AddBinding(new TriggerBinding(Group, "cycleAlignMode", () => _editor.Session.CycleAlignMode()));
+            AddBinding(new TriggerBinding<string>(Group, "selectAlignMode", SelectAlignMode));
             AddBinding(new TriggerBinding<string>(Group, "alignToNeighbour", AlignToNeighbour));
+        }
+
+        private void SelectAlignMode(string mode)
+        {
+            if (Enum.TryParse(mode, out AlignMode parsed) && Enum.IsDefined(typeof(AlignMode), parsed))
+                _editor.Session.SetAlignMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown align mode '{mode}'.");
         }
 
         private void AlignToNeighbour(string side)

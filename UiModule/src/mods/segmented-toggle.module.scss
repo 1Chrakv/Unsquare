@@ -1,0 +1,58 @@
+// Segment size must match segmentRem in segmented-toggle.tsx.
+$segment: 36rem;
+$inset: 3rem;
+
+.track {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    padding: $inset;
+    border-radius: ($segment + 2 * $inset) * 0.5;
+    background-color: rgba(0, 0, 0, 0.35);
+    border: 1rem solid rgba(255, 255, 255, 0.12);
+}
+
+.thumb {
+    position: absolute;
+    top: $inset;
+    left: $inset;
+    width: $segment;
+    height: $segment;
+    border-radius: $segment * 0.5;
+    background-color: rgba(52, 166, 226, 0.9);
+    box-shadow: 0 0 6rem rgba(52, 166, 226, 0.6);
+    transition: transform 0.15s ease-out;
+}
+
+.segment,
+.segmentActive {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: $segment;
+    height: $segment;
+    padding: 0;
+    border: none;
+    border-radius: $segment * 0.5;
+    background-color: transparent;
+}
+
+.icon {
+    width: 24rem;
+    height: 24rem;
+    opacity: 0.55;
+    transition: opacity 0.1s ease-out;
+}
+
+.segment:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+
+    .icon {
+        opacity: 0.9;
+    }
+}
+
+.segmentActive .icon {
+    opacity: 1;
+}
