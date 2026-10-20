@@ -59,9 +59,9 @@ While a handle is selected the building is locked; clicks on other buildings do 
 
 ### Tool window
 
-While a building is selected, a small window floats above its roof. It switches the pick mode (corners, edges,
-faces), resets the selected handle or the whole building, toggles the terrain lift, fits the building to the
-ground and aligns its sides to their neighbours (with the align mode: angle, flush or full).
+While a building is selected, a small window floats above its roof. A 3-way toggle switches the pick mode (corners,
+edges, faces); buttons reset the selected handle or the whole building, toggle the terrain lift, fit the building
+to the ground and align its sides to their neighbours (a second toggle picks the align mode: angle, flush or full).
 
 ### Hotkeys
 
