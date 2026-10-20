@@ -44,6 +44,12 @@ namespace Unsquare.Api
         DeformRequestResult AlignToNeighbour(Entity building, AlignSide side, AlignMode mode,
             NeighbourAlignOptions options);
 
+        /// <summary>
+        /// Moves the bottom of the lot's left, back or right side up or down to the ground height of the neighbour that
+        /// <see cref="AlignToNeighbour"/> would use; rejected when there is none.
+        /// </summary>
+        DeformRequestResult AlignGroundToNeighbour(Entity building, AlignSide side, NeighbourAlignOptions options);
+
         /// <summary>Requests offsets and terrain flag together, e.g. to replay an undo step.</summary>
         DeformRequestResult Apply(Entity building, DeformSpec spec);
 

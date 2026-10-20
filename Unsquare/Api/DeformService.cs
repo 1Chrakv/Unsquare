@@ -24,7 +24,7 @@ namespace Unsquare.Api
         private readonly NeighbourQuery _neighbours;
         private readonly EntityManager _entityManager;
         private readonly List<NeighbourEdge> _edges = new();
-        private readonly List<Line2.Segment> _roadPieces = new();
+        private readonly List<Line3.Segment> _roadPieces = new();
         private readonly List<Entity> _buildings = new();
 
         public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain, NeighbourQuery neighbours,
@@ -98,11 +98,32 @@ namespace Unsquare.Api
         public DeformRequestResult AlignToNeighbour(Entity building, AlignSide side, AlignMode mode,
             NeighbourAlignOptions options)
         {
+            if (!TryFindNeighbour(building, side, options, out var state, out var neighbour, out var result))
+                return result;
+            Mod.Log.Info($"Aligning {side} of building {building} to {neighbour} ({mode}).");
+            return SetOffsets(building, NeighbourAlign.Align(state.Box, state.TargetOffsets, side, neighbour, mode));
+        }
+
+        public DeformRequestResult AlignGroundToNeighbour(Entity building, AlignSide side, NeighbourAlignOptions options)
+        {
+            if (!TryFindNeighbour(building, side, options, out var state, out var neighbour, out var result))
+                return result;
+            Mod.Log.Info($"Levelling {side} of building {building} with {neighbour} " +
+                $"({neighbour.HeightA:0.0} .. {neighbour.HeightB:0.0} m).");
+            return SetOffsets(building, NeighbourAlign.FitHeight(state.Box, state.TargetOffsets, side, neighbour));
+        }
+
+        // The edge NeighbourAlign picks for the side among nearby roads and lots; logs why there is none.
+        private bool TryFindNeighbour(Entity building, AlignSide side, NeighbourAlignOptions options,
+            out CageState state, out NeighbourEdge neighbour, out DeformRequestResult failure)
+        {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
-            if (!TryGetCage(building, out var state) ||
+            neighbour = default;
+            failure = DeformRequestResult.NotDeformable;
+            if (!TryGetCage(building, out state) ||
                 !BuildingSpace.TryGetTransform(_entityManager, building, out var transform))
-                return DeformRequestResult.NotDeformable;
+                return false;
 
             var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
             var area = new Bounds2(float.MaxValue, float.MinValue);
@@ -116,34 +137,32 @@ namespace Unsquare.Api
             _buildings.Clear();
             _neighbours.CollectRoadEdges(area, _roadPieces);
             foreach (var piece in _roadPieces)
-                _edges.Add(NeighbourEdge.Road(BuildingSpace.GroundToBuilding(transform, piece.a),
-                    BuildingSpace.GroundToBuilding(transform, piece.b)));
+                _edges.Add(NeighbourEdge.Road(BuildingSpace.PointToBuilding(transform, piece.a),
+                    BuildingSpace.PointToBuilding(transform, piece.b)));
             _neighbours.CollectBuildings(building, area, _buildings);
             foreach (var other in _buildings)
                 AddLotEdges(transform, other);
-            int roadPieces = _roadPieces.Count;
-            if (!NeighbourAlign.TryFindNeighbour(state.Box, state.TargetOffsets, side, _edges, options,
-                    out var neighbour, out float nearest))
-            {
-                string nearestText = float.IsPositiveInfinity(nearest) ? "none" : $"{nearest:0.0} m";
-                Mod.Log.Info($"Align {side} of building {building}: no neighbour within {options.SearchMeters} m " +
-                    $"({roadPieces} road pieces, {_buildings.Count} lots nearby; " +
-                    $"nearest parallel edge: {nearestText}).");
-                return DeformRequestResult.Rejected;
-            }
-            Mod.Log.Info($"Aligning {side} of building {building} to {neighbour} ({mode}).");
-            return SetOffsets(building, NeighbourAlign.Align(state.Box, state.TargetOffsets, side, neighbour, mode));
+            if (NeighbourAlign.TryFindNeighbour(state.Box, state.TargetOffsets, side, _edges, options,
+                    out neighbour, out float nearest))
+                return true;
+
+            string nearestText = float.IsPositiveInfinity(nearest) ? "none" : $"{nearest:0.0} m";
+            Mod.Log.Info($"Align {side} of building {building}: no neighbour within {options.SearchMeters} m " +
+                $"({_roadPieces.Count} road pieces, {_buildings.Count} lots nearby; " +
+                $"nearest parallel edge: {nearestText}).");
+            failure = DeformRequestResult.Rejected;
+            return false;
         }
 
-        // Ground outline of another lot, in the target's building space.
+        // Ground outline of another lot, in the target's building space (heights relative to the target's ground).
         private void AddLotEdges(in Transform target, Entity other)
         {
             if (!TryGetCage(other, out var state) ||
                 !BuildingSpace.TryGetTransform(_entityManager, other, out var transform))
                 return;
-            var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
+            var ground = GroundFit.GroundPoints3(state.Box, state.TargetOffsets);
             for (int i = 0; i < ground.Length; i++)
-                ground[i] = BuildingSpace.GroundToBuilding(target, BuildingSpace.GroundToWorld(transform, ground[i]));
+                ground[i] = BuildingSpace.PointToBuilding(target, BuildingSpace.PointToWorld(transform, ground[i]));
             NeighbourEdge.AddLotOutline(ground, _edges);
         }
 

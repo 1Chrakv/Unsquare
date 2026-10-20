@@ -15,7 +15,7 @@ namespace Unsquare.Integration.Entities
 {
     /// <summary>
     /// Finds what lies around a building for aligning to neighbours: road edges (outer curves of road segments, in
-    /// world xz) and other buildings, via the game's search trees. Main thread only.
+    /// world space) and other buildings, via the game's search trees. Main thread only.
     /// </summary>
     internal sealed class NeighbourQuery
     {
@@ -33,8 +33,8 @@ namespace Unsquare.Integration.Entities
             _objects = objects;
         }
 
-        /// <summary>Adds the road edges in the world xz area, as straight world xz pieces.</summary>
-        public void CollectRoadEdges(Bounds2 area, List<Line2.Segment> pieces)
+        /// <summary>Adds the road edges in the world xz area, as straight world pieces at road surface height.</summary>
+        public void CollectRoadEdges(Bounds2 area, List<Line3.Segment> pieces)
         {
             try
             {
@@ -100,13 +100,13 @@ namespace Unsquare.Integration.Entities
             return false;
         }
 
-        private static void AddCurve(Bezier4x3 curve, List<Line2.Segment> pieces)
+        private static void AddCurve(Bezier4x3 curve, List<Line3.Segment> pieces)
         {
-            float2 previous = curve.a.xz;
+            float3 previous = curve.a;
             for (int i = 1; i <= PiecesPerCurve; i++)
             {
-                float2 next = MathUtils.Position(curve, (float)i / PiecesPerCurve).xz;
-                pieces.Add(new Line2.Segment(previous, next));
+                float3 next = MathUtils.Position(curve, (float)i / PiecesPerCurve);
+                pieces.Add(new Line3.Segment(previous, next));
                 previous = next;
             }
         }
