@@ -15,9 +15,9 @@ interface SegmentedToggleProps {
 }
 
 // Segment width in rem; the thumb slides by whole segments, so it must match .segment in the stylesheet.
-const segmentRem = 36;
+const segmentRem = 30;
 
-/** A pill with one icon per option and a thumb that slides to the active one; clicks select directly. */
+/** A rounded track with one icon per option and a thumb that slides to the active one; clicks select directly. */
 export const SegmentedToggle = ({ options, value, onSelect }: SegmentedToggleProps) => {
     const index = options.findIndex(option => option.value === value);
     return (

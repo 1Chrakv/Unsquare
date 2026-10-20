@@ -1,13 +1,14 @@
 // Segment size must match segmentRem in segmented-toggle.tsx.
-$segment: 36rem;
-$inset: 3rem;
+$segment: 30rem;
+$inset: 2rem;
+$radius: 5rem;
 
 .track {
     position: relative;
     display: flex;
     flex-direction: row;
     padding: $inset;
-    border-radius: ($segment + 2 * $inset) * 0.5;
+    border-radius: $radius + $inset;
     background-color: rgba(0, 0, 0, 0.35);
     border: 1rem solid rgba(255, 255, 255, 0.12);
 }
@@ -18,9 +19,9 @@ $inset: 3rem;
     left: $inset;
     width: $segment;
     height: $segment;
-    border-radius: $segment * 0.5;
+    border-radius: $radius;
     background-color: rgba(52, 166, 226, 0.9);
-    box-shadow: 0 0 6rem rgba(52, 166, 226, 0.6);
+    box-shadow: 0 0 5rem rgba(52, 166, 226, 0.5);
     transition: transform 0.15s ease-out;
 }
 
@@ -34,13 +35,13 @@ $inset: 3rem;
     height: $segment;
     padding: 0;
     border: none;
-    border-radius: $segment * 0.5;
+    border-radius: $radius;
     background-color: transparent;
 }
 
 .icon {
-    width: 24rem;
-    height: 24rem;
+    width: 20rem;
+    height: 20rem;
     opacity: 0.55;
     transition: opacity 0.1s ease-out;
 }
