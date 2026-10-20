@@ -312,7 +312,7 @@ namespace Unsquare.Integration.Systems
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
             if (!_factory.TryCreate(basePrefab, variantName, box, buildingBox, offsets, _options.Attachments,
-                    assets, out variant))
+                    _options.CoarseLodTwistMeters, assets, out variant))
                 return false;
             _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, spec));
 

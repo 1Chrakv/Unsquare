@@ -32,14 +32,20 @@ namespace Unsquare.Integration.Prefabs
 
         /// <param name="box">The lot cage box.</param>
         /// <param name="buildingBox">The building's mesh box; props align to its faces (facades).</param>
+        /// <param name="coarseLodTwistMeters">Cages twisting more than this drop the coarsest LOD.</param>
         public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box,
-            CageBox buildingBox, CageOffsets offsets, AttachmentOptions attachments,
+            CageBox buildingBox, CageOffsets offsets, AttachmentOptions attachments, float coarseLodTwistMeters,
             ISet<string> usedAssets, out ObjectGeometryPrefab variant)
         {
             variant = null;
             var deformation = new TrilinearCageDeformation(box, offsets);
             var context = new AttachmentContext(deformation, box, buildingBox, attachments);
-            if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), usedAssets, out var meshes))
+            float twist = CageTwist.MaxResidualMeters(offsets);
+            bool skipCoarsestLod = twist > coarseLodTwistMeters;
+            Mod.Log.Info($"LODs of {variantName}: twist {twist:0.00} m, coarsest LOD " +
+                (skipCoarsestLod ? "dropped" : "kept"));
+            if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), skipCoarsestLod, usedAssets,
+                    out var meshes))
                 return false;
 
             ObjectGeometryPrefab clone = null;
@@ -79,7 +85,7 @@ namespace Unsquare.Integration.Prefabs
         }
 
         private bool TryDeformMeshes(ObjectGeometryPrefab basePrefab, IDeformation deformation, string deformKey,
-            ISet<string> usedAssets, out ObjectMeshInfo[] meshes)
+            bool skipCoarsestLod, ISet<string> usedAssets, out ObjectMeshInfo[] meshes)
         {
             meshes = new ObjectMeshInfo[basePrefab.m_Meshes.Length];
             for (int i = 0; i < meshes.Length; i++)
@@ -89,7 +95,8 @@ namespace Unsquare.Integration.Prefabs
                 if (!(info.m_Mesh is RenderPrefab render))
                     continue;
                 var transform = new SubmeshTransform(info.m_Position, info.m_Rotation);
-                var deformed = _renderBuilder.GetOrBuild(render, transform, deformation, deformKey, usedAssets);
+                var deformed = _renderBuilder.GetOrBuild(render, transform, deformation, deformKey, skipCoarsestLod,
+                    usedAssets);
                 if (deformed == null)
                     return false;
                 info.m_Mesh = deformed;

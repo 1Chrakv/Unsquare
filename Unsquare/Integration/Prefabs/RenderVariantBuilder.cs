@@ -18,6 +18,8 @@ namespace Unsquare.Integration.Prefabs
     /// </summary>
     internal sealed class RenderVariantBuilder
     {
+        private const string SkippedLodSuffix = "-fine";
+
         private readonly GeometryAssetStore _store;
         private readonly Dictionary<string, Built> _cache = new(StringComparer.Ordinal);
 
@@ -33,15 +35,19 @@ namespace Unsquare.Integration.Prefabs
         public int CreatedAssetCount { get; private set; }
 
         /// <summary>Returns the deformed clone or null; adds every asset name it relies on to <paramref name="usedAssets"/>.</summary>
+        /// <param name="skipCoarsestLod">Leaves out the coarsest LOD, whose large triangles can't follow a twist.</param>
         public RenderPrefab GetOrBuild(RenderPrefab source, in SubmeshTransform transform, IDeformation deformation,
-            string deformKey, ISet<string> usedAssets)
+            string deformKey, bool skipCoarsestLod, ISet<string> usedAssets)
         {
             var hash = AssetNaming.Hash(source.name, DeformKey.ForSubmesh(deformKey, transform));
             string assetName = AssetNaming.AssetName(hash);
-            if (!_cache.TryGetValue(assetName, out var built))
+            // Both LOD sets may exist in one session (threshold changed), so they need distinct prefab names.
+            string cloneName = skipCoarsestLod ? assetName + SkippedLodSuffix : assetName;
+            if (!_cache.TryGetValue(cloneName, out var built))
             {
-                built = TryBuild(source, transform, deformation, deformKey, hash, assetName);
-                _cache[assetName] = built;
+                built = TryBuild(source, transform, deformation, deformKey, skipCoarsestLod, hash, assetName,
+                    cloneName);
+                _cache[cloneName] = built;
             }
             if (built.Prefab == null)
                 return null;
@@ -53,19 +59,19 @@ namespace Unsquare.Integration.Prefabs
         public void Clear() => _cache.Clear();
 
         private Built TryBuild(RenderPrefab source, SubmeshTransform transform, IDeformation deformation,
-            string deformKey, StableHash hash, string assetName)
+            string deformKey, bool skipCoarsestLod, StableHash hash, string assetName, string cloneName)
         {
             try
             {
                 var assets = new HashSet<string>(StringComparer.Ordinal) { assetName };
                 var asset = ObtainAsset(source, transform, deformation, hash, assetName, out var bounds);
 
-                var clone = (RenderPrefab)source.Clone(assetName);
+                var clone = (RenderPrefab)source.Clone(cloneName);
                 clone.Remove<ObsoleteIdentifiers>();
                 clone.geometryAsset = asset;
                 clone.bounds = new Bounds3(bounds.Min, bounds.Max);
 
-                if (!TryDeformLods(clone, source, transform, deformation, deformKey, assets))
+                if (!TryDeformLods(clone, source, transform, deformation, deformKey, skipCoarsestLod, assets))
                 {
                     Object.Destroy(clone);
                     return Built.Failed;
@@ -100,24 +106,41 @@ namespace Unsquare.Integration.Prefabs
 
         // Without deformed LODs the original shape pops back at a distance.
         private bool TryDeformLods(RenderPrefab clone, RenderPrefab source, SubmeshTransform transform,
-            IDeformation deformation, string deformKey, ISet<string> assets)
+            IDeformation deformation, string deformKey, bool skipCoarsestLod, ISet<string> assets)
         {
             var lod = PrefabCloning.GetOwnedComponent<LodProperties>(clone, source);
             if (lod == null || lod.m_LodMeshes == null)
                 return true;
 
-            var lods = new RenderPrefab[lod.m_LodMeshes.Length];
-            for (int i = 0; i < lods.Length; i++)
+            int skipped = skipCoarsestLod ? CoarsestIndex(lod.m_LodMeshes) : -1;
+            var lods = new List<RenderPrefab>(lod.m_LodMeshes.Length);
+            for (int i = 0; i < lod.m_LodMeshes.Length; i++)
             {
                 var lodSource = lod.m_LodMeshes[i];
-                if (lodSource == null)
+                if (lodSource == null || i == skipped)
                     continue;
-                lods[i] = GetOrBuild(lodSource, transform, deformation, deformKey, assets);
-                if (lods[i] == null)
+                var deformed = GetOrBuild(lodSource, transform, deformation, deformKey, false, assets);
+                if (deformed == null)
                     return false;
+                lods.Add(deformed);
             }
-            lod.m_LodMeshes = lods;
+            lod.m_LodMeshes = lods.ToArray();
             return true;
+        }
+
+        // The game orders LODs by index count, so the coarsest has the fewest; keep at least one LOD.
+        private static int CoarsestIndex(RenderPrefab[] lods)
+        {
+            int coarsest = -1, present = 0;
+            for (int i = 0; i < lods.Length; i++)
+            {
+                if (lods[i] == null)
+                    continue;
+                present++;
+                if (coarsest < 0 || lods[i].indexCount < lods[coarsest].indexCount)
+                    coarsest = i;
+            }
+            return present >= 2 ? coarsest : -1;
         }
 
         private sealed class Built

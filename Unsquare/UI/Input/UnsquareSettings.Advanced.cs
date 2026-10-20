@@ -111,6 +111,10 @@ namespace Unsquare.UI.Input
         public float RebakeDelay { get; set; }
 
         [SettingsUISection(AdvancedTab, PerformanceGroup)]
+        [SettingsUISlider(min = 0f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
+        public float CoarseLodTwist { get; set; }
+
+        [SettingsUISection(AdvancedTab, PerformanceGroup)]
         public bool PruneUnused { get; set; }
 
         [SettingsUISection(AdvancedTab, PerformanceGroup)]
@@ -142,7 +146,8 @@ namespace Unsquare.UI.Input
                 Clamped(FacadeReach, nameof(FacadeReach)));
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
                 (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
-                Clamped(AreaMatchDistance, nameof(AreaMatchDistance)));
+                Clamped(AreaMatchDistance, nameof(AreaMatchDistance)),
+                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)));
         }
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
@@ -178,6 +183,7 @@ namespace Unsquare.UI.Input
             FacadeReach = pipeline.Attachments.FacadeReachMeters;
             AreaMatchDistance = pipeline.AreaMatchMeters;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;
+            CoarseLodTwist = pipeline.CoarseLodTwistMeters;
             PruneUnused = pipeline.PruneUnused;
             PruneAfterDays = pipeline.PruneAfterDays;
 

@@ -124,6 +124,10 @@ namespace Unsquare.UI.Input
 
             Option(entries, nameof(UnsquareSettings.RebakeDelay), "Rebake delay (s)",
                 "Quiet time after the last edit before the building is rebuilt. Higher values save work while dragging.");
+            Option(entries, nameof(UnsquareSettings.CoarseLodTwist), "Coarse model twist limit (m)",
+                "Buildings whose cage bends more than this keep their medium-detail model at a distance, because " +
+                "the coarsest one can't follow the bend. Lower: cleaner distant views, more triangles to draw." +
+                NewDeformations);
             Option(entries, nameof(UnsquareSettings.PruneUnused), "Delete unused variants",
                 "At startup, delete deformed building data that no save has used for a while.");
             Option(entries, nameof(UnsquareSettings.PruneAfterDays), "Delete after (days)",
