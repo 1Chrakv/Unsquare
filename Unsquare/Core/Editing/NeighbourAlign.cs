@@ -18,8 +18,8 @@ namespace Unsquare.Core.Editing
         private const float ParallelEpsilon = 1e-4f;
         private const int TopBit = 2;
 
-        /// <summary>The face's two ground corners; the first is the back (sides) or the −X one (back face).</summary>
-        public static (int First, int Second) FaceCorners(AlignSide side) => side switch
+        // The face's two ground corners; the first is the back (sides) or the −X one (back face).
+        private static (int First, int Second) FaceCorners(AlignSide side) => side switch
         {
             AlignSide.Left => (1, 5),
             AlignSide.Right => (0, 4),
@@ -28,13 +28,9 @@ namespace Unsquare.Core.Editing
         };
 
         /// <summary>
-        /// Finds the edge nearest to the face that is roughly parallel to it and beside it: outside, or inside up to half
-        /// the lot depth when the lot clips into a neighbour. Lot edges must face the face.
+        /// Finds the edge nearest to the face that is roughly parallel to it and beside it: outside, or inside up to
+        /// half the lot depth when the lot clips into a neighbour. Lot edges must face the face.
         /// </summary>
-        public static bool TryFindNeighbour(CageBox box, CageOffsets offsets, AlignSide side,
-            IReadOnlyList<NeighbourEdge> edges, NeighbourAlignOptions options, out NeighbourEdge neighbour) =>
-            TryFindNeighbour(box, offsets, side, edges, options, out neighbour, out _);
-
         /// <param name="nearestOutOfReach">Distance of the nearest edge that only failed the reach, for logs;
         /// infinity if there is none.</param>
         public static bool TryFindNeighbour(CageBox box, CageOffsets offsets, AlignSide side,
@@ -62,7 +58,7 @@ namespace Unsquare.Core.Editing
                 if (length < ParallelEpsilon || math.abs(math.dot(along / length, face.Direction)) < minCos)
                     continue;
                 // An edge facing the same way is the far side of a lot (or a lot behind this one).
-                if (edge.HasOutward && math.dot(edge.Outward, face.Outward) >= 0f)
+                if (!edge.IsRoad && math.dot(edge.Outward, face.Outward) >= 0f)
                     continue;
                 if (!TryOverlapMidpoint(face, edge, out float2 mid))
                     continue;
@@ -159,7 +155,7 @@ namespace Unsquare.Core.Editing
 
         private static int GroundIndex(int corner) => (corner & 1) | ((corner >> 2) << 1);
 
-        /// <summary>Ground points of the face and of the corners across from it (other end of each adjacent edge).</summary>
+        /// <summary>Ground points of the face and of the corners across from it (other end of each side edge).</summary>
         private readonly struct Face
         {
             private Face(float2 first, float2 second, float2 firstAnchor, float2 secondAnchor)

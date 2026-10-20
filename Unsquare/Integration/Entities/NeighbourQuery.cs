@@ -8,16 +8,14 @@ using Game.Net;
 using Game.Tools;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unsquare.Core.Editing;
 using NetSearchSystem = Game.Net.SearchSystem;
 using ObjectSearchSystem = Game.Objects.SearchSystem;
-using Transform = Game.Objects.Transform;
 
 namespace Unsquare.Integration.Entities
 {
     /// <summary>
-    /// Finds what lies around a building for <see cref="NeighbourAlign"/>: road edges (outer curves of road
-    /// segments) and other buildings, via the game's search trees. Main thread only.
+    /// Finds what lies around a building for aligning to neighbours: road edges (outer curves of road segments, in
+    /// world xz) and other buildings, via the game's search trees. Main thread only.
     /// </summary>
     internal sealed class NeighbourQuery
     {
@@ -35,8 +33,8 @@ namespace Unsquare.Integration.Entities
             _objects = objects;
         }
 
-        /// <summary>Adds the road edges in the world xz area, as straight pieces in the building's space.</summary>
-        public void CollectRoadEdges(in Transform building, Bounds2 area, List<NeighbourEdge> edges)
+        /// <summary>Adds the road edges in the world xz area, as straight world xz pieces.</summary>
+        public void CollectRoadEdges(Bounds2 area, List<Line2.Segment> pieces)
         {
             try
             {
@@ -49,10 +47,10 @@ namespace Unsquare.Integration.Entities
                         !_entityManager.HasComponent<EdgeGeometry>(edge))
                         continue;
                     var geometry = _entityManager.GetComponentData<EdgeGeometry>(edge);
-                    AddCurve(building, geometry.m_Start.m_Left, edges);
-                    AddCurve(building, geometry.m_Start.m_Right, edges);
-                    AddCurve(building, geometry.m_End.m_Left, edges);
-                    AddCurve(building, geometry.m_End.m_Right, edges);
+                    AddCurve(geometry.m_Start.m_Left, pieces);
+                    AddCurve(geometry.m_Start.m_Right, pieces);
+                    AddCurve(geometry.m_End.m_Left, pieces);
+                    AddCurve(geometry.m_End.m_Right, pieces);
                 }
             }
             catch (Exception e)
@@ -102,19 +100,16 @@ namespace Unsquare.Integration.Entities
             return false;
         }
 
-        private static void AddCurve(in Transform building, Bezier4x3 curve, List<NeighbourEdge> edges)
+        private static void AddCurve(Bezier4x3 curve, List<Line2.Segment> pieces)
         {
-            float2 previous = ToBuilding(building, curve.a);
+            float2 previous = curve.a.xz;
             for (int i = 1; i <= PiecesPerCurve; i++)
             {
-                float2 next = ToBuilding(building, MathUtils.Position(curve, (float)i / PiecesPerCurve));
-                edges.Add(new NeighbourEdge(previous, next, true));
+                float2 next = MathUtils.Position(curve, (float)i / PiecesPerCurve).xz;
+                pieces.Add(new Line2.Segment(previous, next));
                 previous = next;
             }
         }
-
-        private static float2 ToBuilding(in Transform building, float3 world) =>
-            math.rotate(math.inverse(building.m_Rotation), world - building.m_Position).xz;
 
         private struct Collector : INativeQuadTreeIterator<Entity, QuadTreeBoundsXZ>
         {

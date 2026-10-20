@@ -7,7 +7,7 @@ namespace Unsquare.Core.Editing
     {
         public static NeighbourAlignOptions Default { get; } = new(200f, 45f);
 
-        /// <param name="searchMeters">How far outside the face a neighbour edge may be.</param>
+        /// <param name="searchMeters">How far outside the face a neighbour edge may be (overlaps: half the lot depth).</param>
         /// <param name="maxAngleDegrees">How far a neighbour edge may be turned against the face.</param>
         public NeighbourAlignOptions(float searchMeters, float maxAngleDegrees)
         {

@@ -21,6 +21,14 @@ namespace Unsquare.Api
         public static float3 PointToBuilding(in Transform transform, float3 world) =>
             math.rotate(math.inverse(transform.m_Rotation), world - transform.m_Position);
 
+        /// <summary>A building-space ground point (xz at y = 0) in world xz.</summary>
+        public static float2 GroundToWorld(in Transform transform, float2 local) =>
+            PointToWorld(transform, new float3(local.x, 0f, local.y)).xz;
+
+        /// <summary>A world xz point in building-space xz (buildings only turn about y).</summary>
+        public static float2 GroundToBuilding(in Transform transform, float2 world) =>
+            PointToBuilding(transform, new float3(world.x, transform.m_Position.y, world.y)).xz;
+
         /// <summary>For drag deltas: rotates a world-space direction into building space.</summary>
         public static float3 DirectionToBuilding(in Transform transform, float3 world) =>
             math.rotate(math.inverse(transform.m_Rotation), world);

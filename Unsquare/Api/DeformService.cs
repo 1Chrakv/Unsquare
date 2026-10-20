@@ -24,6 +24,7 @@ namespace Unsquare.Api
         private readonly NeighbourQuery _neighbours;
         private readonly EntityManager _entityManager;
         private readonly List<NeighbourEdge> _edges = new();
+        private readonly List<Line2.Segment> _roadPieces = new();
         private readonly List<Entity> _buildings = new();
 
         public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain, NeighbourQuery neighbours,
@@ -106,60 +107,45 @@ namespace Unsquare.Api
             var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
             var area = new Bounds2(float.MaxValue, float.MinValue);
             foreach (var point in ground)
-                area |= ToWorld(transform, point);
+                area |= BuildingSpace.GroundToWorld(transform, point);
             // A margin beyond the reach, so a rejection can tell how far the nearest edge actually is.
             area = MathUtils.Expand(area, options.SearchMeters + DiagnosticMarginMeters);
 
             _edges.Clear();
+            _roadPieces.Clear();
             _buildings.Clear();
-            _neighbours.CollectRoadEdges(transform, area, _edges);
-            int roadPieces = _edges.Count;
+            _neighbours.CollectRoadEdges(area, _roadPieces);
+            foreach (var piece in _roadPieces)
+                _edges.Add(NeighbourEdge.Road(BuildingSpace.GroundToBuilding(transform, piece.a),
+                    BuildingSpace.GroundToBuilding(transform, piece.b)));
             _neighbours.CollectBuildings(building, area, _buildings);
             foreach (var other in _buildings)
                 AddLotEdges(transform, other);
+            int roadPieces = _roadPieces.Count;
             if (!NeighbourAlign.TryFindNeighbour(state.Box, state.TargetOffsets, side, _edges, options,
                     out var neighbour, out float nearest))
             {
                 string nearestText = float.IsPositiveInfinity(nearest) ? "none" : $"{nearest:0.0} m";
                 Mod.Log.Info($"Align {side} of building {building}: no neighbour within {options.SearchMeters} m " +
-                    $"({roadPieces} road pieces, {_buildings.Count} lots nearby; nearest parallel edge: {nearestText}).");
+                    $"({roadPieces} road pieces, {_buildings.Count} lots nearby; " +
+                    $"nearest parallel edge: {nearestText}).");
                 return DeformRequestResult.Rejected;
             }
             Mod.Log.Info($"Aligning {side} of building {building} to {neighbour} ({mode}).");
             return SetOffsets(building, NeighbourAlign.Align(state.Box, state.TargetOffsets, side, neighbour, mode));
         }
 
-        // Ground outline of another lot (corners 0, 1, 5, 4 in turn), in the target's building space.
+        // Ground outline of another lot, in the target's building space.
         private void AddLotEdges(in Transform target, Entity other)
         {
             if (!TryGetCage(other, out var state) ||
                 !BuildingSpace.TryGetTransform(_entityManager, other, out var transform))
                 return;
             var ground = GroundFit.GroundPoints(state.Box, state.TargetOffsets);
-            var outline = new float2[4];
-            int[] order = { 0, 1, 3, 2 };
-            float2 centre = float2.zero;
-            for (int i = 0; i < outline.Length; i++)
-            {
-                outline[i] = ToBuilding(target, ToWorld(transform, ground[order[i]]));
-                centre += outline[i] * 0.25f;
-            }
-            for (int i = 0; i < outline.Length; i++)
-            {
-                float2 a = outline[i], b = outline[(i + 1) % outline.Length];
-                float2 normal = math.normalizesafe(new float2(b.y - a.y, a.x - b.x));
-                // Facing away from the lot lets the search tell a neighbour's near side from its far side.
-                if (math.dot(normal, (a + b) * 0.5f - centre) < 0f)
-                    normal = -normal;
-                _edges.Add(new NeighbourEdge(a, b, false, normal));
-            }
+            for (int i = 0; i < ground.Length; i++)
+                ground[i] = BuildingSpace.GroundToBuilding(target, BuildingSpace.GroundToWorld(transform, ground[i]));
+            NeighbourEdge.AddLotOutline(ground, _edges);
         }
-
-        private static float2 ToWorld(in Transform transform, float2 local) =>
-            BuildingSpace.PointToWorld(transform, new float3(local.x, 0f, local.y)).xz;
-
-        private static float2 ToBuilding(in Transform transform, float2 world) =>
-            BuildingSpace.PointToBuilding(transform, new float3(world.x, transform.m_Position.y, world.y)).xz;
 
         public DeformRequestResult Apply(Entity building, DeformSpec spec)
         {

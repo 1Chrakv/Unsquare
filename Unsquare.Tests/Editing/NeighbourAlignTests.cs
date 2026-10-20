@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
@@ -11,11 +12,16 @@ namespace Unsquare.Tests.Editing
         private static readonly CageBox Lot = new(new float3(-8, 0, -12), new float3(8, 15, 12));
         private static readonly NeighbourAlignOptions Options = NeighbourAlignOptions.Default;
 
-        private static NeighbourEdge LotEdge(float ax, float az, float bx, float bz) =>
-            new(new float2(ax, az), new float2(bx, bz), false);
+        // A neighbour lot's side facing this lot (its outward normal points towards the lot centre).
+        private static NeighbourEdge LotEdge(float ax, float az, float bx, float bz)
+        {
+            float2 a = new(ax, az), b = new(bx, bz);
+            float2 normal = math.normalize(new float2(b.y - a.y, a.x - b.x));
+            return NeighbourEdge.LotSide(a, b, math.dot(normal, -(a + b) * 0.5f) < 0f ? -normal : normal);
+        }
 
         private static bool Find(AlignSide side, params NeighbourEdge[] edges) =>
-            NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, side, edges, Options, out _);
+            NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, side, edges, Options, out _, out _);
 
         private static void AssertXz(CageOffsets offsets, int corner, float x, float z)
         {
@@ -46,7 +52,7 @@ namespace Unsquare.Tests.Editing
         }
 
         private static NeighbourEdge FacingX(float x, float outwardX) =>
-            new(new float2(x, -12), new float2(x, 12), false, new float2(outwardX, 0));
+            NeighbourEdge.LotSide(new float2(x, -12), new float2(x, 12), new float2(outwardX, 0));
 
         [Test]
         public void TryFindNeighbour_ClippedIntoNeighbour_FindsItsFacingEdge()
@@ -64,7 +70,7 @@ namespace Unsquare.Tests.Editing
             var facing = FacingX(2, -1);
             var edges = new[] { FacingX(10, 1), facing };
             Assert.That(NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, AlignSide.Left, edges, Options,
-                out var found), Is.True);
+                out var found, out _), Is.True);
             Assert.That(found.A, Is.EqualTo(facing.A));
         }
 
@@ -83,7 +89,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void TryFindNeighbour_RoadInsideLot_IsFound()
         {
-            Assert.That(Find(AlignSide.Left, new NeighbourEdge(new float2(5, -12), new float2(5, 12), true)), Is.True);
+            Assert.That(Find(AlignSide.Left, NeighbourEdge.Road(new float2(5, -12), new float2(5, 12))), Is.True);
         }
 
         [Test]
@@ -116,7 +122,7 @@ namespace Unsquare.Tests.Editing
             var near = LotEdge(10, -12, 10, 12);
             var edges = new[] { LotEdge(14, -12, 14, 12), near, LotEdge(-10, -12, -10, 12) };
             Assert.That(NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, AlignSide.Left, edges, Options,
-                out var found), Is.True);
+                out var found, out _), Is.True);
             Assert.That(found.A, Is.EqualTo(near.A));
         }
 
@@ -161,7 +167,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void Align_FullOnRoad_IsFlush()
         {
-            var road = new NeighbourEdge(new float2(10, 14), new float2(11, -10), true);
+            var road = NeighbourEdge.Road(new float2(10, 14), new float2(11, -10));
             var full = NeighbourAlign.Align(Lot, CageOffsets.Identity, AlignSide.Left, road, AlignMode.Full);
             var flush = NeighbourAlign.Align(Lot, CageOffsets.Identity, AlignSide.Left, road, AlignMode.Flush);
             Assert.That(full, Is.EqualTo(flush));
@@ -200,6 +206,23 @@ namespace Unsquare.Tests.Editing
         {
             Assert.That(() => new NeighbourAlignOptions(0f, 30f), Throws.ArgumentException);
             Assert.That(() => new NeighbourAlignOptions(10f, 90f), Throws.ArgumentException);
+        }
+
+        [Test]
+        public void AddLotOutline_SidesFaceAwayFromTheLot()
+        {
+            // Ground points in GroundFit order: corners 0 (-x,-z), 1 (+x,-z), 4 (-x,+z), 5 (+x,+z).
+            var points = new[] { new float2(-2, -3), new float2(2, -3), new float2(-2, 3), new float2(2, 3) };
+            var edges = new List<NeighbourEdge>();
+            NeighbourEdge.AddLotOutline(points, edges);
+            Assert.That(edges, Has.Count.EqualTo(4));
+            foreach (var edge in edges)
+            {
+                float2 mid = (edge.A + edge.B) * 0.5f;
+                Assert.That(math.dot(edge.Outward, mid), Is.GreaterThan(0f), edge.ToString());
+                Assert.That(math.length(edge.Outward), Is.EqualTo(1f).Within(1e-5f));
+                Assert.That(edge.IsRoad, Is.False);
+            }
         }
     }
 }

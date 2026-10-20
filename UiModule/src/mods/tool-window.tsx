@@ -15,7 +15,7 @@ import resetBuildingIcon from "images/reset-building.svg";
 import resetHandleIcon from "images/reset-handle.svg";
 import terrainLiftIcon from "images/terrain-lift.svg";
 import { Guard } from "mods/guard";
-import { SegmentedToggle } from "mods/segmented-toggle";
+import { SegmentedToggle, SegmentOption } from "mods/segmented-toggle";
 import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./tool-window.module.scss";
 
@@ -36,7 +36,7 @@ const canLiftTerrain$ = bindValue<boolean>(group, "canLiftTerrain", false);
 const alignMode$ = bindValue<string>(group, "alignMode", "Angle");
 
 // Values are the C# CageHandleKind names.
-const pickKinds = [
+const pickKinds: ToggleEntry[] = [
     { value: "Corner", icon: cornerIcon, fallback: "Pick corners" },
     { value: "Edge", icon: edgeIcon, fallback: "Pick edges" },
     { value: "Face", icon: faceIcon, fallback: "Pick faces" },
@@ -49,11 +49,23 @@ const alignSides = [
     { side: "Right", icon: alignRightIcon, fallback: "Align the right side to its neighbour (Alt+Shift+Right)" },
 ];
 
-const alignModes = [
+const alignModes: ToggleEntry[] = [
     { value: "Angle", icon: alignAngleIcon, fallback: "Align mode: angle only (Alt+A)" },
     { value: "Flush", icon: alignFlushIcon, fallback: "Align mode: flush (Alt+A)" },
     { value: "Full", icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
 ];
+
+interface ToggleEntry {
+    value: string;
+    icon: string;
+    fallback: string;
+}
+
+// Toggle options with localised tooltips; the key is the prefix followed by the value.
+const toOptions = (entries: ToggleEntry[], keyPrefix: string,
+    translate: ReturnType<typeof useLocalization>["translate"]): SegmentOption[] =>
+    entries.map(({ value, icon, fallback }) =>
+        ({ value, icon, tooltip: translate(`${keyPrefix}${value}`, fallback) ?? fallback }));
 
 // A labelled group of controls; the header sits above the row.
 const Section = ({ title, children }: { title: string | null; children: ReactNode }) => (
@@ -78,8 +90,7 @@ const ToolWindow = () => {
             <div className={styles.window}>
                 <Section title={translate("Unsquare.ToolWindow.Section.Pick", "Pick")}>
                     <SegmentedToggle
-                        options={pickKinds.map(({ value, icon, fallback }) =>
-                            ({ value, icon, tooltip: translate(`Unsquare.ToolWindow.${value}`, fallback) ?? fallback }))}
+                        options={toOptions(pickKinds, "Unsquare.ToolWindow.", translate)}
                         value={pickKind}
                         onSelect={kind => trigger(group, "selectPickKind", kind)}
                     />
@@ -122,11 +133,7 @@ const ToolWindow = () => {
                     ))}
                     <div className={styles.spacer} />
                     <SegmentedToggle
-                        options={alignModes.map(({ value, icon, fallback }) => ({
-                            value,
-                            icon,
-                            tooltip: translate(`Unsquare.ToolWindow.AlignMode${value}`, fallback) ?? fallback,
-                        }))}
+                        options={toOptions(alignModes, "Unsquare.ToolWindow.AlignMode", translate)}
                         value={alignMode}
                         onSelect={mode => trigger(group, "selectAlignMode", mode)}
                     />
