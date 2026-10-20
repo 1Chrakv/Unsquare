@@ -23,11 +23,24 @@ namespace Unsquare.Core.Terrain
         /// <summary>Building-space xz where the ground plane (y = 0) cuts each deformed column.</summary>
         public static float2[] GroundPoints(CageBox box, CageOffsets offsets)
         {
+            var points3 = GroundPoints3(box, offsets);
+            var points = new float2[points3.Length];
+            for (int i = 0; i < points.Length; i++)
+                points[i] = points3[i].xz;
+            return points;
+        }
+
+        /// <summary>
+        /// Where each deformed column's ground lies in building space, per column in <see cref="GroundCorners"/> order;
+        /// y is the ground height after the deformation.
+        /// </summary>
+        public static float3[] GroundPoints3(CageBox box, CageOffsets offsets)
+        {
             if (offsets == null)
                 throw new ArgumentNullException(nameof(offsets));
-            var points = new float2[GroundCorners.Count];
+            var points = new float3[GroundCorners.Count];
             for (int i = 0; i < points.Length; i++)
-                points[i] = GroundPoint(box, offsets, GroundCorners[i]).xz;
+                points[i] = GroundPoint(box, offsets, GroundCorners[i]);
             return points;
         }
 

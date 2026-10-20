@@ -113,6 +113,22 @@ namespace Unsquare.Core.Editing
             return ShiftColumn(aligned, secondCorner, second - face.Second);
         }
 
+        /// <summary>
+        /// Moves the face's two corner columns up or down so their ground sits at the neighbour's ground height next to
+        /// them. Column heights, xz and the other columns stay.
+        /// </summary>
+        public static CageOffsets FitHeight(CageBox box, CageOffsets offsets, AlignSide side, NeighbourEdge neighbour)
+        {
+            var points = GroundFit.GroundPoints3(box, offsets);
+            var heights = new float[points.Length];
+            for (int i = 0; i < points.Length; i++)
+                heights[i] = points[i].y;
+            var (first, second) = FaceCorners(side);
+            heights[GroundIndex(first)] = neighbour.HeightNear(points[GroundIndex(first)].xz);
+            heights[GroundIndex(second)] = neighbour.HeightNear(points[GroundIndex(second)].xz);
+            return GroundFit.Fit(box, offsets, heights, GroundFitMode.AllCorners);
+        }
+
         // Same xz shift in grid steps for the bottom and top corner keeps the column's tilt and height.
         private static CageOffsets ShiftColumn(CageOffsets offsets, int bottom, float2 delta)
         {

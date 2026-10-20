@@ -13,12 +13,15 @@ namespace Unsquare.Tests.Editing
         private static readonly NeighbourAlignOptions Options = NeighbourAlignOptions.Default;
 
         // A neighbour lot's side facing this lot (its outward normal points towards the lot centre).
-        private static NeighbourEdge LotEdge(float ax, float az, float bx, float bz)
+        private static NeighbourEdge LotEdge(float ax, float az, float bx, float bz, float height = 0f)
         {
             float2 a = new(ax, az), b = new(bx, bz);
             float2 normal = math.normalize(new float2(b.y - a.y, a.x - b.x));
-            return NeighbourEdge.LotSide(a, b, math.dot(normal, -(a + b) * 0.5f) < 0f ? -normal : normal);
+            return NeighbourEdge.LotSide(Ground(a, height), Ground(b, height),
+                math.dot(normal, -(a + b) * 0.5f) < 0f ? -normal : normal);
         }
+
+        private static float3 Ground(float2 xz, float height = 0f) => new(xz.x, height, xz.y);
 
         private static bool Find(AlignSide side, params NeighbourEdge[] edges) =>
             NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, side, edges, Options, out _, out _);
@@ -52,7 +55,7 @@ namespace Unsquare.Tests.Editing
         }
 
         private static NeighbourEdge FacingX(float x, float outwardX) =>
-            NeighbourEdge.LotSide(new float2(x, -12), new float2(x, 12), new float2(outwardX, 0));
+            NeighbourEdge.LotSide(new float3(x, 0, -12), new float3(x, 0, 12), new float2(outwardX, 0));
 
         [Test]
         public void TryFindNeighbour_ClippedIntoNeighbour_FindsItsFacingEdge()
@@ -89,7 +92,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void TryFindNeighbour_RoadInsideLot_IsFound()
         {
-            Assert.That(Find(AlignSide.Left, NeighbourEdge.Road(new float2(5, -12), new float2(5, 12))), Is.True);
+            Assert.That(Find(AlignSide.Left, NeighbourEdge.Road(new float3(5, 0, -12), new float3(5, 0, 12))), Is.True);
         }
 
         [Test]
@@ -167,7 +170,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void Align_FullOnRoad_IsFlush()
         {
-            var road = NeighbourEdge.Road(new float2(10, 14), new float2(11, -10));
+            var road = NeighbourEdge.Road(new float3(10, 0, 14), new float3(11, 0, -10));
             var full = NeighbourAlign.Align(Lot, CageOffsets.Identity, AlignSide.Left, road, AlignMode.Full);
             var flush = NeighbourAlign.Align(Lot, CageOffsets.Identity, AlignSide.Left, road, AlignMode.Flush);
             Assert.That(full, Is.EqualTo(flush));
@@ -212,7 +215,7 @@ namespace Unsquare.Tests.Editing
         public void AddLotOutline_SidesFaceAwayFromTheLot()
         {
             // Ground points in GroundFit order: corners 0 (-x,-z), 1 (+x,-z), 4 (-x,+z), 5 (+x,+z).
-            var points = new[] { new float2(-2, -3), new float2(2, -3), new float2(-2, 3), new float2(2, 3) };
+            var points = new[] { new float3(-2, 1, -3), new float3(2, 1, -3), new float3(-2, 1, 3), new float3(2, 1, 3) };
             var edges = new List<NeighbourEdge>();
             NeighbourEdge.AddLotOutline(points, edges);
             Assert.That(edges, Has.Count.EqualTo(4));
@@ -222,7 +225,53 @@ namespace Unsquare.Tests.Editing
                 Assert.That(math.dot(edge.Outward, mid), Is.GreaterThan(0f), edge.ToString());
                 Assert.That(math.length(edge.Outward), Is.EqualTo(1f).Within(1e-5f));
                 Assert.That(edge.IsRoad, Is.False);
+                Assert.That(edge.HeightA, Is.EqualTo(1f));
             }
+        }
+
+        [Test]
+        public void FitHeight_HigherLot_RaisesOnlyThatSidesColumns()
+        {
+            var raisedTop = CageOffsets.Identity.Move(CageHandle.Corner(7), new float3(0f, 2f, 0f));
+            var fitted = NeighbourAlign.FitHeight(Lot, raisedTop, AlignSide.Left, LotEdge(10, -12, 10, 12, 2f));
+            foreach (int bottom in new[] { 1, 5 })
+            {
+                Assert.That(fitted.Meters(bottom).y, Is.EqualTo(2f).Within(1e-4f), $"corner {bottom}");
+                float before = raisedTop.Meters(bottom | 2).y - raisedTop.Meters(bottom).y;
+                float after = fitted.Meters(bottom | 2).y - fitted.Meters(bottom).y;
+                Assert.That(after, Is.EqualTo(before).Within(1e-4f), $"column {bottom}");
+            }
+            foreach (int corner in new[] { 0, 2, 4, 6 })
+                Assert.That(fitted.Meters(corner), Is.EqualTo(raisedTop.Meters(corner)), $"corner {corner}");
+        }
+
+        [Test]
+        public void FitHeight_SlopedRoad_InterpolatesPerColumn()
+        {
+            // Road edge from (10, z -20, 0 m) to (10, z 20, 4 m): corner 1 (z -12) at 0.8 m, corner 5 (z 12) at 3.2 m.
+            var road = NeighbourEdge.Road(new float3(10, 0, -20), new float3(10, 4, 20));
+            var fitted = NeighbourAlign.FitHeight(Lot, CageOffsets.Identity, AlignSide.Left, road);
+            Assert.That(fitted.Meters(1).y, Is.EqualTo(0.8f).Within(1e-4f));
+            Assert.That(fitted.Meters(5).y, Is.EqualTo(3.2f).Within(1e-4f));
+        }
+
+        [Test]
+        public void FitHeight_BeyondEdgeEnd_UsesNearestEnd()
+        {
+            var shortEdge = NeighbourEdge.Road(new float3(10, 1, -12), new float3(10, 3, 0));
+            var fitted = NeighbourAlign.FitHeight(Lot, CageOffsets.Identity, AlignSide.Left, shortEdge);
+            Assert.That(fitted.Meters(1).y, Is.EqualTo(1f).Within(1e-4f));
+            Assert.That(fitted.Meters(5).y, Is.EqualTo(3f).Within(1e-4f));
+        }
+
+        [Test]
+        public void FitHeight_Back_MovesBackColumns()
+        {
+            var fitted = NeighbourAlign.FitHeight(Lot, CageOffsets.Identity, AlignSide.Back,
+                LotEdge(-20, -14, 20, -14, -1.5f));
+            Assert.That(fitted.Meters(0).y, Is.EqualTo(-1.5f).Within(1e-4f));
+            Assert.That(fitted.Meters(1).y, Is.EqualTo(-1.5f).Within(1e-4f));
+            Assert.That(fitted.Meters(4).y, Is.EqualTo(0f));
         }
     }
 }
