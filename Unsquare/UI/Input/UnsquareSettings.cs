@@ -39,6 +39,12 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.AlignLeft, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignBack, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignRight, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.AlignGroundLeft, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.AlignGroundBack, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.AlignGroundRight, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CycleAlignMode, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ResetAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -150,6 +156,18 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.A, CageHotkeys.CycleAlignMode, alt: true)]
         public ProxyBinding CycleAlignModeBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, CageHotkeys.AlignGroundLeft, alt: true, ctrl: true)]
+        public ProxyBinding AlignGroundLeftBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, CageHotkeys.AlignGroundBack, alt: true, ctrl: true)]
+        public ProxyBinding AlignGroundBackBinding { get; set; }
+
+        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, CageHotkeys.AlignGroundRight, alt: true, ctrl: true)]
+        public ProxyBinding AlignGroundRightBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]

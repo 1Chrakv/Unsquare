@@ -42,6 +42,9 @@ namespace Unsquare.UI.Input
         public const string AlignBack = "UnsquareAlignBack";
         public const string AlignRight = "UnsquareAlignRight";
         public const string CycleAlignMode = "UnsquareCycleAlignMode";
+        public const string AlignGroundLeft = "UnsquareAlignGroundLeft";
+        public const string AlignGroundBack = "UnsquareAlignGroundBack";
+        public const string AlignGroundRight = "UnsquareAlignGroundRight";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
         public const string Undo = "UnsquareUndo";
@@ -93,6 +96,13 @@ namespace Unsquare.UI.Input
                 "Align right side to neighbour (seen from the street)", s => s.AlignToNeighbour(AlignSide.Right)),
             new HotkeyDefinition(CycleAlignMode, nameof(UnsquareSettings.CycleAlignModeBinding),
                 "Cycle align mode (angle, flush, full)", s => s.CycleAlignMode()),
+            new HotkeyDefinition(AlignGroundLeft, nameof(UnsquareSettings.AlignGroundLeftBinding),
+                "Level left side with neighbour (seen from the street)", s => s.AlignGroundToNeighbour(AlignSide.Left)),
+            new HotkeyDefinition(AlignGroundBack, nameof(UnsquareSettings.AlignGroundBackBinding),
+                "Level back with neighbour", s => s.AlignGroundToNeighbour(AlignSide.Back)),
+            new HotkeyDefinition(AlignGroundRight, nameof(UnsquareSettings.AlignGroundRightBinding),
+                "Level right side with neighbour (seen from the street)",
+                s => s.AlignGroundToNeighbour(AlignSide.Right)),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",
                 s => s.ResetAll()),
             new HotkeyDefinition(Undo, nameof(UnsquareSettings.UndoBinding), "Undo cage edit", s => s.Undo()),

@@ -285,6 +285,17 @@ namespace Unsquare.UI.Editing
             return Record(command, result);
         }
 
+        /// <summary>Moves the bottom of the target's left, back or right side to its neighbour's ground height.</summary>
+        public DeformRequestResult AlignGroundToNeighbour(AlignSide side)
+        {
+            string command = $"Level {side} with neighbour";
+            if (!TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            var result = _service.AlignGroundToNeighbour(Target, side, Options.Align);
+            RememberEdit(state.TargetSpec, result);
+            return Record(command, result);
+        }
+
         /// <summary>Angle → Flush → Full → Angle.</summary>
         public void CycleAlignMode() => SetAlignMode(AlignMode switch
         {

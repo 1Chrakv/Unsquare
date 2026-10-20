@@ -53,7 +53,16 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<string>(Group, "alignMode",
                 () => _editor.Session.AlignMode.ToString()));
             AddBinding(new TriggerBinding<string>(Group, "selectAlignMode", SelectAlignMode));
-            AddBinding(new TriggerBinding<string>(Group, "alignToNeighbour", AlignToNeighbour));
+            AddBinding(new TriggerBinding<string>(Group, "alignToNeighbour", side =>
+            {
+                if (TryParseSide(side, out var parsed))
+                    _editor.Session.AlignToNeighbour(parsed);
+            }));
+            AddBinding(new TriggerBinding<string>(Group, "alignGroundToNeighbour", side =>
+            {
+                if (TryParseSide(side, out var parsed))
+                    _editor.Session.AlignGroundToNeighbour(parsed);
+            }));
         }
 
         private void SelectAlignMode(string mode)
@@ -64,12 +73,12 @@ namespace Unsquare.UI.Bindings
                 Mod.Log.Warn($"[UI] Unknown align mode '{mode}'.");
         }
 
-        private void AlignToNeighbour(string side)
+        private static bool TryParseSide(string side, out AlignSide parsed)
         {
-            if (Enum.TryParse(side, out AlignSide parsed) && Enum.IsDefined(typeof(AlignSide), parsed))
-                _editor.Session.AlignToNeighbour(parsed);
-            else
-                Mod.Log.Warn($"[UI] Unknown align side '{side}'.");
+            if (Enum.TryParse(side, out parsed) && Enum.IsDefined(typeof(AlignSide), parsed))
+                return true;
+            Mod.Log.Warn($"[UI] Unknown align side '{side}'.");
+            return false;
         }
 
         private void SelectPickKind(string kind)
