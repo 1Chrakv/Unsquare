@@ -24,7 +24,8 @@ angled streets and slopes.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street
   side goes to road level, or all four corners follow the terrain.
 - **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road
-  or neighbouring lot: only the angle, flush onto its edge, or fully onto the neighbour's edge and corners.
+  or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
+  corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
@@ -96,7 +97,7 @@ the hovered one cyan.
 ### Options
 
 Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment,
-nudge step sizes, picking and gizmo sizes, neighbour alignment reach, and overlay style.
+nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
 
 ### Before uninstalling
 
