@@ -105,17 +105,24 @@ namespace Unsquare.Api
             var area = new Bounds2(float.MaxValue, float.MinValue);
             foreach (var point in ground)
                 area |= ToWorld(transform, point);
-            area = MathUtils.Expand(area, options.SearchMeters);
+            // Twice the reach, so a rejection can tell how far the nearest edge actually is.
+            area = MathUtils.Expand(area, options.SearchMeters * 2f);
 
             _edges.Clear();
             _buildings.Clear();
             _neighbours.CollectRoadEdges(transform, area, _edges);
+            int roadPieces = _edges.Count;
             _neighbours.CollectBuildings(building, area, _buildings);
             foreach (var other in _buildings)
                 AddLotEdges(transform, other);
             if (!NeighbourAlign.TryFindNeighbour(state.Box, state.TargetOffsets, side, _edges, options,
-                    out var neighbour))
+                    out var neighbour, out float nearest))
+            {
+                string nearestText = float.IsPositiveInfinity(nearest) ? "none" : $"{nearest:0.0} m";
+                Mod.Log.Info($"Align {side} of building {building}: no neighbour within {options.SearchMeters} m " +
+                    $"({roadPieces} road pieces, {_buildings.Count} lots nearby; nearest parallel edge: {nearestText}).");
                 return DeformRequestResult.Rejected;
+            }
             Mod.Log.Info($"Aligning {side} of building {building} to {neighbour} ({mode}).");
             return SetOffsets(building, NeighbourAlign.Align(state.Box, state.TargetOffsets, side, neighbour, mode));
         }

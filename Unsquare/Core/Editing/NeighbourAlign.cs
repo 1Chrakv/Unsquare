@@ -28,13 +28,21 @@ namespace Unsquare.Core.Editing
 
         /// <summary>Finds the edge outside the face, roughly parallel to it and overlapping it, nearest to it.</summary>
         public static bool TryFindNeighbour(CageBox box, CageOffsets offsets, AlignSide side,
-            IReadOnlyList<NeighbourEdge> edges, NeighbourAlignOptions options, out NeighbourEdge neighbour)
+            IReadOnlyList<NeighbourEdge> edges, NeighbourAlignOptions options, out NeighbourEdge neighbour) =>
+            TryFindNeighbour(box, offsets, side, edges, options, out neighbour, out _);
+
+        /// <param name="nearestOutOfReach">Distance of the nearest edge that only failed the reach, for logs;
+        /// infinity if there is none.</param>
+        public static bool TryFindNeighbour(CageBox box, CageOffsets offsets, AlignSide side,
+            IReadOnlyList<NeighbourEdge> edges, NeighbourAlignOptions options, out NeighbourEdge neighbour,
+            out float nearestOutOfReach)
         {
             if (edges == null)
                 throw new ArgumentNullException(nameof(edges));
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
             neighbour = default;
+            nearestOutOfReach = float.PositiveInfinity;
             var face = Face.Of(box, offsets, side);
             if (face.Length < ParallelEpsilon)
                 return false;
@@ -51,6 +59,8 @@ namespace Unsquare.Core.Editing
                 if (!TryOverlapMidpoint(face, edge, out float2 mid))
                     continue;
                 float distance = math.dot(mid - face.Mid, face.Outward);
+                if (distance > options.SearchMeters)
+                    nearestOutOfReach = math.min(nearestOutOfReach, distance);
                 if (distance < -OverlapToleranceMeters || distance > options.SearchMeters)
                     continue;
                 if (math.abs(distance) < best)

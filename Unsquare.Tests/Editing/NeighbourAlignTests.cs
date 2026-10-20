@@ -40,9 +40,33 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void TryFindNeighbour_TooFarTooTurnedOrBeside_IsIgnored()
         {
-            Assert.That(Find(AlignSide.Left, LotEdge(30, -12, 30, 12)), Is.False);
+            Assert.That(Find(AlignSide.Left, LotEdge(60, -12, 60, 12)), Is.False);
             Assert.That(Find(AlignSide.Left, LotEdge(10, 0, 20, 0)), Is.False);
             Assert.That(Find(AlignSide.Left, LotEdge(10, 20, 10, 30)), Is.False);
+        }
+
+        [Test]
+        public void TryFindNeighbour_ThreeCellsAway_IsWithinDefaultReach()
+        {
+            Assert.That(Find(AlignSide.Left, LotEdge(32, -12, 32, 12)), Is.True);
+        }
+
+        [Test]
+        public void TryFindNeighbour_OutOfReach_ReportsNearestDistance()
+        {
+            var edges = new[] { LotEdge(40, -12, 40, 12), LotEdge(32, -12, 32, 12) };
+            bool found = NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, AlignSide.Left, edges,
+                new NeighbourAlignOptions(16f, 45f), out _, out float nearest);
+            Assert.That(found, Is.False);
+            Assert.That(nearest, Is.EqualTo(24f).Within(1e-4f));
+        }
+
+        [Test]
+        public void TryFindNeighbour_NothingParallel_ReportsInfinity()
+        {
+            NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, AlignSide.Left, new[] { LotEdge(10, 0, 20, 0) },
+                Options, out _, out float nearest);
+            Assert.That(float.IsPositiveInfinity(nearest), Is.True);
         }
 
         [Test]

@@ -53,7 +53,7 @@ namespace Unsquare.UI.Input
         public int UndoSteps { get; set; }
 
         [SettingsUISection(AdvancedTab, EditingGroup)]
-        [SettingsUISlider(min = 2f, max = 50f, step = 1f, unit = Unit.kInteger)]
+        [SettingsUISlider(min = 2f, max = 100f, step = 1f, unit = Unit.kInteger)]
         public float AlignReach { get; set; }
 
         [SettingsUISection(AdvancedTab, EditingGroup)]

@@ -95,7 +95,8 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.UndoSteps), "Undo steps",
                 "How many cage edits (nudges, drags, resets) undo can take back, across all buildings.");
             Option(entries, nameof(UnsquareSettings.AlignReach), "Align reach (m)",
-                "How far from a lot face a road or a neighbouring lot may be to align the face to it.");
+                "How far from a lot face a road or a neighbouring lot may be to align the face to it " +
+                "(one zoning cell is 8 m).");
             Option(entries, nameof(UnsquareSettings.AlignMaxAngle), "Align max angle",
                 "How far a road or neighbouring lot edge may be turned against the face to align to it.");
 
