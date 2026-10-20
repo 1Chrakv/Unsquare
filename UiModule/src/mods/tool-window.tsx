@@ -5,6 +5,9 @@ import alignAngleIcon from "images/align-angle.svg";
 import alignBackIcon from "images/align-back.svg";
 import alignFlushIcon from "images/align-flush.svg";
 import alignFullIcon from "images/align-full.svg";
+import alignGroundBackIcon from "images/align-ground-back.svg";
+import alignGroundLeftIcon from "images/align-ground-left.svg";
+import alignGroundRightIcon from "images/align-ground-right.svg";
 import alignLeftIcon from "images/align-left.svg";
 import alignRightIcon from "images/align-right.svg";
 import cornerIcon from "images/pick-corner.svg";
@@ -47,6 +50,12 @@ const alignSides = [
     { side: "Left", icon: alignLeftIcon, fallback: "Align the left side to its neighbour (Alt+Shift+Left)" },
     { side: "Back", icon: alignBackIcon, fallback: "Align the back to its neighbour (Alt+Shift+Up)" },
     { side: "Right", icon: alignRightIcon, fallback: "Align the right side to its neighbour (Alt+Shift+Right)" },
+];
+
+const groundSides = [
+    { side: "Left", icon: alignGroundLeftIcon, fallback: "Level the left side with its neighbour (Ctrl+Alt+Left)" },
+    { side: "Back", icon: alignGroundBackIcon, fallback: "Level the back with its neighbour (Ctrl+Alt+Up)" },
+    { side: "Right", icon: alignGroundRightIcon, fallback: "Level the right side with its neighbour (Ctrl+Alt+Right)" },
 ];
 
 const alignModes: ToggleEntry[] = [
@@ -116,6 +125,19 @@ const ToolWindow = () => {
                         focusKey={focusDisabled}
                         onSelect={() => trigger(group, "fitToGround")}
                     />
+                    <div className={styles.spacer} />
+                    {groundSides.map(({ side, icon, fallback }) => (
+                        <ToolButton
+                            key={side}
+                            src={icon}
+                            tooltip={translate(`Unsquare.ToolWindow.AlignGround${side}`, fallback)}
+                            selected={false}
+                            multiSelect={false}
+                            disabled={false}
+                            focusKey={focusDisabled}
+                            onSelect={() => trigger(group, "alignGroundToNeighbour", side)}
+                        />
+                    ))}
                 </Section>
                 <div className={styles.divider} />
                 <Section title={translate("Unsquare.ToolWindow.Section.Align", "Align to neighbour")}>
