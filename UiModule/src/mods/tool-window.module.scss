@@ -27,14 +27,15 @@
     width: 6rem;
 }
 
-// A labelled group: small header above a row of controls.
+// A labelled group: small header above two rows of controls.
 .section {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
 }
 
 .sectionHeader {
+    align-self: center;
     margin-bottom: 4rem;
     font-size: 11rem;
     letter-spacing: 1rem;
@@ -43,9 +44,24 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-.sectionBody {
+// Rows keep a tool button's height when empty, so all sections line up.
+.row,
+.rowColumns {
     display: flex;
     flex-direction: row;
     align-items: center;
-    flex: 1;
+    min-height: 40rem;
+}
+
+.row {
+    justify-content: center;
+}
+
+.row + .row,
+.rowColumns + .rowColumns {
+    margin-top: 4rem;
+}
+
+.rowColumns {
+    justify-content: flex-start;
 }
