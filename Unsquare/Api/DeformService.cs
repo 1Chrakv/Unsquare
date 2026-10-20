@@ -17,6 +17,8 @@ namespace Unsquare.Api
     /// <summary>Validates and clamps UI requests, then forwards them to the variant pipeline.</summary>
     internal sealed class DeformService : IBuildingDeformService
     {
+        private const float DiagnosticMarginMeters = 50f;
+
         private readonly IVariantPipeline _pipeline;
         private readonly BaseTerrainSystem _terrain;
         private readonly NeighbourQuery _neighbours;
@@ -105,8 +107,8 @@ namespace Unsquare.Api
             var area = new Bounds2(float.MaxValue, float.MinValue);
             foreach (var point in ground)
                 area |= ToWorld(transform, point);
-            // Twice the reach, so a rejection can tell how far the nearest edge actually is.
-            area = MathUtils.Expand(area, options.SearchMeters * 2f);
+            // A margin beyond the reach, so a rejection can tell how far the nearest edge actually is.
+            area = MathUtils.Expand(area, options.SearchMeters + DiagnosticMarginMeters);
 
             _edges.Clear();
             _buildings.Clear();

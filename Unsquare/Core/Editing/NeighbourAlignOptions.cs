@@ -5,7 +5,7 @@ namespace Unsquare.Core.Editing
     /// <summary>Which edges count as the neighbour of a lot face (see <see cref="NeighbourAlign"/>).</summary>
     public sealed class NeighbourAlignOptions
     {
-        public static NeighbourAlignOptions Default { get; } = new(40f, 45f);
+        public static NeighbourAlignOptions Default { get; } = new(200f, 45f);
 
         /// <param name="searchMeters">How far outside the face a neighbour edge may be.</param>
         /// <param name="maxAngleDegrees">How far a neighbour edge may be turned against the face.</param>

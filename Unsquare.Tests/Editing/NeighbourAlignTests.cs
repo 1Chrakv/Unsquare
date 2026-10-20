@@ -40,7 +40,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void TryFindNeighbour_TooFarTooTurnedOrBeside_IsIgnored()
         {
-            Assert.That(Find(AlignSide.Left, LotEdge(60, -12, 60, 12)), Is.False);
+            Assert.That(Find(AlignSide.Left, LotEdge(260, -12, 260, 12)), Is.False);
             Assert.That(Find(AlignSide.Left, LotEdge(10, 0, 20, 0)), Is.False);
             Assert.That(Find(AlignSide.Left, LotEdge(10, 20, 10, 30)), Is.False);
         }
