@@ -22,7 +22,7 @@ angled streets and slopes.
 - **Terrain lift.** When the bottom of the cage is raised or lowered, the ground under the lot follows. It can be
   switched off per building to keep a flat pad.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street
-  side goes to road level, or all four corners follow the terrain.
+  side goes to road level, or (toggle) all four corners follow the terrain.
 - **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road
   or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
@@ -63,8 +63,9 @@ While a handle is selected the building is locked; clicks on other buildings do 
 ### Tool window
 
 While a building is selected, a small window floats above its roof, in labelled sections: a 3-way toggle for the
-pick mode (corners, edges, faces); terrain lift, fit to ground and level with neighbour; align the sides to their neighbours (a second
-toggle picks the align mode: angle, flush or full); and reset the selected handle or the whole building.
+pick mode (corners, edges, faces); terrain lift, fit to ground with its toggle (back only or all corners) and level
+with neighbour; align the sides to their neighbours (a second toggle picks the align mode: angle, flush or full);
+and reset the selected handle or the whole building.
 
 ### Hotkeys
 
@@ -84,7 +85,7 @@ Defaults; all can be rebound in Options → Unsquare. Except Alt+U, they only wo
 | Reset selected handle | Alt+R |
 | Reset building / reset all buildings | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off | Alt+T |
-| Fit to ground (back to terrain, street side to road) / all corners to terrain | Alt+G / Alt+Shift+G |
+| Fit to ground / toggle the fit mode (back only or all corners) | Alt+G / Alt+F |
 | Align left / back / right side to its neighbour | Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→ |
 | Cycle align mode (angle → flush → full) | Alt+A |
 | Level left / back / right side with its neighbour | Ctrl+Alt+← / Ctrl+Alt+↑ / Ctrl+Alt+→ |

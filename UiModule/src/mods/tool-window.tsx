@@ -14,6 +14,8 @@ import cornerIcon from "images/pick-corner.svg";
 import fitGroundIcon from "images/fit-ground.svg";
 import edgeIcon from "images/pick-edge.svg";
 import faceIcon from "images/pick-face.svg";
+import groundFitAllIcon from "images/ground-fit-all.svg";
+import groundFitBackIcon from "images/ground-fit-back.svg";
 import resetBuildingIcon from "images/reset-building.svg";
 import resetHandleIcon from "images/reset-handle.svg";
 import terrainLiftIcon from "images/terrain-lift.svg";
@@ -37,6 +39,7 @@ const hasHandle$ = bindValue<boolean>(group, "hasHandle", false);
 const terrainLift$ = bindValue<boolean>(group, "terrainLift", false);
 const canLiftTerrain$ = bindValue<boolean>(group, "canLiftTerrain", false);
 const alignMode$ = bindValue<string>(group, "alignMode", "Angle");
+const groundFitMode$ = bindValue<string>(group, "groundFitMode", "BackOnly");
 
 // Values are the C# CageHandleKind names.
 const pickKinds: ToggleEntry[] = [
@@ -62,6 +65,12 @@ const alignModes: ToggleEntry[] = [
     { value: "Angle", icon: alignAngleIcon, fallback: "Align mode: angle only (Alt+A)" },
     { value: "Flush", icon: alignFlushIcon, fallback: "Align mode: flush (Alt+A)" },
     { value: "Full", icon: alignFullIcon, fallback: "Align mode: full (Alt+A)" },
+];
+
+// Values are the C# GroundFitMode names.
+const groundFitModes: ToggleEntry[] = [
+    { value: "BackOnly", icon: groundFitBackIcon, fallback: "Fit mode: back only, street side at road level (Alt+F)" },
+    { value: "AllCorners", icon: groundFitAllIcon, fallback: "Fit mode: all corners follow the ground (Alt+F)" },
 ];
 
 interface ToggleEntry {
@@ -91,6 +100,7 @@ const ToolWindow = () => {
     const terrainLift = useValue(terrainLift$);
     const canLiftTerrain = useValue(canLiftTerrain$);
     const alignMode = useValue(alignMode$);
+    const groundFitMode = useValue(groundFitMode$);
     const { translate } = useLocalization();
     if (!ToolButton || !anchor.visible)
         return null;
@@ -118,12 +128,18 @@ const ToolWindow = () => {
                     <ToolButton
                         src={fitGroundIcon}
                         tooltip={translate("Unsquare.ToolWindow.FitToGround",
-                            "Fit the back corners to the original ground")}
+                            "Fit the bottom corners to the original ground")}
                         selected={false}
                         multiSelect={false}
                         disabled={false}
                         focusKey={focusDisabled}
                         onSelect={() => trigger(group, "fitToGround")}
+                    />
+                    <div className={styles.spacer} />
+                    <SegmentedToggle
+                        options={toOptions(groundFitModes, "Unsquare.ToolWindow.GroundFitMode", translate)}
+                        value={groundFitMode}
+                        onSelect={mode => trigger(group, "selectGroundFitMode", mode)}
                     />
                     <div className={styles.spacer} />
                     {groundSides.map(({ side, icon, fallback }) => (

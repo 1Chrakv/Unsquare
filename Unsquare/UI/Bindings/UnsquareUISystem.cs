@@ -48,8 +48,10 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "canLiftTerrain",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsDeformed));
             AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
-            AddBinding(new TriggerBinding(Group, "fitToGround",
-                () => _editor.Session.FitToGround(GroundFitMode.BackOnly)));
+            AddBinding(new TriggerBinding(Group, "fitToGround", () => _editor.Session.FitToGround()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "groundFitMode",
+                () => _editor.Session.GroundFitMode.ToString()));
+            AddBinding(new TriggerBinding<string>(Group, "selectGroundFitMode", SelectGroundFitMode));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "alignMode",
                 () => _editor.Session.AlignMode.ToString()));
             AddBinding(new TriggerBinding<string>(Group, "selectAlignMode", SelectAlignMode));
@@ -63,6 +65,14 @@ namespace Unsquare.UI.Bindings
                 if (TryParseSide(side, out var parsed))
                     _editor.Session.AlignGroundToNeighbour(parsed);
             }));
+        }
+
+        private void SelectGroundFitMode(string mode)
+        {
+            if (Enum.TryParse(mode, out GroundFitMode parsed) && Enum.IsDefined(typeof(GroundFitMode), parsed))
+                _editor.Session.SetGroundFitMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown ground fit mode '{mode}'.");
         }
 
         private void SelectAlignMode(string mode)

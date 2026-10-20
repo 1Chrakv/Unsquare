@@ -42,8 +42,8 @@ leave Unsquare mode.
 While a building is selected, a small window floats above its roof, in four sections with a header each:
 - **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
 - **Terrain:** lift the terrain with the building (highlighted while on, disabled while undeformed; Alt+T) and fit the
-  bottom corners to the original ground (Alt+G); level the left, back or right side with its neighbour's ground
-  (Ctrl+Alt+arrows).
+  bottom corners to the original ground (Alt+G), with a 2-way toggle for back only / all corners (Alt+F); level the
+  left, back or right side with its neighbour's ground (Ctrl+Alt+arrows).
 - **Align to neighbour:** left, back, right (as seen from the street; Alt+Shift+arrows) and the align mode toggle
   (angle / flush / full; clicking selects directly, Alt+A cycles).
 - **Reset:** the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
@@ -65,7 +65,7 @@ While a building is selected, a small window floats above its roof, in four sect
 | Reset selected corner / edge / face | Alt+R |
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off for the selected building | Alt+T |
-| Fit back corners to the original ground (street side to road level) / all corners | Alt+G / Alt+Shift+G |
+| Fit to the original ground / toggle back only (street side to road level) or all corners | Alt+G / Alt+F |
 | Align left / back / right side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → |
 | Cycle align mode (angle → flush → full) | Alt+A |
 | Level left / back / right side with its neighbour's ground | Ctrl+Alt+← / ↑ / → |
@@ -158,7 +158,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 75 | Compare the `[Fit]` corner heights with the visible slope (e.g. a corner on a hillside) | Higher corners get the larger values; the fitted corners touch the natural ground |
 | 76 | After a fit, Ctrl+Z | The shape before the fit returns in one step |
 | 77 | Fit with terrain lift on, then Alt+T | Lifted: the lot follows the slope; flat: the pad stays level |
-| 78 | Alt+Shift+G on the same building; then raise its front corners and press Alt+G | All four corners follow the original ground (`Fit to ground (all corners)`); Alt+G brings the street side back to road level |
+| 78 | Press Alt+F (or click the "all corners" toggle), then Alt+G on the same building; raise its front corners, Alt+F back to "back only", Alt+G | Toggle follows (`[Edit] Ground fit mode AllCorners`), all four corners follow the original ground (`Fit to ground (all corners)`); after switching back, Alt+G brings the street side back to road level. The mode stays when selecting another building |
 | 79 | Mode on: hover and click a park's grass, raise a top edge, pull a bottom corner out | Park previewed and selected from its lot; cage about 8 m tall, vertical edges easy to pick; benches, trees and paths follow the cage; no `has no lot cage` log |
 | 80 | Click a house's garden (away from the house mesh) | The house is selected |
 | 81 | Freshly placed park with curved paths: deform it twice, then Reset | Paths stay connected and bend smoothly, the road entrance stays attached; after Reset the layout equals a fresh park; `Lot sync … N net edges moved` without unmapped parts |
