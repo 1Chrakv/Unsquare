@@ -35,6 +35,8 @@ namespace Unsquare.Integration.Systems
         private readonly Dictionary<ObjectGeometryPrefab, (CageBox Lot, CageBox Building)> _boxes = new();
         private readonly List<KeyValuePair<Entity, DeformSpec>> _due = new();
         private readonly List<(Entity Building, bool Succeeded)> _finished = new();
+        private readonly Dictionary<Entity, ObjectGeometryPrefab> _simDataPending = new();
+        private readonly List<Entity> _readyPrefabs = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
 
         private PrefabSystem _prefabSystem;
@@ -94,9 +96,10 @@ namespace Unsquare.Integration.Systems
             foreach (var request in _due)
                 Bake(request.Key, request.Value);
 
+            ProcessSimData();
             ProcessSwaps();
             SaveIfDirty();
-            Enabled = _debouncer.Count > 0 || _swaps.Count > 0;
+            Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0;
         }
 
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -105,6 +108,7 @@ namespace Unsquare.Integration.Systems
             _debouncer.Clear();
             _swaps.Clear();
             _statuses.Clear();
+            _simDataPending.Clear();
             _simulationReady = false;
 
             // First preload of the session: nothing is registered yet, so pruning cannot strand a live prefab.
@@ -123,6 +127,10 @@ namespace Unsquare.Integration.Systems
         {
             base.OnGameLoadingComplete(purpose, mode);
             _simulationReady = (mode & GameMode.GameOrEditor) != 0;
+            // Restored variants: copy before the UI or simulation reads them; the rest waits for OnUpdate.
+            ProcessSimData();
+            if (_simDataPending.Count > 0)
+                Enabled = true;
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
             {
                 _manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
@@ -315,6 +323,9 @@ namespace Unsquare.Integration.Systems
                     _options.CoarseLodTwistMeters, assets, out variant))
                 return false;
             _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, spec));
+            // Restored variants are never swapped to, so the copy cannot wait for TrySwap.
+            if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
+                _simDataPending[variantEntity] = basePrefab;
 
             string key = ManifestEntry.MakeKey(typeName, variantName);
             if (isRestore)
@@ -338,6 +349,40 @@ namespace Unsquare.Integration.Systems
         {
             _swaps[building] = new PendingSwap(targetPrefab, basePrefab, spec);
             SetStatus(building, VariantStatus.WaitingForPrefab);
+        }
+
+        private void ProcessSimData()
+        {
+            if (_simDataPending.Count == 0)
+                return;
+            _readyPrefabs.Clear();
+            foreach (var pair in _simDataPending)
+            {
+                // A new prefab entity keeps Created until PrefabInitializeSystem has filled its data.
+                if (!EntityManager.Exists(pair.Key) || !EntityManager.HasComponent<Created>(pair.Key))
+                    _readyPrefabs.Add(pair.Key);
+            }
+
+            int copied = 0;
+            foreach (var variantEntity in _readyPrefabs)
+            {
+                var basePrefab = _simDataPending[variantEntity];
+                _simDataPending.Remove(variantEntity);
+                try
+                {
+                    if (EntityManager.Exists(variantEntity) && _prefabSystem.TryGetEntity(basePrefab, out var donor))
+                    {
+                        SimDataCopier.CopyMissing(EntityManager, donor, variantEntity);
+                        copied++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Mod.Log.Error(e, $"Copying sim data from {basePrefab.name} to variant {variantEntity} failed.");
+                }
+            }
+            if (copied > 0)
+                Mod.Log.Info($"Copied sim data to {copied} variants, {_simDataPending.Count} still initializing.");
         }
 
         private void ProcessSwaps()

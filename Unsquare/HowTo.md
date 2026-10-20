@@ -19,7 +19,7 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
               attachment deformers place props/areas/lanes/nets, AddPrefab, manifest entry
           ─▶ wait until the prefab entity loses `Created` ─▶ SimDataCopier ─▶ PrefabSwapper
 Next session: OnGamePreload ─▶ VariantManifest ─▶ re-create every variant (assets + BoundsCache reused)
-              OnGameLoadingComplete ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
+              OnGameLoadingComplete ─▶ SimDataCopier ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
 ```
 
 `VariantSystem` runs in `PrefabUpdate`, before `PrefabInitializeSystem` (`Mod.OnLoad`), so prefabs it adds are
@@ -101,9 +101,12 @@ reloads on demand). Assets land in `%LocalLow%\Colossal Order\Cities Skylines II
 A new prefab entity keeps `Created` until `PrefabInitializeSystem` has filled its data, so `VariantSystem`
 queues the copy and the swap until it is gone and the simulation is ready.
 
-* `SimDataCopier`: removing `SpawnableBuilding` leaves the variant without the data a growable building needs,
-  so `SpawnableBuildingData`, `BuildingPropertyData` and `ConsumptionData` are copied from the base when missing.
-  Without it, a zoned building loses residents, jobs or level.
+* `SimDataCopier`: removing `SpawnableBuilding` also drops the zone's prefab data, so `SpawnableBuildingData`,
+  `BuildingPropertyData`, `ConsumptionData`, `PollutionData`, `OfficeBuilding` and `LevelUpResourceData` are copied
+  from the base when missing. Without them a zoned building loses residents, jobs, level, upkeep, its address and
+  most info panel sections. `BuildingSpawnGroupData` is never copied (spawner).
+* The copy runs for every created variant, including restored ones (`OnGameLoadingComplete`): saved buildings
+  already reference their variant, so no swap would trigger it.
 * `PrefabSwapper` sets the building's `PrefabRef`, adds `Updated` (simulation re-evaluates) and `BatchesUpdated`
   (renderer rebuilds batches), and rewrites saved area and net instances (`LotInstanceSync`). A zero cage swaps
   back to the base prefab.
