@@ -35,7 +35,8 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.ToggleTerrainLift, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.FitToGround, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
-    [SettingsUIKeyboardAction(CageHotkeys.FitToGroundAll, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.ToggleGroundFitMode, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignLeft, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignBack, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignRight, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -132,8 +133,8 @@ namespace Unsquare.UI.Input
         public ProxyBinding FitToGroundBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.G, CageHotkeys.FitToGroundAll, alt: true, shift: true)]
-        public ProxyBinding FitToGroundAllBinding { get; set; }
+        [SettingsUIKeyboardBinding(BindingKeyboard.F, CageHotkeys.ToggleGroundFitMode, alt: true)]
+        public ProxyBinding ToggleGroundFitModeBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, CageHotkeys.AlignLeft, alt: true, shift: true)]

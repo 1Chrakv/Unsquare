@@ -55,6 +55,9 @@ namespace Unsquare.UI.Editing
 
         /// <summary>How <see cref="AlignToNeighbour"/> moves the face; kept while the game runs.</summary>
         public AlignMode AlignMode { get; private set; } = AlignMode.Angle;
+
+        /// <summary>Which corner columns <see cref="FitToGround"/> moves; kept while the game runs.</summary>
+        public GroundFitMode GroundFitMode { get; private set; } = GroundFitMode.BackOnly;
         public CageDrag ActiveDrag { get; private set; }
 
         /// <summary>Gizmo axis (0..2) of the active drag, or -1.</summary>
@@ -245,9 +248,13 @@ namespace Unsquare.UI.Editing
             return Record("Reset", result);
         }
 
-        /// <summary>Puts the target's bottom corners on the original terrain; applied a frame or two later.</summary>
-        public DeformRequestResult FitToGround(GroundFitMode mode)
+        /// <summary>
+        /// Puts the target's bottom corners on the original terrain (<see cref="GroundFitMode"/>); applied a frame or
+        /// two later.
+        /// </summary>
+        public DeformRequestResult FitToGround()
         {
+            var mode = GroundFitMode;
             string command = mode == GroundFitMode.BackOnly ? "Fit to ground (back)" : "Fit to ground (all corners)";
             if (!TryGetCage(out _))
                 return Record(command, DeformRequestResult.NotDeformable);
@@ -261,6 +268,19 @@ namespace Unsquare.UI.Editing
                 return Record(command, DeformRequestResult.Rejected);
             Log($"{command}: sampling terrain");
             return DeformRequestResult.Accepted;
+        }
+
+        /// <summary>Back only ↔ all corners: whether fitting moves the street side to the ground too.</summary>
+        public void ToggleGroundFitMode() => SetGroundFitMode(
+            GroundFitMode == GroundFitMode.BackOnly ? GroundFitMode.AllCorners : GroundFitMode.BackOnly);
+
+        public void SetGroundFitMode(GroundFitMode mode)
+        {
+            if (!IsEnabled || mode == GroundFitMode)
+                return;
+            GroundFitMode = mode;
+            Log($"Ground fit mode {GroundFitMode}");
+            Changed?.Invoke();
         }
 
         /// <summary>Switches whether the target's lot terrain follows the cage; only for deformed buildings.</summary>

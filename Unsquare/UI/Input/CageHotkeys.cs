@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
-using Unsquare.Core.Terrain;
 
 namespace Unsquare.UI.Input
 {
@@ -37,7 +36,7 @@ namespace Unsquare.UI.Input
         public const string ResetSelected = "UnsquareResetSelected";
         public const string ToggleTerrainLift = "UnsquareToggleTerrainLift";
         public const string FitToGround = "UnsquareFitToGround";
-        public const string FitToGroundAll = "UnsquareFitToGroundAll";
+        public const string ToggleGroundFitMode = "UnsquareToggleGroundFitMode";
         public const string AlignLeft = "UnsquareAlignLeft";
         public const string AlignBack = "UnsquareAlignBack";
         public const string AlignRight = "UnsquareAlignRight";
@@ -82,9 +81,9 @@ namespace Unsquare.UI.Input
             new HotkeyDefinition(ToggleTerrainLift, nameof(UnsquareSettings.ToggleTerrainLiftBinding),
                 "Toggle terrain lift", s => s.ToggleTerrainLift()),
             new HotkeyDefinition(FitToGround, nameof(UnsquareSettings.FitToGroundBinding),
-                "Fit back corners to original ground", s => s.FitToGround(GroundFitMode.BackOnly)),
-            new HotkeyDefinition(FitToGroundAll, nameof(UnsquareSettings.FitToGroundAllBinding),
-                "Fit all corners to original ground", s => s.FitToGround(GroundFitMode.AllCorners)),
+                "Fit to original ground (back only or all corners, see Alt+F)", s => s.FitToGround()),
+            new HotkeyDefinition(ToggleGroundFitMode, nameof(UnsquareSettings.ToggleGroundFitModeBinding),
+                "Toggle fitting the street side to the ground", s => s.ToggleGroundFitMode()),
             new HotkeyDefinition(AlignLeft, nameof(UnsquareSettings.AlignLeftBinding),
                 "Align left side to neighbour (seen from the street)", s => s.AlignToNeighbour(AlignSide.Left)),
             new HotkeyDefinition(AlignBack, nameof(UnsquareSettings.AlignBackBinding), "Align back to neighbour",
