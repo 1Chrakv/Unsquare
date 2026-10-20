@@ -344,6 +344,18 @@ namespace Unsquare.UI.Editing
             return count;
         }
 
+        /// <summary>
+        /// Converts the city's FlexIt buildings. Runs outside Unsquare mode (options page); not undoable, so it also
+        /// clears the history.
+        /// </summary>
+        public FlexItImportResult ImportFlexIt()
+        {
+            _history.Clear();
+            var result = _service.ImportFlexIt();
+            Log($"FlexIt import: {result}");
+            return result;
+        }
+
         /// <summary>Reverts the newest cage edit on any building; that building becomes the target.</summary>
         public void Undo() => Revisit(true);
 

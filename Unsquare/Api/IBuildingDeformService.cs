@@ -62,6 +62,12 @@ namespace Unsquare.Api
         /// <summary>Reverts every deformed building in the city (uninstall path); returns how many.</summary>
         int ResetAll();
 
+        /// <summary>
+        /// Converts the city's FlexIt buildings (FlexIt must be running): tapers and shears become Unsquare cages,
+        /// curved ones go back to their original prefab. Each building keeps its entity.
+        /// </summary>
+        FlexItImportResult ImportFlexIt();
+
         /// <summary>Current tunables (limits, attachments, rebake delay, pruning, lot sync).</summary>
         PipelineOptions Options { get; }
 

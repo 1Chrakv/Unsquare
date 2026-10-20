@@ -33,6 +33,7 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.OverlayGroup), "Cage overlay" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.PerformanceGroup), "Performance and storage" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.ResetGroup), "Reset" },
+                { _settings.GetOptionGroupLocaleID(UnsquareSettings.FlexItGroup), "Coming from FlexIt" },
                 { _settings.GetBindingMapLocaleID(), "Unsquare" },
                 { "Unsquare.ModeButton.Tooltip", "Unsquare: deform buildings (Alt+U)" },
                 { "Unsquare.ToolWindow.Section.Pick", "Pick" },
@@ -72,6 +73,10 @@ namespace Unsquare.UI.Input
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),
                     "Reset all advanced options to their defaults?" },
+                { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ImportFlexIt)),
+                    "Convert all FlexIt buildings of this city to Unsquare? Back up your save first. Tapered and " +
+                    "skewed buildings keep their shape; curved ones (arch, corner, bend) go back to their original " +
+                    "shape. Afterwards, save the city; then FlexIt can be removed." },
             };
             entries[_settings.GetOptionLabelLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
                 CageHotkeys.ToggleModeLabel;
@@ -161,6 +166,12 @@ namespace Unsquare.UI.Input
                 "At startup, delete deformed building data that no save has used for a while.");
             Option(entries, nameof(UnsquareSettings.PruneAfterDays), "Delete after (days)",
                 "Days a deformed variant may stay unused before it is deleted.");
+            Option(entries, nameof(UnsquareSettings.ImportFlexIt), "Import FlexIt buildings",
+                "Converts the buildings FlexIt deformed in the loaded city. Needs FlexIt to be active. Tapered and " +
+                "skewed buildings become Unsquare cages with the same shape, and their props and lot follow too. " +
+                "Unsquare can't curve buildings yet, so arched, corner and bent ones are reset to their original shape.");
+            Option(entries, nameof(UnsquareSettings.ImportFlexItStatus), "Last import",
+                "Result of the last FlexIt import; details are in the Unsquare log.");
             Option(entries, nameof(UnsquareSettings.ResetAdvanced), "Reset advanced options",
                 "Restore the defaults of every option on this tab. Key bindings stay unchanged.");
             return entries;
