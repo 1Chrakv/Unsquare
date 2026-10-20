@@ -4,11 +4,15 @@
 	<!--Name of the mod to display to players-->
 	<DisplayName Value="Unsquare" />
 	<!--Short description of the mod-->
-	<ShortDescription Value="This is a short description" />
+	<ShortDescription Value="Freely deform buildings by moving the corners, edges and faces of their lot box." />
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>
-This is a long description
+Unsquare lets you bend, taper and skew individual buildings. Switch to Unsquare mode (button next to the underground toggle), pick a building and drag the corners, edges or faces of its lot box. Props, paths, areas and lanes on the lot follow the deformation, and the terrain can be lifted to match.
+
+Deformed buildings are saved as variant prefabs and restored on load. Saves that contain deformed buildings need the mod; reset buildings before uninstalling.
+
+Unofficial mod, not affiliated with or endorsed by Colossal Order or Paradox Interactive. Inspired by FlexIt.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
@@ -27,7 +31,7 @@ This is a long description
 	<!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
 	<RequiredDLC Value="" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
-	<ChangeLog Value="" />
+	<ChangeLog Value="First public release." />
 	<!--<ChangeLog>
 	</ChangeLog>-->
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
