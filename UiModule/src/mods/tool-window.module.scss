@@ -10,7 +10,7 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    padding: 6rem 8rem 8rem;
+    padding: 4rem 8rem 6rem;
     border-radius: 6rem;
     background-color: rgba(24, 33, 51, 0.85);
     backdrop-filter: blur(5px);
@@ -36,7 +36,7 @@
 
 .sectionHeader {
     align-self: center;
-    margin-bottom: 4rem;
+    margin-bottom: 2rem;
     font-size: 11rem;
     letter-spacing: 1rem;
     text-transform: uppercase;
@@ -44,22 +44,16 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-// Rows keep a tool button's height when empty, so all sections line up.
+// Rows sit flush on each other; an empty bottom row collapses and its section stays top-aligned.
 .row,
 .rowColumns {
     display: flex;
     flex-direction: row;
     align-items: center;
-    min-height: 40rem;
 }
 
 .row {
     justify-content: center;
-}
-
-.row + .row,
-.rowColumns + .rowColumns {
-    margin-top: 4rem;
 }
 
 .rowColumns {
