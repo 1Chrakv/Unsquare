@@ -36,5 +36,41 @@ namespace Unsquare.Tests.Editing
         {
             Assert.That(ToolWindowPlacement.TryPlace(new float3(float.NaN, 0.5f, 10f), Margin, out _), Is.False);
         }
+
+        [Test]
+        public void TryPlaceAbove_HigherCorner_RaisesWindowKeepsAnchorX()
+        {
+            var corners = new[] { new float3(0.2f, 0.6f, 40f), new float3(0.7f, 0.75f, 60f) };
+            Assert.That(ToolWindowPlacement.TryPlaceAbove(new float3(0.4f, 0.65f, 50f), corners, Margin,
+                out var position), Is.True);
+            Assert.That(position.x, Is.EqualTo(0.4f).Within(1e-5f));
+            Assert.That(position.y, Is.EqualTo(0.25f).Within(1e-5f));
+        }
+
+        [Test]
+        public void TryPlaceAbove_CornerBehindCamera_IsIgnored()
+        {
+            var corners = new[] { new float3(0.5f, 0.95f, -5f) };
+            Assert.That(ToolWindowPlacement.TryPlaceAbove(new float3(0.5f, 0.6f, 50f), corners, Margin,
+                out var position), Is.True);
+            Assert.That(position.y, Is.EqualTo(0.4f).Within(1e-5f));
+        }
+
+        [Test]
+        public void TryPlaceAbove_AnchorBehindCamera_ReturnsFalse()
+        {
+            var corners = new[] { new float3(0.5f, 0.7f, 10f) };
+            Assert.That(ToolWindowPlacement.TryPlaceAbove(new float3(0.5f, 0.6f, -1f), corners, Margin, out _),
+                Is.False);
+        }
+
+        [Test]
+        public void TryPlaceAbove_CornerAboveScreen_ClampsIntoMargin()
+        {
+            var corners = new[] { new float3(0.5f, 1.4f, 10f) };
+            Assert.That(ToolWindowPlacement.TryPlaceAbove(new float3(0.5f, 0.6f, 50f), corners, Margin,
+                out var position), Is.True);
+            Assert.That(position.y, Is.EqualTo(Margin).Within(1e-5f));
+        }
     }
 }

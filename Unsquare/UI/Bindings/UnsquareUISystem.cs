@@ -22,6 +22,7 @@ namespace Unsquare.UI.Bindings
         // Keeps the window's anchor this far from the screen border (share of the screen size).
         private const float ScreenMargin = 0.04f;
 
+        private readonly float3[] _cornerViewports = new float3[CageTopology.CornerCount];
         private UnsquareToolSystem _tool;
         private CageEditorSystem _editor;
         private bool _loggedAnchorFailure;
@@ -99,7 +100,7 @@ namespace Unsquare.UI.Bindings
                 Mod.Log.Warn($"[UI] Unknown pick kind '{kind}'.");
         }
 
-        // Above the roof of the edited building; hidden without a deformable target or behind the camera.
+        // Over the roof and above the cage's highest point on screen; hidden without a target or behind the camera.
         private ToolWindowAnchor GetToolWindowAnchor()
         {
             var session = _editor.Session;
@@ -112,7 +113,13 @@ namespace Unsquare.UI.Bindings
                     return ToolWindowAnchor.Hidden;
                 float3 world = BuildingSpace.PointToWorld(transform, CageAnchor.Top(cage.Box, cage.TargetOffsets));
                 float3 viewport = view.Camera.WorldToViewportPoint(world);
-                return ToolWindowPlacement.TryPlace(viewport, ScreenMargin, out var position)
+                for (int corner = 0; corner < _cornerViewports.Length; corner++)
+                {
+                    float3 local = DeformedCage.CornerPosition(cage.Box, cage.TargetOffsets, corner);
+                    _cornerViewports[corner] =
+                        view.Camera.WorldToViewportPoint(BuildingSpace.PointToWorld(transform, local));
+                }
+                return ToolWindowPlacement.TryPlaceAbove(viewport, _cornerViewports, ScreenMargin, out var position)
                     ? new ToolWindowAnchor(position.x, position.y)
                     : ToolWindowAnchor.Hidden;
             }
