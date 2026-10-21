@@ -13,11 +13,12 @@ namespace Unsquare.Integration.Import
         public bool NoCity { get; set; }
         public bool FlexItMissing { get; set; }
 
-        /// <summary>Curved FlexIt variants, now on their base prefab.</summary>
+        /// <summary>Arch and bend variants (and corner fits that could not be fitted), now on their base prefab.</summary>
         public int ResetCount { get; set; }
 
         public int FailedCount { get; set; }
 
-        public List<(Entity Building, DeformSpec Spec, string Source)> Conversions { get; } = new();
+        /// <summary>Approximated: a corner fit's closest cage, not an exact match.</summary>
+        public List<(Entity Building, DeformSpec Spec, string Source, bool Approximated)> Conversions { get; } = new();
     }
 }

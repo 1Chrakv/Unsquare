@@ -180,9 +180,10 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 96 | Back of a lot at a sloped road, Ctrl+Alt+↑ | Each back corner goes to the road surface height next to it |
 | 97 | Level a side with nothing in reach; then Ctrl+Z after a level | Rejected with the `no neighbour within …` log line; undo restores the heights in one step |
 | 98 | Without FlexIt, open Options → Advanced in a loaded city and press Import FlexIt buildings | Last import: `FlexIt is not running`; nothing changes. In the main menu the button is greyed out |
-| 99 | With FlexIt active, load a save with a taper, a "square end" (taper + skew), a skew-only, an arch and a corner building; press Import | The first three look as before, now with props and paths following; arch and corner are rectangular again; no skew is left; log `FlexIt import done: 3 converted …, 2 curved reset, 0 failed` |
+| 99 | With FlexIt active, load a save with a taper, a "square end" (taper + skew), a skew-only, an arch and a corner building; press Import | The first three look as before, now with props and paths following; the corner building gets the closest straight shape, the arch is rectangular again; no skew is left; log `FlexIt import done: 4 converted (1 approximated, …), 1 curved reset, 0 failed` |
 | 100 | After 99, select an imported building with the Unsquare tool | Green cage with the FlexIt shape; it can be edited and reset like any Unsquare building |
 | 101 | After 99, save; remove FlexIt; reload | All imported buildings look the same; no `Unknown prefab ID` for them in the game log |
+| 102 | Corner fits at about 10° and 30°, import | Both keep their far end facing the turned street; the 10° one looks close to FlexIt, the 30° one visibly straighter; log `approximated corner fit … (max deviation X m)` per building |
 
 ## Reporting problems
 

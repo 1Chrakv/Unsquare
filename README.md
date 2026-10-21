@@ -112,7 +112,8 @@ Unsquare can take over buildings deformed with FlexIt:
 3. Save the city. FlexIt can be removed afterwards.
 
 Tapered and skewed buildings get an Unsquare cage of the same shape; their props, paths and lot areas now follow too.
-Unsquare can't curve buildings yet, so arched, corner-fitted and bent buildings are reset to their original shape.
+Unsquare can't curve buildings yet: corner-fitted buildings get the closest straight shape (they no longer fold at
+the corner), and arched and bent buildings are reset to their original shape.
 Each building stays the same building (residents, companies and upgrades are kept). The result is shown below the
 button, details are in the Unsquare log.
 

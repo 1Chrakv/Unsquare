@@ -75,8 +75,9 @@ namespace Unsquare.UI.Input
                     "Reset all advanced options to their defaults?" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ImportFlexIt)),
                     "Convert all FlexIt buildings of this city to Unsquare? Back up your save first. Tapered and " +
-                    "skewed buildings keep their shape; curved ones (arch, corner, bend) go back to their original " +
-                    "shape. Afterwards, save the city; then FlexIt can be removed." },
+                    "skewed buildings keep their shape, corner-fitted ones get the closest straight shape, and " +
+                    "arched or bent ones go back to their original shape. Afterwards, save the city; then FlexIt " +
+                    "can be removed." },
             };
             entries[_settings.GetOptionLabelLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
                 CageHotkeys.ToggleModeLabel;
@@ -169,7 +170,8 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.ImportFlexIt), "Import FlexIt buildings",
                 "Converts the buildings FlexIt deformed in the loaded city. Needs FlexIt to be active. Tapered and " +
                 "skewed buildings become Unsquare cages with the same shape, and their props and lot follow too. " +
-                "Unsquare can't curve buildings yet, so arched, corner and bent ones are reset to their original shape.");
+                "Unsquare can't curve buildings yet: corner-fitted ones get the closest straight shape (the corner " +
+                "itself doesn't fold), arched and bent ones are reset to their original shape.");
             Option(entries, nameof(UnsquareSettings.ImportFlexItStatus), "Last import",
                 "Result of the last FlexIt import; details are in the Unsquare log.");
             Option(entries, nameof(UnsquareSettings.ResetAdvanced), "Reset advanced options",

@@ -12,6 +12,9 @@ namespace Unsquare.Integration.Import
     internal static class FlexItFootprint
     {
         private const float MinHalfExtent = 4f;
+        private const float MinPlanExtent = 24f;
+        private const float MinBlendHalf = 2f;
+        private const float BlendShare = 0.08f;
 
         /// <summary>Largest distance of a render mesh bound from the origin along x or z (submesh rotation ignored).</summary>
         public static float HalfExtent(ObjectGeometryPrefab prefab, bool alongX)
@@ -29,6 +32,33 @@ namespace Unsquare.Integration.Import
                 extent = math.max(extent, math.max(math.abs(min), math.abs(max)));
             }
             return extent;
+        }
+
+        /// <summary>Half width of the corner fit's blend band: 8 % of the largest mesh bound size, at least 2 m.</summary>
+        public static float BlendHalf(ObjectGeometryPrefab prefab)
+        {
+            float extent = MinPlanExtent;
+            if (prefab.m_Meshes != null)
+            {
+                foreach (var info in prefab.m_Meshes)
+                {
+                    if (info == null || !(info.m_Mesh is RenderPrefab render))
+                        continue;
+                    var size = render.bounds.max - render.bounds.min;
+                    extent = math.max(extent, math.max(size.x, size.z));
+                }
+            }
+            return math.max(MinBlendHalf, BlendShare * extent);
+        }
+
+        /// <summary>Side edge of the geometry bounds the corner fit turns around (+1: max x, −1: min x).</summary>
+        public static bool TryGetCornerX(EntityManager entityManager, Entity prefabEntity, int side, out float cornerX)
+        {
+            cornerX = 0f;
+            if (!entityManager.TryGetComponent(prefabEntity, out ObjectGeometryData geometry))
+                return false;
+            cornerX = side > 0 ? geometry.m_Bounds.max.x : geometry.m_Bounds.min.x;
+            return true;
         }
 
         /// <summary>Street-side edge of the prefab's geometry bounds, FlexIt's pivot depth.</summary>

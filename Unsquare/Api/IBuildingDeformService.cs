@@ -64,7 +64,7 @@ namespace Unsquare.Api
 
         /// <summary>
         /// Converts the city's FlexIt buildings (FlexIt must be running): tapers and shears become Unsquare cages,
-        /// curved ones go back to their original prefab. Each building keeps its entity.
+        /// corner fits become the closest cage, arches and bends go back to their original prefab. Same entity.
         /// </summary>
         FlexItImportResult ImportFlexIt();
 

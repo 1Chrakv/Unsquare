@@ -13,10 +13,12 @@ namespace Unsquare.Integration.Import
 {
     /// <summary>
     /// Moves every FlexIt building in the loaded city back to its base prefab, clears its FlexIt shear and works out
-    /// the Unsquare cage for tapers and shears; curved variants stay on the base. Needs FlexIt running.
+    /// the Unsquare cage (exact for tapers and shears, closest fit for corners); arch and bend stay on the base.
     /// </summary>
     internal sealed class FlexItImporter
     {
+        private const int OutlineSamplesPerSide = 16;
+
         private readonly World _world;
         private readonly PrefabSystem _prefabSystem;
         private readonly IVariantPipeline _pipeline;
@@ -94,6 +96,15 @@ namespace Unsquare.Integration.Import
                 Mod.Log.Warn($"FlexIt import: {basePrefab.name} has no lot, cannot convert {source}.");
                 return;
             }
+            if (action == FlexItImportAction.Approximate)
+            {
+                if (TryApproximate(basePrefab, baseEntity, applied.Offsets, variant.Value, shear, out offsets,
+                        out float error))
+                    Mod.Log.Info($"FlexIt import: building {building} approximated corner fit {source} " +
+                                 $"(max deviation {error:0.0} m).");
+                else
+                    action = FlexItImportAction.ResetToBase;
+            }
 
             // Only FlexIt variants need a rebase; Unsquare's own swap remaps its lot from the applied cage.
             // Rebase first: if that fails, the building keeps its FlexIt look completely.
@@ -113,7 +124,8 @@ namespace Unsquare.Integration.Import
             }
             else
             {
-                batch.Conversions.Add((building, applied.WithOffsets(offsets), source));
+                bool approximated = action == FlexItImportAction.Approximate;
+                batch.Conversions.Add((building, applied.WithOffsets(offsets), source, approximated));
             }
         }
 
@@ -163,6 +175,31 @@ namespace Unsquare.Integration.Import
             }
             offsets = FlexItCageConverter.ToOffsets(lotBox, applied, taper, shear);
             return true;
+        }
+
+        // Fitted over the mesh outline: the facades are what the player compares with the FlexIt look.
+        private bool TryApproximate(ObjectGeometryPrefab basePrefab, Entity baseEntity, CageOffsets applied,
+            FlexItVariant variant, FlexItShear? shear, out CageOffsets offsets, out float maxError)
+        {
+            offsets = null;
+            maxError = 0f;
+            if (!CageBoxMeasurer.TryMeasureLot(basePrefab, out var lotBox))
+                return false;
+            if (!CageBoxMeasurer.TryMeasureMeshes(basePrefab, out var meshBox))
+                meshBox = lotBox;
+
+            int side = variant.B >= 0 ? 1 : -1;
+            float halfWidth = FlexItFootprint.HalfExtent(basePrefab, alongX: true);
+            if (!FlexItFootprint.TryGetCornerX(EntityManager, baseEntity, side, out float cornerX))
+                cornerX = side * halfWidth;
+            if (!FlexItFootprint.TryGetFrontZ(EntityManager, baseEntity, out float pivotZ))
+                pivotZ = FlexItFootprint.HalfExtent(basePrefab, alongX: false);
+            var corner = new FlexItCorner(variant.A, side, halfWidth, cornerX, pivotZ,
+                FlexItFootprint.BlendHalf(basePrefab));
+
+            var samples = PlanCageFit.Outline(meshBox.Min.xz, meshBox.Max.xz, OutlineSamplesPerSide);
+            return FlexItCageConverter.TryFitOffsets(lotBox, applied, samples, corner, shear, out offsets,
+                out maxError);
         }
     }
 }
