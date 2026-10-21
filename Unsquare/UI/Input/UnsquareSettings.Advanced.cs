@@ -1,5 +1,7 @@
 using System;
 using System.Reflection;
+using Game;
+using Game.SceneFlow;
 using Game.Settings;
 using Game.UI;
 using Unity.Mathematics;
@@ -23,6 +25,10 @@ namespace Unsquare.UI.Input
         public const string OverlayGroup = "Overlay";
         public const string PerformanceGroup = "Performance";
         public const string ResetGroup = "Reset";
+        public const string FlexItGroup = "FlexIt";
+
+        private Func<string> _importFlexIt;
+        private string _importFlexItStatus = "";
 
         [SettingsUISection(AdvancedTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
@@ -143,7 +149,32 @@ namespace Unsquare.UI.Input
             }
         }
 
+        [SettingsUISection(AdvancedTab, FlexItGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        [SettingsUIDisableByCondition(typeof(UnsquareSettings), nameof(IsNoCityLoaded))]
+        public bool ImportFlexIt
+        {
+            set
+            {
+                if (_importFlexIt != null)
+                    _importFlexItStatus = _importFlexIt();
+            }
+        }
+
+        [SettingsUISection(AdvancedTab, FlexItGroup)]
+        public string ImportFlexItStatus => _importFlexItStatus;
+
         public bool IsPruneDisabled() => !PruneUnused;
+
+        public bool IsNoCityLoaded()
+        {
+            var manager = GameManager.instance;
+            return manager == null || (manager.gameMode & GameMode.Game) == 0;
+        }
+
+        /// <summary>Hooks up the FlexIt import button; the action returns the status line shown below it.</summary>
+        internal void BindFlexItImport(Func<string> import) => _importFlexIt = import;
 
         public PipelineOptions ToPipelineOptions()
         {

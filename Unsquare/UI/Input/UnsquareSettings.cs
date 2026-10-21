@@ -12,9 +12,9 @@ namespace Unsquare.UI.Input
     [FileLocation(nameof(Unsquare))]
     [SettingsUITabOrder(MainTab, AdvancedTab)]
     [SettingsUIGroupOrder(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
-        PerformanceGroup, ResetGroup)]
+        PerformanceGroup, FlexItGroup, ResetGroup)]
     [SettingsUIShowGroupName(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
-        PerformanceGroup)]
+        PerformanceGroup, FlexItGroup)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.ExitMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CyclePickKind, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]

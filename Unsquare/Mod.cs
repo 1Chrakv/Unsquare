@@ -47,8 +47,9 @@ namespace Unsquare
             updateSystem.UpdateAt<UnsquareUISystem>(SystemUpdatePhase.UIUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
-            _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world),
-                world.GetOrCreateSystemManaged<CageEditorSystem>().Session,
+            var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
+            _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
+            _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world), session,
                 world.GetOrCreateSystemManaged<CageOverlaySystem>());
             _settingsApplier.Apply();
         }

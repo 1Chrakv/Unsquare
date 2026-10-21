@@ -1,7 +1,9 @@
 using System;
+using Game.Prefabs;
 using Unity.Entities;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Options;
+using Unsquare.Integration.Import;
 
 namespace Unsquare.Integration.Systems
 {
@@ -26,5 +28,14 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>Swaps every deformed building back to its base prefab; returns the count.</summary>
         int ResetAll();
+
+        /// <summary>
+        /// Swaps a building on a foreign prefab (e.g. a FlexIt variant) to <paramref name="basePrefab"/> right away,
+        /// cancelling requests in flight; false before the simulation is ready.
+        /// </summary>
+        bool TryRebase(Entity building, ObjectGeometryPrefab basePrefab);
+
+        /// <summary>Rebases all FlexIt buildings and clears their shear; see <see cref="FlexItImporter"/>.</summary>
+        FlexItImportBatch PrepareFlexItImport();
     }
 }

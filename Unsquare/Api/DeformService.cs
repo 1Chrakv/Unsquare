@@ -192,6 +192,34 @@ namespace Unsquare.Api
 
         public int ResetAll() => _pipeline.ResetAll();
 
+        public FlexItImportResult ImportFlexIt()
+        {
+            var batch = _pipeline.PrepareFlexItImport();
+            int converted = 0, approximated = 0, clamped = 0, failed = batch.FailedCount;
+            foreach (var (building, spec, source, isApproximation) in batch.Conversions)
+            {
+                var result = Apply(building, spec);
+                if (result == DeformRequestResult.Accepted || result == DeformRequestResult.Clamped)
+                {
+                    converted++;
+                    if (isApproximation)
+                        approximated++;
+                }
+                else
+                {
+                    failed++;
+                }
+                if (result == DeformRequestResult.Clamped)
+                    clamped++;
+                if (result != DeformRequestResult.Accepted)
+                    Mod.Log.Warn($"FlexIt import of building {building} ({source}): {result}.");
+            }
+            var summary = new FlexItImportResult(batch.NoCity, batch.FlexItMissing, converted, approximated,
+                clamped, batch.ResetCount, failed);
+            Mod.Log.Info($"FlexIt import done: {summary}.");
+            return summary;
+        }
+
         private static DeformStatus MapStatus(VariantStatus status, DeformSpec applied) => status switch
         {
             VariantStatus.Pending => DeformStatus.Pending,

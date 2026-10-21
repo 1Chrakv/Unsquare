@@ -19,6 +19,7 @@ using Unsquare.Core.Persistence;
 using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;
 using Unsquare.Integration.Entities;
+using Unsquare.Integration.Import;
 using Unsquare.Integration.Prefabs;
 using Unsquare.Integration.Prefabs.Attachments;
 
@@ -205,6 +206,37 @@ namespace Unsquare.Integration.Systems
             }
             Mod.Log.Info($"Reset {count} deformed buildings.");
             return count;
+        }
+
+        bool IVariantPipeline.TryRebase(Entity building, ObjectGeometryPrefab basePrefab)
+        {
+            if (!_simulationReady || !_prefabSystem.TryGetEntity(basePrefab, out var baseEntity))
+                return false;
+            _debouncer.Cancel(building);
+            _swaps.Remove(building);
+            try
+            {
+                // Foreign variants never moved the lot's nets: an identity remap keeps them in place.
+                PrefabSwapper.Swap(EntityManager, building, baseEntity, _options.AreaMatchMeters,
+                    new LotRemap(null, null));
+                SetStatus(building, VariantStatus.Idle);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, $"Moving building {building} to {basePrefab.name} failed.");
+                return false;
+            }
+        }
+
+        FlexItImportBatch IVariantPipeline.PrepareFlexItImport()
+        {
+            if (!_simulationReady)
+            {
+                Mod.Log.Warn("FlexIt import needs a loaded city.");
+                return new FlexItImportBatch { NoCity = true };
+            }
+            return new FlexItImporter(World, _prefabSystem, this, _buildingQuery).Prepare();
         }
 
         /// <summary>Lot cage and deformation a variant prefab was baked from; false for base prefabs and unknown variants.</summary>
