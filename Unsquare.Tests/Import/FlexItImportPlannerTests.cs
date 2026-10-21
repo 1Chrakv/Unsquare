@@ -24,6 +24,21 @@ namespace Unsquare.Tests.Import
         }
 
         [Test]
+        public void Decide_CornerFit_Approximates()
+        {
+            var corner = new FlexItVariant("Base", FlexItMode.Corner, 20, 1, 0, 0);
+            Assert.That(FlexItImportPlanner.Decide(corner, null), Is.EqualTo(FlexItImportAction.Approximate));
+            Assert.That(FlexItImportPlanner.Decide(corner, Shear), Is.EqualTo(FlexItImportAction.Approximate));
+        }
+
+        [Test]
+        public void Decide_Bend_Resets()
+        {
+            var bend = new FlexItVariant("Base", FlexItMode.Bend, 20, 10, 0, 0);
+            Assert.That(FlexItImportPlanner.Decide(bend, null), Is.EqualTo(FlexItImportAction.ResetToBase));
+        }
+
+        [Test]
         public void Decide_CurvedVariant_ResetsEvenWithShear()
         {
             Assert.That(FlexItImportPlanner.Decide(Arch, null), Is.EqualTo(FlexItImportAction.ResetToBase));

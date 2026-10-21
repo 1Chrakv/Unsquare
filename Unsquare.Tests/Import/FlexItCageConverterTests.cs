@@ -89,6 +89,40 @@ namespace Unsquare.Tests.Import
             Assert.That(got.y, Is.EqualTo(deformed.y).Within(Tolerance));
         }
 
+        [Test]
+        public void TryFitOffsets_CornerFit_BeatsIdentityAndKeepsHeights()
+        {
+            var corner = new FlexItCorner(20, 1, 6, 6, 10, 2);
+            var samples = PlanCageFit.Outline(new float2(-6, -10), new float2(6, 10), 8);
+            Assert.That(FlexItCageConverter.TryFitOffsets(Lot, CageOffsets.Identity, samples, corner, null,
+                out var offsets, out float error), Is.True);
+
+            float identityError = 0f;
+            foreach (var p in samples)
+                identityError = math.max(identityError, math.distance(corner.Map(p), p));
+            Assert.That(error, Is.LessThan(identityError));
+            for (int i = 0; i < CageTopology.CornerCount; i++)
+            {
+                Assert.That(offsets.Steps(i).y, Is.EqualTo(0));
+                Assert.That(offsets.Steps(i), Is.EqualTo(offsets.Steps(i | 2)));
+            }
+        }
+
+        [Test]
+        public void TryFitOffsets_CornerFit_TurnsTheCornerSideLikeFlexIt()
+        {
+            var corner = new FlexItCorner(20, 1, 6, 6, 10, 2);
+            var samples = PlanCageFit.Outline(new float2(-6, -10), new float2(6, 10), 8);
+            FlexItCageConverter.TryFitOffsets(Lot, CageOffsets.Identity, samples, corner, null, out var offsets, out _);
+
+            // The far back corner lies in the turned wing: the cage moves it sideways the same way FlexIt does.
+            var cage = new TrilinearCageDeformation(Lot, offsets);
+            float2 back = new float2(-6, -10);
+            float wanted = corner.Map(back).x - back.x;
+            float got = cage.Apply(new float3(back.x, 0, back.y), out _).x - back.x;
+            Assert.That(math.sign(got), Is.EqualTo(math.sign(wanted)));
+        }
+
         private static void AssertMatches(CageOffsets offsets, System.Func<float2, float2> expected)
         {
             var cage = new TrilinearCageDeformation(Lot, offsets);

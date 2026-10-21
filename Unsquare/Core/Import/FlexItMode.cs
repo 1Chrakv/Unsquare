@@ -6,7 +6,7 @@ namespace Unsquare.Core.Import
         /// <summary>Plan-bilinear shear of the side walls (and front/back); Unsquare can express it as a cage.</summary>
         Taper,
 
-        /// <summary>Wing turned around a corner; curved, so it is reset on import.</summary>
+        /// <summary>Wing turned around a corner; folded, so the import approximates it with one cage.</summary>
         Corner,
 
         /// <summary>Circular arc; curved, so it is reset on import.</summary>
