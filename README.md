@@ -103,6 +103,19 @@ the hovered one cyan.
 Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment,
 nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
 
+### Coming from FlexIt
+
+Unsquare can take over buildings deformed with FlexIt:
+
+1. Back up your save. Keep FlexIt active, add Unsquare and load the city.
+2. Options → Unsquare → Advanced → Coming from FlexIt → **Import FlexIt buildings**.
+3. Save the city. FlexIt can be removed afterwards.
+
+Tapered and skewed buildings get an Unsquare cage of the same shape; their props, paths and lot areas now follow too.
+Unsquare can't curve buildings yet, so arched, corner-fitted and bent buildings are reset to their original shape.
+Each building stays the same building (residents, companies and upgrades are kept). The result is shown below the
+button, details are in the Unsquare log.
+
 ### Before uninstalling
 
 Saves with deformed buildings need the mod to restore them. Reset deformed buildings (Alt+Shift+Delete resets all)

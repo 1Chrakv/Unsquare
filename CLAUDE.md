@@ -144,6 +144,18 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   Edges carry ground heights (road surface, neighbour lot ground); `NeighbourAlign.FitHeight` (Ctrl+Alt+arrows)
   moves the same side's two columns to the neighbour's height next to them via `GroundFit.Fit`.
 
+## FlexIt import
+
+- Workflow: FlexIt stays active, the save is loaded, Advanced tab → Import FlexIt buildings
+  (`CageEditSession.ImportFlexIt` → `IBuildingDeformService.ImportFlexIt` → `FlexItImporter`), save, remove FlexIt.
+  Buildings keep their entity: rebase to the base prefab (`IVariantPipeline.TryRebase`), then a normal cage request.
+- FlexIt variants are recognised by name only (`FlexItVariantName`, `<Base>__taper|corner|arch|bend<A>_<B>…`, degrees).
+  Taper and the render-only shear are bilinear in plan, so `FlexItCageConverter` maps the lot corners exactly; arch,
+  corner and bend are curved and reset to the base.
+- The taper and shear are relative to FlexIt's own measures (`FlexItFootprint`: mesh half extents, geometry bounds
+  `max.z`), not to the lot box. Shear is read and removed through FlexIt's public `SkewRegistrySystem` by reflection
+  (`FlexItBridge`); if FlexIt changes, the bridge must fail softly and the import reports FlexIt as missing.
+
 ## Props: rigid placement, full deformation later
 
 - **Now:** sub-objects (props, attached sub-buildings) get rigid poses via `SubObjectDeformer` →
