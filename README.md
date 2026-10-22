@@ -69,7 +69,7 @@ the align mode: angle, flush or full); and reset the selected handle or the whol
 
 ### Hotkeys
 
-Defaults; all can be rebound in Options → Unsquare. Except Alt+U, they only work in Unsquare mode.
+Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Alt+U, they only work in Unsquare mode.
 
 | Action | Key |
 |---|---|
@@ -99,7 +99,7 @@ the hovered one cyan.
 
 ### Options
 
-Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment,
+Options → Unsquare → Settings holds the tunables: cage limits, which attachments follow the cage, facade alignment,
 nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
 
 ### Coming from FlexIt
@@ -107,7 +107,7 @@ nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, 
 Unsquare can take over buildings deformed with FlexIt:
 
 1. Back up your save. Keep FlexIt active, add Unsquare and load the city.
-2. Options → Unsquare → Advanced → Coming from FlexIt → **Import FlexIt buildings**.
+2. Options → Unsquare → Settings → Coming from FlexIt → **Import FlexIt buildings**.
 3. Save the city. FlexIt can be removed afterwards.
 
 Tapered and skewed buildings get an Unsquare cage of the same shape; their props, paths and lot areas now follow too.

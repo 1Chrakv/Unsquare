@@ -23,8 +23,8 @@ namespace Unsquare.UI.Input
             var entries = new Dictionary<string, string>
             {
                 { _settings.GetSettingsLocaleID(), "Unsquare" },
-                { _settings.GetOptionTabLocaleID(UnsquareSettings.MainTab), "Main" },
-                { _settings.GetOptionTabLocaleID(UnsquareSettings.AdvancedTab), "Advanced" },
+                { _settings.GetOptionTabLocaleID(UnsquareSettings.SettingsTab), "Settings" },
+                { _settings.GetOptionTabLocaleID(UnsquareSettings.KeyBindingsTab), "Key bindings" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.HotkeyGroup), "Cage editing hotkeys" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.EditingGroup), "Editing" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.LimitsGroup), "Cage limits" },
@@ -71,8 +71,8 @@ namespace Unsquare.UI.Input
                     "Align mode: full. The face takes the neighbour's edge and its corners (Alt+A)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
-                { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),
-                    "Reset all advanced options to their defaults?" },
+                { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetSettings)),
+                    "Reset all settings to their defaults? Key bindings are kept." },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ImportFlexIt)),
                     "Convert all FlexIt buildings of this city to Unsquare? Back up your save first. Tapered and " +
                     "skewed buildings keep their shape, corner-fitted ones get the closest straight shape, and " +
@@ -170,7 +170,7 @@ namespace Unsquare.UI.Input
                 "itself doesn't fold), arched and bent ones are reset to their original shape.");
             Option(entries, nameof(UnsquareSettings.ImportFlexItStatus), "Last import",
                 "Result of the last FlexIt import; details are in the Unsquare log.");
-            Option(entries, nameof(UnsquareSettings.ResetAdvanced), "Reset advanced options",
+            Option(entries, nameof(UnsquareSettings.ResetSettings), "Reset settings",
                 "Restore the defaults of every option on this tab. Key bindings stay unchanged.");
             return entries;
         }

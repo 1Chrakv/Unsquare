@@ -6,7 +6,7 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
 1. **Close the game**, then `dotnet build Unsquare.sln` – the toolchain replaces `Mods\Unsquare` with the build.
    While the game runs the DLLs are locked: the deploy fails *and* leaves `Mods\Unsquare` half-deleted.
-2. Start the game, open Options → Unsquare and check the key bindings (rebind any that clash).
+2. Start the game, open Options → Unsquare → Key bindings and check the bindings (rebind any that clash).
 3. Follow the log live:
 
    ```powershell
@@ -102,12 +102,12 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 19 | Save, reload, cold restart | Deformed buildings restore; lot areas/paths stay deformed |
 | 20 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
 | 21 | Building with a storefront: pull a bottom front corner in | Storefront turns with the facade and stays parallel to it; props deep inside the lot keep a smooth average turn; roof props near the eaves follow the roof |
-| 22 | Options → Unsquare → Advanced | All groups shown with defaults; every change logs `Options: …` once |
+| 22 | Options → Unsquare: Settings is the first tab, Key bindings the second | All groups shown with defaults; every change logs `Options: …` once |
 | 23 | Facade alignment reach 0, deform a new building with a storefront | Storefront takes the average turn, not the facade's |
 | 24 | Turn off "Deform ground areas", lot-deform a fresh house | Paving and grass stay rectangular; `Attachments of …` log shows `Areas off` |
 | 25 | Change nudge step sizes, press Alt+S repeatedly | Steps cycle through the new sizes (snapped to 0.1 m) |
 | 26 | Change line thickness / handle sizes / axis length | Overlay updates immediately |
-| 27 | Reset advanced options, restart the game | Defaults restored and kept after the restart |
+| 27 | Change a key binding, press Reset settings, restart the game | Settings defaults restored and kept after the restart; the key binding is kept |
 | 28 | Deform a building, select another one, reselect it and nudge again | The cage shows the current shape; the nudge continues from it (never from undeformed) |
 | 29 | Click the Unsquare button, then Alt+U, then the button again | Button highlighted while the mode is on; log `[Edit] Unsquare mode on/off` each time |
 | 30 | Mode off: press Alt+→, Alt+Shift+Delete, click buildings | Nothing happens (no `[Edit]` log, no overlay); buildings open the info panel as usual |
@@ -122,12 +122,12 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 39 | Select an edge and click just beside it (on the ground or a neighbour) | Cage and gizmo stay; nothing changes |
 | 40 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
 | 41 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
-| 42 | Options → Advanced: change pick radius, far-click margin and gizmo size | Picking gets easier/harder, far clicks need more/less distance, gizmo resizes immediately |
+| 42 | Options → Settings: change pick radius, far-click margin and gizmo size | Picking gets easier/harder, far clicks need more/less distance, gizmo resizes immediately |
 | 43 | Leave the mode during a drag (Alt+U) | Drag cancelled, cage and gizmo hidden |
 | 44 | Mode on, no building selected: move the mouse over several houses and the ground | Each house shows a dim cage while hovered; none over the ground |
 | 45 | Select a house (no handle): hover other houses; then select an edge and hover them again | Other houses are previewed; with the edge selected no preview appears |
 | 46 | With an edge selected, click ~1 m beside the cage, then a few metres away, then again far away on the ground | Near click: nothing; far click: `Selection cleared` (cage stays); second far click: `Target cleared` (cage gone) |
-| 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its previous size (6 % of the view height, at least 1 m) |
+| 47 | Options → Settings → Reset settings, select a handle | Gizmo about half its previous size (6 % of the view height, at least 1 m) |
 | 48 | Select a handle, press Esc; press it again; right-click in the mode | Esc behaves as in the game's own tools (no step back): first it leaves the mode (`Unsquare mode off`), then it opens the pause menu. Right-click still steps back |
 | 49 | Select a face, Alt+PageUp ×3, Ctrl+Z ×3, Ctrl+Y ×1 | Each undo takes back one nudge (`[Edit] Undo on …`), redo repeats the first; selection stays |
 | 50 | Drag an arrow over several metres, Ctrl+Z | The whole drag is undone in one step |
@@ -167,7 +167,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 84 | Click an edge without moving the mouse | Only selects it; no drag log, nothing to undo |
 | 85 | With a handle selected, hover and drag the yellow gizmo square; right-click mid-drag | Square brighter on hover; handle moves in the horizontal plane; right-click snaps back |
 | 86 | Repeat 83 with a corner and a face (Alt+W), also at a flat camera angle | Same horizontal move; no jumps when the view is nearly level |
-| 87 | Options → Advanced: raise the drag threshold to 20 px | Small mouse jitter on a press no longer drags |
+| 87 | Options → Settings: raise the drag threshold to 20 px | Small mouse jitter on a press no longer drags |
 | 88 | Building next to a turned neighbour lot, angle mode: Alt+Shift+← (or the left align button) | The left side (seen from the street) turns parallel to the neighbour's edge; the corner nearer the neighbour stays, the other slides along its front or back edge; log `Aligning Left of building … to lot …` |
 | 89 | Alt+A to flush, Ctrl+Z, align again | Tool window icon changes; the side turns parallel and moves onto the neighbour's edge (gap closed, depth line kept) |
 | 90 | Alt+A to full, align toward a lot | The side's corners sit on the neighbour lot's corners (shared edge), even if the side gets longer or shorter |
@@ -178,7 +178,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 95 | Building next to a lot standing higher (or on a slope), Ctrl+Alt+← (or the left level button) | Only the left side's bottom corners move to the neighbour lot's ground; the building height and the other corners stay; log `Levelling Left of building … with lot …` |
 | 96 | Back of a lot at a sloped road, Ctrl+Alt+↑ | Each back corner goes to the road surface height next to it |
 | 97 | Level a side with nothing in reach; then Ctrl+Z after a level | Rejected with the `no neighbour within …` log line; undo restores the heights in one step |
-| 98 | Without FlexIt, open Options → Advanced in a loaded city and press Import FlexIt buildings | Last import: `FlexIt is not running`; nothing changes. In the main menu the button is greyed out |
+| 98 | Without FlexIt, open Options → Settings in a loaded city and press Import FlexIt buildings | Last import: `FlexIt is not running`; nothing changes. In the main menu the button is greyed out |
 | 99 | With FlexIt active, load a save with a taper, a "square end" (taper + skew), a skew-only, an arch and a corner building; press Import | The first three look as before, now with props and paths following; the corner building gets the closest straight shape, the arch is rectangular again; no skew is left; log `FlexIt import done: 4 converted (1 approximated, …), 1 curved reset, 0 failed` |
 | 100 | After 99, select an imported building with the Unsquare tool | Green cage with the FlexIt shape; it can be edited and reset like any Unsquare building |
 | 101 | After 99, save; remove FlexIt; reload | All imported buildings look the same; no `Unknown prefab ID` for them in the game log |

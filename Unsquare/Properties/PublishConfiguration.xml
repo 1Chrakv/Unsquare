@@ -34,7 +34,7 @@ While a handle is selected the building is locked; clicks on other buildings do 
 
 While a building is selected, a small tool window floats above its roof, in labelled sections with toggles in the top row and buttons below: the pick mode (corners, edges, faces); terrain lift (follow or flat) and fit to ground with its mode (back only or all corners); align the sides to their neighbours or level them with their ground (a toggle picks the align mode: angle, flush or full); and reset the selected handle or the whole building.
 
-**Hotkeys** (defaults; rebind them in Options → Unsquare. Except Alt+U, they only work in Unsquare mode)
+**Hotkeys** (defaults; rebind them in Options → Unsquare → Key bindings. Except Alt+U, they only work in Unsquare mode)
 
 - Unsquare mode on / off: Alt+U
 - Cycle pick mode (edges → faces → corners): Alt+W
@@ -56,7 +56,7 @@ While a building is selected, a small tool window floats above its roof, in labe
 
 **Overlay:** dashed lines show the original box. The cage colour shows its state: white undeformed, yellow pending, green applied, red failed, magenta when the lot outline leaves its plot (the edit still applies). The selected handle is orange, the hovered one cyan.
 
-**Options:** Options → Unsquare → Advanced holds the tunables: cage limits, which attachments follow the cage, facade alignment, nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
+**Options:** Options → Unsquare → Settings holds the tunables: cage limits, which attachments follow the cage, facade alignment, nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
 
 **Limitations**
 
@@ -68,7 +68,7 @@ While a building is selected, a small tool window floats above its roof, in labe
 - **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme moves are clamped.
 - **Saves depend on the mod.** Without Unsquare, deformed buildings can't be restored. While in early development, an update may also discard older deformations.
 
-**Coming from FlexIt:** back up your save, keep Flex It active, add Unsquare and load the city. Then press Options → Unsquare → Advanced → Import FlexIt buildings, and save. Tapered and skewed buildings get an Unsquare cage of the same shape, and their props, paths and lot areas follow too. Unsquare can't curve buildings yet: corner-fitted buildings get the closest straight shape (they no longer fold at the corner), and arched and bent buildings are reset to their original shape. Flex It can be removed afterwards.
+**Coming from FlexIt:** back up your save, keep Flex It active, add Unsquare and load the city. Then press Options → Unsquare → Settings → Import FlexIt buildings, and save. Tapered and skewed buildings get an Unsquare cage of the same shape, and their props, paths and lot areas follow too. Unsquare can't curve buildings yet: corner-fitted buildings get the closest straight shape (they no longer fold at the corner), and arched and bent buildings are reset to their original shape. Flex It can be removed afterwards.
 
 **Before uninstalling:** reset deformed buildings (Alt+Shift+Delete resets all) and save before removing the mod.
 

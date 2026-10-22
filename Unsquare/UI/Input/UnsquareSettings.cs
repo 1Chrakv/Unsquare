@@ -6,15 +6,15 @@ using Game.Settings;
 namespace Unsquare.UI.Input
 {
     /// <summary>
-    /// The mod's options page: cage editing key bindings (all rebindable) on the main tab, tunables on the
-    /// advanced tab (see UnsquareSettings.Advanced.cs).
+    /// The mod's options page: tunables on the first tab (see UnsquareSettings.Tunables.cs), the cage editing key
+    /// bindings (all rebindable) on the second.
     /// </summary>
     [FileLocation(nameof(Unsquare))]
-    [SettingsUITabOrder(MainTab, AdvancedTab)]
-    [SettingsUIGroupOrder(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
-        PerformanceGroup, FlexItGroup, ResetGroup)]
-    [SettingsUIShowGroupName(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
-        PerformanceGroup, FlexItGroup)]
+    [SettingsUITabOrder(SettingsTab, KeyBindingsTab)]
+    [SettingsUIGroupOrder(EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
+        PerformanceGroup, FlexItGroup, ResetGroup, HotkeyGroup)]
+    [SettingsUIShowGroupName(EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
+        PerformanceGroup, FlexItGroup, HotkeyGroup)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CyclePickKind, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -53,7 +53,7 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.LogState, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     public sealed partial class UnsquareSettings : ModSetting
     {
-        public const string MainTab = "Main";
+        public const string KeyBindingsTab = "KeyBindings";
         public const string HotkeyGroup = "Hotkeys";
 
         public UnsquareSettings(IMod mod) : base(mod)
@@ -61,131 +61,131 @@ namespace Unsquare.UI.Input
             SetDefaults();
         }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.U, CageHotkeys.ToggleMode, alt: true)]
         public ProxyBinding ToggleModeBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.W, CageHotkeys.CyclePickKind, alt: true)]
         public ProxyBinding CyclePickKindBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Digit1, CageHotkeys.KindCorner, alt: true)]
         public ProxyBinding KindCornerBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Digit2, CageHotkeys.KindEdge, alt: true)]
         public ProxyBinding KindEdgeBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Digit3, CageHotkeys.KindFace, alt: true)]
         public ProxyBinding KindFaceBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Q, CageHotkeys.PreviousHandle, alt: true)]
         public ProxyBinding PreviousHandleBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.E, CageHotkeys.NextHandle, alt: true)]
         public ProxyBinding NextHandleBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, CageHotkeys.MoveNegX, alt: true)]
         public ProxyBinding MoveNegXBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, CageHotkeys.MovePosX, alt: true)]
         public ProxyBinding MovePosXBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, CageHotkeys.MovePosZ, alt: true)]
         public ProxyBinding MovePosZBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, CageHotkeys.MoveNegZ, alt: true)]
         public ProxyBinding MoveNegZBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.PageUp, CageHotkeys.MovePosY, alt: true)]
         public ProxyBinding MovePosYBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.PageDown, CageHotkeys.MoveNegY, alt: true)]
         public ProxyBinding MoveNegYBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.S, CageHotkeys.CycleStep, alt: true)]
         public ProxyBinding CycleStepBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.R, CageHotkeys.ResetHandle, alt: true)]
         public ProxyBinding ResetHandleBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Backspace, CageHotkeys.ResetSelected, alt: true)]
         public ProxyBinding ResetSelectedBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.T, CageHotkeys.ToggleTerrainLift, alt: true)]
         public ProxyBinding ToggleTerrainLiftBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.G, CageHotkeys.FitToGround, alt: true)]
         public ProxyBinding FitToGroundBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.F, CageHotkeys.ToggleGroundFitMode, alt: true)]
         public ProxyBinding ToggleGroundFitModeBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, CageHotkeys.AlignLeft, alt: true, shift: true)]
         public ProxyBinding AlignLeftBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, CageHotkeys.AlignBack, alt: true, shift: true)]
         public ProxyBinding AlignBackBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, CageHotkeys.AlignRight, alt: true, shift: true)]
         public ProxyBinding AlignRightBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.A, CageHotkeys.CycleAlignMode, alt: true)]
         public ProxyBinding CycleAlignModeBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, CageHotkeys.AlignGroundLeft, alt: true, ctrl: true)]
         public ProxyBinding AlignGroundLeftBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, CageHotkeys.AlignGroundBack, alt: true, ctrl: true)]
         public ProxyBinding AlignGroundBackBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, CageHotkeys.AlignGroundRight, alt: true, ctrl: true)]
         public ProxyBinding AlignGroundRightBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]
         public ProxyBinding ResetAllBinding { get; set; }
 
         // Bindings are physical key positions (US layout): this is Ctrl+Z / Ctrl+Y on a German QWERTZ keyboard.
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Y, CageHotkeys.Undo, ctrl: true)]
         public ProxyBinding UndoBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Z, CageHotkeys.Redo, ctrl: true)]
         public ProxyBinding RedoBinding { get; set; }
 
-        [SettingsUISection(MainTab, HotkeyGroup)]
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.L, CageHotkeys.LogState, alt: true)]
         public ProxyBinding LogStateBinding { get; set; }
 
         public override void SetDefaults()
         {
             // Key bindings take their defaults from the attributes above.
-            SetAdvancedDefaults();
+            SetSettingsDefaults();
         }
     }
 }
