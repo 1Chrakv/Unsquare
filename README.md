@@ -55,8 +55,8 @@ angled streets and slopes.
 3. Click a corner, edge or face (depending on the pick mode) to select it. A gizmo appears on the selection:
    - drag an arrow (X red, Y green, Z blue) to move along that axis,
    - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
-4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Esc, Alt+U or the button
-   leave the mode.
+4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Alt+U or the button leave
+   the mode; Esc does what it does in the game's own tools.
 
 While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
 
@@ -74,7 +74,6 @@ Defaults; all can be rebound in Options → Unsquare. Except Alt+U, they only wo
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
-| Leave Unsquare mode | Esc |
 | Cycle pick mode (edges → faces → corners) | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle | Alt+Q / Alt+E |

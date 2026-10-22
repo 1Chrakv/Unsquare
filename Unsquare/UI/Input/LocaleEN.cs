@@ -84,11 +84,6 @@ namespace Unsquare.UI.Input
             entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
                 "Turns Unsquare mode on and off, like the Unsquare button. The other hotkeys only work in the mode.";
             entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ToggleMode)] = CageHotkeys.ToggleModeLabel;
-            entries[_settings.GetOptionLabelLocaleID(nameof(UnsquareSettings.ExitModeBinding))] =
-                CageHotkeys.ExitModeLabel;
-            entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ExitModeBinding))] =
-                "Leaves Unsquare mode. Only active while the mode is on, so the key keeps its usual meaning otherwise.";
-            entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ExitMode)] = CageHotkeys.ExitModeLabel;
             foreach (var hotkey in CageHotkeys.All)
             {
                 entries[_settings.GetOptionLabelLocaleID(hotkey.PropertyName)] = hotkey.Label;

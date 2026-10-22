@@ -17,7 +17,6 @@ namespace Unsquare.UI.Input
         private CageEditorSystem _editor;
         private UnsquareToolSystem _tool;
         private ProxyAction _toggleMode;
-        private ProxyAction _exitMode;
 
         protected override void OnCreate()
         {
@@ -31,7 +30,6 @@ namespace Unsquare.UI.Input
         {
             _bindings.Clear();
             _toggleMode = Enable(settings, CageHotkeys.ToggleMode);
-            _exitMode = Enable(settings, CageHotkeys.ExitMode);
             foreach (var hotkey in CageHotkeys.All)
             {
                 var action = Enable(settings, hotkey.ActionName);
@@ -49,11 +47,6 @@ namespace Unsquare.UI.Input
             }
             if (!_tool.IsActive)
                 return;
-            if (_exitMode != null && _exitMode.WasPressedThisFrame())
-            {
-                _tool.Toggle();
-                return;
-            }
             var session = _editor.Session;
             foreach (var (action, command) in _bindings)
             {

@@ -34,8 +34,8 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 
 Clicks close to the selected building's cage never change the selection. A click far away (outside the cage grown by
 the far-click margin, default 5 % of its size) steps back: first the handle is deselected, then the building. While a
-handle is selected the building is locked: clicks on other buildings do nothing. Only Esc, Alt+U and the toolbar button
-leave Unsquare mode.
+handle is selected the building is locked: clicks on other buildings do nothing. Alt+U and the toolbar button leave Unsquare
+mode; Esc is left to the game (its Back: default tool, then the pause menu).
 
 ## Tool window (in Unsquare mode)
 
@@ -55,7 +55,6 @@ row holds only toggles, the bottom row only buttons:
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
-| Leave Unsquare mode (only in the mode) | Esc |
 | Cycle pick mode edges → faces → corners | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
@@ -124,12 +123,12 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 40 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
 | 41 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
 | 42 | Options → Advanced: change pick radius, far-click margin and gizmo size | Picking gets easier/harder, far clicks need more/less distance, gizmo resizes immediately |
-| 43 | Leave the mode during a drag (Esc or Alt+U) | Drag cancelled, cage and gizmo hidden |
+| 43 | Leave the mode during a drag (Alt+U) | Drag cancelled, cage and gizmo hidden |
 | 44 | Mode on, no building selected: move the mouse over several houses and the ground | Each house shows a dim cage while hovered; none over the ground |
 | 45 | Select a house (no handle): hover other houses; then select an edge and hover them again | Other houses are previewed; with the edge selected no preview appears |
 | 46 | With an edge selected, click ~1 m beside the cage, then a few metres away, then again far away on the ground | Near click: nothing; far click: `Selection cleared` (cage stays); second far click: `Target cleared` (cage gone) |
 | 47 | Options → Advanced → Reset advanced options, select a handle | Gizmo about half its previous size (6 % of the view height, at least 1 m) |
-| 48 | Press Esc in the mode (also during a drag); press Esc outside the mode | Mode off (`Unsquare mode off`, button not highlighted, drag cancelled); outside the mode Esc behaves as usual. Note whether the pause menu opens too |
+| 48 | Select a handle, press Esc; press it again; right-click in the mode | Esc behaves as in the game's own tools (no step back): first it leaves the mode (`Unsquare mode off`), then it opens the pause menu. Right-click still steps back |
 | 49 | Select a face, Alt+PageUp ×3, Ctrl+Z ×3, Ctrl+Y ×1 | Each undo takes back one nudge (`[Edit] Undo on …`), redo repeats the first; selection stays |
 | 50 | Drag an arrow over several metres, Ctrl+Z | The whole drag is undone in one step |
 | 51 | Deform house A, select house B (lock it on a handle), Ctrl+Z | House A is reverted and becomes the target; B's selection is dropped |

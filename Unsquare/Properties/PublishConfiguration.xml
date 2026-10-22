@@ -28,7 +28,7 @@ Unsquare lets you freely deform individual buildings. Pick a building and drag t
 1. Turn on Unsquare mode with the button next to the underground toggle, or press Alt+U.
 2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
 3. Click a corner, edge or face (depending on the pick mode) to select it. Drag an arrow of the gizmo (X red, Y green, Z blue) to move along that axis, or drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
-4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Esc, Alt+U or the button leave the mode.
+4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Alt+U or the button leave the mode; Esc does what it does in the game's own tools.
 
 While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
 
@@ -37,7 +37,6 @@ While a building is selected, a small tool window floats above its roof, in labe
 **Hotkeys** (defaults; rebind them in Options → Unsquare. Except Alt+U, they only work in Unsquare mode)
 
 - Unsquare mode on / off: Alt+U
-- Leave Unsquare mode: Esc
 - Cycle pick mode (edges → faces → corners): Alt+W
 - Pick corners / edges / faces: Alt+1 / Alt+2 / Alt+3
 - Select previous / next handle: Alt+Q / Alt+E

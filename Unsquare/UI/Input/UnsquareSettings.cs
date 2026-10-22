@@ -16,7 +16,6 @@ namespace Unsquare.UI.Input
     [SettingsUIShowGroupName(HotkeyGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
         PerformanceGroup, FlexItGroup)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
-    [SettingsUIKeyboardAction(CageHotkeys.ExitMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CyclePickKind, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -65,10 +64,6 @@ namespace Unsquare.UI.Input
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.U, CageHotkeys.ToggleMode, alt: true)]
         public ProxyBinding ToggleModeBinding { get; set; }
-
-        [SettingsUISection(MainTab, HotkeyGroup)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Escape, CageHotkeys.ExitMode)]
-        public ProxyBinding ExitModeBinding { get; set; }
 
         [SettingsUISection(MainTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.W, CageHotkeys.CyclePickKind, alt: true)]
