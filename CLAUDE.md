@@ -84,11 +84,11 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   early development, breaking them is allowed (bump `VariantManifest.FormatVersion`), but only after the user
   confirmed it.
 
-## Options (advanced settings tab)
+## Options (settings tab)
 
 - Tunables are option objects with a `Default`, not consts: `PipelineOptions` (Core: `CageLimits`,
   `AttachmentOptions`, rebake delay, pruning, sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
-- Flow: `UnsquareSettings` (Advanced tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
+- Flow: `UnsquareSettings` (Settings tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
   `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
 - Slider attributes are the single source of ranges (mapping clamps to them); defaults come from the option types.
 - Attachment options are read when a variant is created; variant names don't include them, so existing
@@ -146,7 +146,7 @@ Feature branches only bump the patch version; the minor version goes up once, wh
 
 ## FlexIt import
 
-- Workflow: FlexIt stays active, the save is loaded, Advanced tab → Import FlexIt buildings
+- Workflow: FlexIt stays active, the save is loaded, Settings tab → Import FlexIt buildings
   (`CageEditSession.ImportFlexIt` → `IBuildingDeformService.ImportFlexIt` → `FlexItImporter`), save, remove FlexIt.
   Buildings keep their entity: rebase to the base prefab (`IVariantPipeline.TryRebase`), then a normal cage request.
 - FlexIt variants are recognised by name only (`FlexItVariantName`, `<Base>__taper|corner|arch|bend<A>_<B>…`, degrees).

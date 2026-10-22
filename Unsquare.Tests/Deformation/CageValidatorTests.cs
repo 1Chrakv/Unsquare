@@ -70,6 +70,22 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void OffsetLimit_LongLowBox_VerticalScalesWithLongestSide()
+        {
+            var lot = new CageBox(new float3(-20, 0, -60), new float3(20, 8, 60));
+            Assert.That(CageValidator.OffsetLimit(lot, CageLimits.Default), Is.EqualTo(new float3(80, 240, 240)));
+        }
+
+        [Test]
+        public void Clamp_BackColumnsFarDownSlope_KeepsDrop()
+        {
+            var lot = new CageBox(new float3(-20, 0, -60), new float3(20, 8, 60));
+            var offsets = CageOffsets.Identity.Move(CageHandle.Face(4), new float3(0, -30, 0));
+            Assert.That(CageValidator.Clamp(lot, offsets, CageLimits.Default), Is.EqualTo(offsets));
+            Assert.That(CageValidator.Validate(lot, offsets, CageLimits.Default), Is.EqualTo(CageValidity.Valid));
+        }
+
+        [Test]
         public void Validate_StricterVolumeRatio_RejectsStrongSqueeze()
         {
             var offsets = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(0, -8, 0));

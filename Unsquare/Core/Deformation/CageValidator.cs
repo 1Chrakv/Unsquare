@@ -9,8 +9,16 @@ namespace Unsquare.Core.Deformation
     {
         private const int SamplesPerAxis = 3;
 
-        public static float3 OffsetLimit(CageBox box, CageLimits limits) =>
-            math.max(box.Size * Checked(limits).MaxOffsetFactor, limits.MinOffsetLimitMeters);
+        /// <summary>
+        /// Max corner offset per axis. The vertical one scales with the largest box side, so long, low lots can still
+        /// follow a slope (ground fit) that drops more than their height.
+        /// </summary>
+        public static float3 OffsetLimit(CageBox box, CageLimits limits)
+        {
+            float3 size = box.Size;
+            size.y = math.cmax(size);
+            return math.max(size * Checked(limits).MaxOffsetFactor, limits.MinOffsetLimitMeters);
+        }
 
         public static CageValidity Validate(CageBox box, CageOffsets offsets, CageLimits limits)
         {

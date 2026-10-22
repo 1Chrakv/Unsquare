@@ -1,9 +1,11 @@
 using System;
+using System.Reflection;
 using Colossal.Entities;
 using Game;
 using Game.Areas;
 using Game.Buildings;
 using Game.Common;
+using Game.Input;
 using Game.Prefabs;
 using Game.Tools;
 using Unity.Entities;
@@ -26,7 +28,12 @@ namespace Unsquare.UI.Tool
     {
         private const int MaxOwnerDepth = 8;
 
+        // The game's tool Cancel also takes Escape, which would then never reach the game's Back and pause menu.
+        private static readonly FieldInfo MouseCancelField =
+            typeof(ToolBaseSystem).GetField("m_MouseCancel", BindingFlags.Instance | BindingFlags.NonPublic);
+
         private CageEditorSystem _editor;
+        private IProxyAction _mouseCancel;
         private CageOverlaySystem _overlay;
         private IHandleDrag _drag;
 
@@ -45,6 +52,7 @@ namespace Unsquare.UI.Tool
             base.OnCreate();
             _editor = World.GetOrCreateSystemManaged<CageEditorSystem>();
             _overlay = World.GetOrCreateSystemManaged<CageOverlaySystem>();
+            _mouseCancel = TryGetMouseCancel();
         }
 
         public override PrefabBase GetPrefab() => null;
@@ -76,6 +84,7 @@ namespace Unsquare.UI.Tool
         {
             base.OnStartRunning();
             applyAction.shouldBeEnabled = true;
+            cancelActionOverride = _mouseCancel; // the base resets it when the tool stops
             cancelAction.shouldBeEnabled = true;
             ResetDrags();
             _loggedFailure = false;
@@ -83,6 +92,21 @@ namespace Unsquare.UI.Tool
             session.SetEnabled(true);
             if (TryResolveBuilding(m_ToolSystem.selected, out var building))
                 SelectBuilding(session, building);
+        }
+
+        private IProxyAction TryGetMouseCancel()
+        {
+            try
+            {
+                if (MouseCancelField?.GetValue(this) is IProxyAction action)
+                    return action;
+                Mod.Log.Warn("Mouse cancel action not found; Esc steps back in Unsquare mode.");
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Warn(e, "Mouse cancel action not readable; Esc steps back in Unsquare mode.");
+            }
+            return null;
         }
 
         protected override void OnStopRunning()

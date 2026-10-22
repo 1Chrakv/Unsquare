@@ -23,8 +23,8 @@ namespace Unsquare.UI.Input
             var entries = new Dictionary<string, string>
             {
                 { _settings.GetSettingsLocaleID(), "Unsquare" },
-                { _settings.GetOptionTabLocaleID(UnsquareSettings.MainTab), "Main" },
-                { _settings.GetOptionTabLocaleID(UnsquareSettings.AdvancedTab), "Advanced" },
+                { _settings.GetOptionTabLocaleID(UnsquareSettings.SettingsTab), "Settings" },
+                { _settings.GetOptionTabLocaleID(UnsquareSettings.KeyBindingsTab), "Key bindings" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.HotkeyGroup), "Cage editing hotkeys" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.EditingGroup), "Editing" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.LimitsGroup), "Cage limits" },
@@ -71,8 +71,8 @@ namespace Unsquare.UI.Input
                     "Align mode: full. The face takes the neighbour's edge and its corners (Alt+A)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
-                { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetAdvanced)),
-                    "Reset all advanced options to their defaults?" },
+                { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetSettings)),
+                    "Reset all settings to their defaults? Key bindings are kept." },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ImportFlexIt)),
                     "Convert all FlexIt buildings of this city to Unsquare? Back up your save first. Tapered and " +
                     "skewed buildings keep their shape, corner-fitted ones get the closest straight shape, and " +
@@ -84,11 +84,6 @@ namespace Unsquare.UI.Input
             entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ToggleModeBinding))] =
                 "Turns Unsquare mode on and off, like the Unsquare button. The other hotkeys only work in the mode.";
             entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ToggleMode)] = CageHotkeys.ToggleModeLabel;
-            entries[_settings.GetOptionLabelLocaleID(nameof(UnsquareSettings.ExitModeBinding))] =
-                CageHotkeys.ExitModeLabel;
-            entries[_settings.GetOptionDescLocaleID(nameof(UnsquareSettings.ExitModeBinding))] =
-                "Leaves Unsquare mode. Only active while the mode is on, so the key keeps its usual meaning otherwise.";
-            entries[_settings.GetBindingKeyLocaleID(CageHotkeys.ExitMode)] = CageHotkeys.ExitModeLabel;
             foreach (var hotkey in CageHotkeys.All)
             {
                 entries[_settings.GetOptionLabelLocaleID(hotkey.PropertyName)] = hotkey.Label;
@@ -120,7 +115,8 @@ namespace Unsquare.UI.Input
                 "How far a road or neighbouring lot edge may be turned against the face to align to it.");
 
             Option(entries, nameof(UnsquareSettings.MaxOffsetFactor), "Max corner offset (× box size)",
-                "How far a cage corner may move per axis, relative to the cage size on that axis.");
+                "How far a cage corner may move per axis, relative to the cage size on that axis. Up and down it is " +
+                "relative to the longest side, so long lots can follow steep slopes.");
             Option(entries, nameof(UnsquareSettings.MinMovementRange), "Min movement range (m)",
                 "Corners may always move at least this far, so thin buildings can still be edited.");
             Option(entries, nameof(UnsquareSettings.MinLocalVolume), "Min local volume",
@@ -174,7 +170,7 @@ namespace Unsquare.UI.Input
                 "itself doesn't fold), arched and bent ones are reset to their original shape.");
             Option(entries, nameof(UnsquareSettings.ImportFlexItStatus), "Last import",
                 "Result of the last FlexIt import; details are in the Unsquare log.");
-            Option(entries, nameof(UnsquareSettings.ResetAdvanced), "Reset advanced options",
+            Option(entries, nameof(UnsquareSettings.ResetSettings), "Reset settings",
                 "Restore the defaults of every option on this tab. Key bindings stay unchanged.");
             return entries;
         }

@@ -13,11 +13,11 @@ using Unsquare.UI.Overlay;
 
 namespace Unsquare.UI.Input
 {
-    // Advanced tab: tunables of editing, cage limits, attachments, lot sync, overlay and housekeeping.
+    // Settings tab: tunables of editing, cage limits, attachments, lot sync, overlay and housekeeping.
     // Defaults come from the option types; values are clamped to the slider ranges when mapped.
     public sealed partial class UnsquareSettings
     {
-        public const string AdvancedTab = "Advanced";
+        public const string SettingsTab = "Settings";
         public const string EditingGroup = "Editing";
         public const string LimitsGroup = "Limits";
         public const string AttachmentsGroup = "Attachments";
@@ -30,126 +30,126 @@ namespace Unsquare.UI.Input
         private Func<string> _importFlexIt;
         private string _importFlexItStatus = "";
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float SmallStep { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float MediumStep { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float LargeStep { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 4f, max = 40f, step = 1f, unit = Unit.kInteger)]
         public float PickRadius { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 1f, max = 20f, step = 1f, unit = Unit.kInteger)]
         public float DragThreshold { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0f, max = 50f, step = 1f, unit = Unit.kPercentage)]
         public float FarClickMargin { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 10f, max = 500f, step = 10f, unit = Unit.kInteger)]
         public int UndoSteps { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 2f, max = 400f, step = 2f, unit = Unit.kInteger)]
         public float AlignReach { get; set; }
 
-        [SettingsUISection(AdvancedTab, EditingGroup)]
+        [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 5f, max = 85f, step = 5f, unit = Unit.kAngle)]
         public float AlignMaxAngle { get; set; }
 
-        [SettingsUISection(AdvancedTab, LimitsGroup)]
+        [SettingsUISection(SettingsTab, LimitsGroup)]
         [SettingsUISlider(min = 0.5f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float MaxOffsetFactor { get; set; }
 
-        [SettingsUISection(AdvancedTab, LimitsGroup)]
+        [SettingsUISection(SettingsTab, LimitsGroup)]
         [SettingsUISlider(min = 1f, max = 30f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float MinMovementRange { get; set; }
 
-        [SettingsUISection(AdvancedTab, LimitsGroup)]
+        [SettingsUISection(SettingsTab, LimitsGroup)]
         [SettingsUISlider(min = 1f, max = 50f, step = 1f, unit = Unit.kPercentage)]
         public float MinLocalVolume { get; set; }
 
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
         public bool DeformProps { get; set; }
 
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
         public bool DeformAreas { get; set; }
 
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
         public bool DeformLanes { get; set; }
 
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
         public bool DeformNets { get; set; }
 
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
         public PlacementMode AttachedProps { get; set; }
 
-        [SettingsUISection(AdvancedTab, AttachmentsGroup)]
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
         [SettingsUISlider(min = 0f, max = 20f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float FacadeReach { get; set; }
 
-        [SettingsUISection(AdvancedTab, LotSyncGroup)]
+        [SettingsUISection(SettingsTab, LotSyncGroup)]
         [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
         public float AreaMatchDistance { get; set; }
 
-        [SettingsUISection(AdvancedTab, OverlayGroup)]
+        [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 0.02f, max = 0.5f, step = 0.02f, unit = Unit.kFloatTwoFractions)]
         public float LineRadius { get; set; }
 
-        [SettingsUISection(AdvancedTab, OverlayGroup)]
+        [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 0.2f, max = 3f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float HandleSize { get; set; }
 
-        [SettingsUISection(AdvancedTab, OverlayGroup)]
+        [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 0.2f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float SelectedHandleSize { get; set; }
 
-        [SettingsUISection(AdvancedTab, OverlayGroup)]
+        [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 0f, max = 10f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float AxisLength { get; set; }
 
-        [SettingsUISection(AdvancedTab, OverlayGroup)]
+        [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 2f, max = 30f, step = 1f, unit = Unit.kPercentage)]
         public float GizmoSize { get; set; }
 
-        [SettingsUISection(AdvancedTab, PerformanceGroup)]
+        [SettingsUISection(SettingsTab, PerformanceGroup)]
         [SettingsUISlider(min = 0.1f, max = 2f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float RebakeDelay { get; set; }
 
-        [SettingsUISection(AdvancedTab, PerformanceGroup)]
+        [SettingsUISection(SettingsTab, PerformanceGroup)]
         [SettingsUISlider(min = 0f, max = 5f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
         public float CoarseLodTwist { get; set; }
 
-        [SettingsUISection(AdvancedTab, PerformanceGroup)]
+        [SettingsUISection(SettingsTab, PerformanceGroup)]
         public bool PruneUnused { get; set; }
 
-        [SettingsUISection(AdvancedTab, PerformanceGroup)]
+        [SettingsUISection(SettingsTab, PerformanceGroup)]
         [SettingsUISlider(min = 1f, max = 180f, step = 1f, unit = Unit.kInteger)]
         [SettingsUIDisableByCondition(typeof(UnsquareSettings), nameof(IsPruneDisabled))]
         public int PruneAfterDays { get; set; }
 
-        [SettingsUISection(AdvancedTab, ResetGroup)]
+        [SettingsUISection(SettingsTab, ResetGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
-        public bool ResetAdvanced
+        public bool ResetSettings
         {
             set
             {
-                SetAdvancedDefaults();
+                SetSettingsDefaults();
                 ApplyAndSave();
             }
         }
 
-        [SettingsUISection(AdvancedTab, FlexItGroup)]
+        [SettingsUISection(SettingsTab, FlexItGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
         [SettingsUIDisableByCondition(typeof(UnsquareSettings), nameof(IsNoCityLoaded))]
@@ -162,7 +162,7 @@ namespace Unsquare.UI.Input
             }
         }
 
-        [SettingsUISection(AdvancedTab, FlexItGroup)]
+        [SettingsUISection(SettingsTab, FlexItGroup)]
         public string ImportFlexItStatus => _importFlexItStatus;
 
         public bool IsPruneDisabled() => !PruneUnused;
@@ -202,7 +202,7 @@ namespace Unsquare.UI.Input
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
             Clamped(AxisLength, nameof(AxisLength)), Clamped(GizmoSize, nameof(GizmoSize)) / 100f);
 
-        private void SetAdvancedDefaults()
+        private void SetSettingsDefaults()
         {
             var edit = CageEditOptions.Default;
             SmallStep = edit.SmallStep;

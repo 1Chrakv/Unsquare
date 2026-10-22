@@ -7,7 +7,7 @@ using Unsquare.UI.Overlay;
 namespace Unsquare.UI.Input
 {
     /// <summary>
-    /// Pushes the advanced options into the deform service, the edit session and the overlay: once on load
+    /// Pushes the settings into the deform service, the edit session and the overlay: once on load
     /// and again whenever the options page applies a change.
     /// </summary>
     internal sealed class SettingsApplier : IDisposable
