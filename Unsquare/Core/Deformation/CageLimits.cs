@@ -4,7 +4,8 @@ namespace Unsquare.Core.Deformation
 {
     /// <summary>
     /// How far cage corners may move and how much the cage may squeeze. The offset limit per axis is
-    /// max(box size × <see cref="MaxOffsetFactor"/>, <see cref="MinOffsetLimitMeters"/>).
+    /// max(box size × <see cref="MaxOffsetFactor"/>, <see cref="MinOffsetLimitMeters"/>); vertically the largest
+    /// box side counts.
     /// </summary>
     public sealed class CageLimits : IEquatable<CageLimits>
     {
@@ -23,7 +24,7 @@ namespace Unsquare.Core.Deformation
             MinVolumeRatio = minVolumeRatio;
         }
 
-        /// <summary>Max corner offset per axis, relative to the box size on that axis.</summary>
+        /// <summary>Max corner offset per axis, relative to the box size (vertically: longest side).</summary>
         public float MaxOffsetFactor { get; }
 
         /// <summary>Lower bound of the offset limit so thin boxes can still be edited.</summary>

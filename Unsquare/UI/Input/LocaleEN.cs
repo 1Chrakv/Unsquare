@@ -120,7 +120,8 @@ namespace Unsquare.UI.Input
                 "How far a road or neighbouring lot edge may be turned against the face to align to it.");
 
             Option(entries, nameof(UnsquareSettings.MaxOffsetFactor), "Max corner offset (× box size)",
-                "How far a cage corner may move per axis, relative to the cage size on that axis.");
+                "How far a cage corner may move per axis, relative to the cage size on that axis. Up and down it is " +
+                "relative to the longest side, so long lots can follow steep slopes.");
             Option(entries, nameof(UnsquareSettings.MinMovementRange), "Min movement range (m)",
                 "Corners may always move at least this far, so thin buildings can still be edited.");
             Option(entries, nameof(UnsquareSettings.MinLocalVolume), "Min local volume",
