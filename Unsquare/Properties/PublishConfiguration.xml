@@ -37,6 +37,8 @@ A small window above the building has more tools: terrain, fit to ground, align 
 - Lights and other effects don't move yet.
 - Only buildings with a lot can be reshaped.
 
+**Recommended mods** (not required): **Move It**, **Find It** and **Anarchy** work well alongside Unsquare for placing and fine-tuning buildings.
+
 **Coming from FlexIt:** back up your save, keep FlexIt active, add Unsquare and load the city. Click Options → Unsquare → Settings → Import FlexIt buildings, then save, and FlexIt can be removed. Tapered and skewed buildings keep their shape; curved ones become straight.
 
 **Before uninstalling:** reset all your reshaped buildings (Alt+Shift+Delete) and save, or they can't be restored.
@@ -55,23 +57,17 @@ A small window above the building has more tools: terrain, fit to ground, align 
 	<Screenshot Value="Properties/Screenshots/StreetCorners.jpg" />
 	<Screenshot Value="Properties/Screenshots/Overview.png" />
 	<!--Tag, can be set multiple times-->
-	<Tag Value="" />
-	<!--Link to the forum post where the mod can be discussed-->
-	<ForumLink Value="" />
+	<Tag Value="Code Mod" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.17.0" />
+	<ModVersion Value="1.0.0" />
 	<!--Recommended version of the base game to use the mod-->
-	<GameVersion Value="1.0.*" />
-	<!--Dependency for the mod, can be set multiple times-->
-	<Dependency Id="" />
-	<!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
-	<RequiredDLC Value="" />
+	<GameVersion Value="1.6.*" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
 	<ChangeLog Value="First public release." />
 	<!--<ChangeLog>
 	</ChangeLog>-->
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
-	<ExternalLink Type="" Url="" />
+	<ExternalLink Type="github" Url="https://github.com/1Chrakv/Unsquare" />
 	<!--Supported values Public, Private, Unlisted-->
 	<AccessLevel Value="Public" />
 </Publish>

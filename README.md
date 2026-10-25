@@ -48,6 +48,14 @@ angled streets and slopes.
 - **Saves depend on the mod.** Deformed buildings are variant prefabs; without Unsquare they can't be restored.
   While in early development, an update may also discard older deformations.
 
+## Recommended mods
+
+Highly recommended, but not required; Unsquare works without them:
+
+- **Move It**: move and rotate buildings precisely before or after reshaping them.
+- **Find It**: find and place buildings quickly.
+- **Anarchy**: place buildings and props where the game would otherwise block them.
+
 ## Usage
 
 1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**.
