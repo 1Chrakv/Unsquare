@@ -79,6 +79,11 @@ While a building is selected, a small tool window floats above its roof, in labe
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
 	<!--Screenshot, can be set multiple times-->
+	<Screenshot Value="Properties/Screenshots/Freeform.png" />
+	<Screenshot Value="Properties/Screenshots/NeighbourAlign.png" />
+	<Screenshot Value="Properties/Screenshots/TerrainAlign.jpg" />
+	<Screenshot Value="Properties/Screenshots/ParkDeform.jpg" />
+	<Screenshot Value="Properties/Screenshots/StreetCorners.jpg" />
 	<Screenshot Value="Properties/Screenshots/Overview.png" />
 	<!--Tag, can be set multiple times-->
 	<Tag Value="" />
