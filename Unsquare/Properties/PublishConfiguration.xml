@@ -4,73 +4,42 @@
 	<!--Name of the mod to display to players-->
 	<DisplayName Value="Unsquare" />
 	<!--Short description of the mod-->
-	<ShortDescription Value="Unsquare your city! Bend, taper, twist and lean buildings to fit any plot, angle or slope." />
+	<ShortDescription Value="Unsquare your city! Deform your buildings to fit any plot, angle or slope." />
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>
-Unsquare lets you freely deform individual buildings. Pick a building and drag the corners, edges or faces of its lot box: the building is reshaped by a trilinear cage deformation, so it can be tapered, skewed, twisted, raised or leaned to fit odd plots, angled streets and slopes.
+Unsquare lets you reshape any building. Taper, skew, twist, raise or lean buildings so they fit odd plots, angled streets and slopes.
 
-**Deformation is cosmetic only.** It changes how a building and its lot look, not what the game simulates: lot size, zone cells and the building's simulation (residents, jobs, level, upkeep) stay those of the original rectangular building.
+**The change is only visual.** The building keeps its residents, jobs, level and upkeep, and its lot keeps its size and zone cells.
 
 **Features**
 
-- **Cage deformation of the lot box.** The cage spans the whole lot, from the ground to the roof, with 8 corners, 12 edges and 6 faces as handles. All LODs of the building are deformed.
-- **The lot follows.** Props, sub-buildings, ground areas (paving, grass), lanes and paths on the lot move with the cage. Props stay rigid but follow position and rotation, and turn with the nearest facade; ground props stay upright. Path ends at the road slide along it and stay connected.
-- **Terrain lift.** When the bottom of the cage is raised or lowered, the ground under the lot follows. It can be switched off per building to keep a flat pad.
-- **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street side goes to road level, or (toggle) all four corners follow the terrain.
-- **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
-- **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
-- **Undo / redo** of every cage edit, across all buildings.
-- **Saved with the city.** Deformed buildings are restored when a save is loaded. Identical deformations share their assets.
+- **Reshape the whole lot.** The building, its props, paths, paving and grass all follow.
+- **Terrain follows.** Raise or lower the bottom and the ground follows, or keep it flat.
+- **Fit to ground.** Sets the building onto the slope with one click.
+- **Align to neighbours.** Turns a side to the next road or building, or levels it with their ground.
+- **Undo and redo** for every change.
+- **Saved with your city.**
 
 **How to use**
 
-1. Turn on Unsquare mode with the button next to the underground toggle, or press Alt+U.
-2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
-3. Click a corner, edge or face (depending on the pick mode) to select it. Drag an arrow of the gizmo (X red, Y green, Z blue) to move along that axis, or drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
-4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Alt+U or the button leave the mode; Esc does what it does in the game's own tools.
+1. Click the Unsquare button next to the underground toggle.
+2. Click a building, then a corner, edge or side.
+3. Drag the arrows to move it, or drag the handle itself to move it sideways.
+4. Right-click to step back.
 
-While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
-
-While a building is selected, a small tool window floats above its roof, in labelled sections with toggles in the top row and buttons below: the pick mode (corners, edges, faces); terrain lift (follow or flat) and fit to ground with its mode (back only or all corners); align the sides to their neighbours or level them with their ground (a toggle picks the align mode: angle, flush or full); and reset the selected handle or the whole building.
-
-**Hotkeys** (defaults; rebind them in Options → Unsquare → Key bindings. Except Alt+U, they only work in Unsquare mode)
-
-- Unsquare mode on / off: Alt+U
-- Cycle pick mode (edges → faces → corners): Alt+W
-- Pick corners / edges / faces: Alt+1 / Alt+2 / Alt+3
-- Select previous / next handle: Alt+Q / Alt+E
-- Move along X (width): Alt+← / Alt+→
-- Move along Z (+Z = street side): Alt+↑ / Alt+↓
-- Move up / down: Alt+PageUp / Alt+PageDown
-- Cycle step size (0.1 / 0.5 / 2 m): Alt+S
-- Reset selected handle: Alt+R
-- Reset building / reset all buildings: Alt+Backspace / Alt+Shift+Delete
-- Terrain lift on / off: Alt+T
-- Fit to ground / toggle the fit mode (back only or all corners): Alt+G / Alt+F
-- Align left / back / right side to its neighbour: Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→
-- Cycle align mode (angle → flush → full): Alt+A
-- Level left / back / right side with its neighbour: Ctrl+Alt+← / Ctrl+Alt+↑ / Ctrl+Alt+→
-- Undo / redo: Ctrl+Z / Ctrl+Y
-- Write the cage state to the log: Alt+L
-
-**Overlay:** dashed lines show the original box. The cage colour shows its state: white undeformed, yellow pending, green applied, red failed, magenta when the lot outline leaves its plot (the edit still applies). The selected handle is orange, the hovered one cyan.
-
-**Options:** Options → Unsquare → Settings holds the tunables: cage limits, which attachments follow the cage, facade alignment, nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
+A small window above the building has more tools: terrain, fit to ground, align to neighbours and reset.
 
 **Limitations**
 
-- **Terrain follows the original lot box.** The game flattens and blends the ground over the rectangular lot footprint; Unsquare only tilts that flat area and the lot edges. A lot pushed outside its rectangle gets no ground shaping there, and diagonal creases come from the game's blending.
-- **The lot itself stays rectangular.** Lot size, zone cells and the plot outline are not deformed; pulling the lot outside its plot only shows a warning (magenta cage) and may overlap neighbours.
-- **Props are placed rigidly.** They move and turn with the cage but their meshes are not bent, so large props on strongly bent lots can look stiff or clip.
-- **Effects** (lights, smoke and similar) are not moved with the deformation yet.
-- **Strong twists** drop the coarsest LOD, which can't follow the bend; very distant buildings may pop.
-- **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme moves are clamped.
-- **Saves depend on the mod.** Without Unsquare, deformed buildings can't be restored. While in early development, an update may also discard older deformations.
+- The ground is only shaped inside the original rectangular lot.
+- Props move and turn with the building but don't bend.
+- Lights and other effects don't move yet.
+- Only buildings with a lot can be reshaped.
 
-**Coming from FlexIt:** back up your save, keep Flex It active, add Unsquare and load the city. Then press Options → Unsquare → Settings → Import FlexIt buildings, and save. Tapered and skewed buildings get an Unsquare cage of the same shape, and their props, paths and lot areas follow too. Unsquare can't curve buildings yet: corner-fitted buildings get the closest straight shape (they no longer fold at the corner), and arched and bent buildings are reset to their original shape. Flex It can be removed afterwards.
+**Coming from FlexIt:** back up your save, keep FlexIt active, add Unsquare and load the city. Click Options → Unsquare → Settings → Import FlexIt buildings, then save, and FlexIt can be removed. Tapered and skewed buildings keep their shape; curved ones become straight.
 
-**Before uninstalling:** reset deformed buildings (Alt+Shift+Delete resets all) and save before removing the mod.
+**Before uninstalling:** reset all your reshaped buildings (Alt+Shift+Delete) and save, or they can't be restored.
 
 **Credits:** inspired by Flex It by Root Of Business. Unsquare is an independent implementation and contains no code from Flex It.
 
