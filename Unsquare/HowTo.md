@@ -122,7 +122,8 @@ registered again before the save's entities are deserialized:
   offsets, `FlatTerrain`, cities, last use, asset names), keyed `BaseType/VariantName`.
 * `OnGamePreload` re-creates every entry; existing assets and cached bounds make this cheap.
 * Writes go through `AtomicJsonFile` (`.tmp` → replace, `.bak` fallback). An unreadable manifest is moved aside
-  (`.corrupt-<time>`), never treated as empty. `FormatVersion` mismatches drop old entries (early development).
+  (`.corrupt-<time>`), never treated as empty. `FormatVersion` mismatches still drop old entries;
+  the next format change must add a migration instead (saves are compatible since 1.0.0).
 
 ---
 

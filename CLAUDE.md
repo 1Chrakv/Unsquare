@@ -80,9 +80,9 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   lines as `CustomMeshType.Cylinder` via `DrawCustomMesh` (see `SegmentPose`).
 - Custom meshes are only rendered in frames whose overlay buffer also holds a regular primitive (circle, line);
   `CageOverlaySystem` draws a near-invisible keep-alive circle every frame.
-- Prefab names, deform keys, asset names, GUID seeds and the manifest format are what saves depend on. While in
-  early development, breaking them is allowed (bump `VariantManifest.FormatVersion`), but only after the user
-  confirmed it.
+- Prefab names, deform keys, asset names, GUID seeds and the manifest format are what saves depend on. Since the
+  public 1.0.0 release they must stay compatible: a format change bumps `VariantManifest.FormatVersion` and migrates
+  older entries (never drops them). Any change to them needs the user's confirmation first.
 
 ## Options (settings tab)
 

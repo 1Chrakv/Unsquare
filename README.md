@@ -46,7 +46,7 @@ angled streets and slopes.
 - **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme
   moves are clamped.
 - **Saves depend on the mod.** Deformed buildings are variant prefabs; without Unsquare they can't be restored.
-  While in early development, an update may also discard older deformations.
+  Updates keep existing deformations.
 
 ## Recommended mods
 
