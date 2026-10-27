@@ -55,7 +55,7 @@ A small window above the building has more tools: terrain, fit to ground, align 
 	<Screenshot Value="Properties/Screenshots/ParkDeform.jpg" />
 	<Screenshot Value="Properties/Screenshots/TerrainAlign.jpg" />
 	<Screenshot Value="Properties/Screenshots/StreetCorners.jpg" />
-	<Screenshot Value="Properties/Screenshots/Overview.png" />
+	<Screenshot Value="Properties/Screenshots/Overview.jpg" />
 	<!--Tag, can be set multiple times-->
 	<Tag Value="Code Mod" />
 	<!--Version of the mod-->
