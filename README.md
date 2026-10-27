@@ -7,6 +7,9 @@ deform individual buildings. Pick a building and drag the corners, edges or face
 reshaped by a trilinear cage deformation, so it can be tapered, skewed, twisted, raised or leaned to fit odd plots,
 angled streets and slopes.
 
+**Get it on [Paradox Mods](https://mods.paradoxplaza.com/mods/165185/Windows)** (or in game: Paradox Mods → search
+"Unsquare").
+
 > [!IMPORTANT]
 > **Deformation is cosmetic only.** It changes how a building and its lot look, not what the game simulates: lot
 > size, zone cells and the building's simulation (residents, jobs, level, upkeep) stay those of the original
