@@ -135,6 +135,15 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   the terrain before lots/roads (CPU heights are read from the modified cascade), so `BaseTerrainSystem` reads a small
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
 - Effects (`EffectSource`) are not deformed yet.
+- **Zoning and condemnation:**
+  - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot
+    cells to "no zone". The zone check then condemns it, and after a reset the base stays condemned.
+    `SimDataCopier` therefore copies the base's `OverrideZone | Overridable | DeleteOverridden` flags.
+  - `LotZoneRepair` runs once per load and gives back cells that earlier versions wiped: overridden, unzoned cells
+    under a deformed growable's own lot.
+  - `CondemnGuardSystem` stays as a backup (paths blocking cells, rezoning). It removes `Condemned` and the icon
+    from variant buildings right after `ModificationEndBarrier`, and never touches other buildings, the zone check
+    (the game's or Plop the Growables') or other mods' tags.
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
   street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
   clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,
