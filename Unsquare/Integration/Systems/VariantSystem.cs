@@ -49,8 +49,10 @@ namespace Unsquare.Integration.Systems
         private VariantManifest _manifest = new();
         private PipelineOptions _options = PipelineOptions.Default;
         private EntityQuery _buildingQuery;
+        private EntityQuery _zoneBlockQuery;
         private bool _stateLoaded;
         private bool _simulationReady;
+        private bool _zoneRepairPending;
         private Action<Entity> _buildingChanged;
 
         event Action<Entity> IVariantPipeline.BuildingChanged
@@ -87,6 +89,9 @@ namespace Unsquare.Integration.Systems
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
+            _zoneBlockQuery = GetEntityQuery(
+                ComponentType.ReadOnly<Game.Zones.Block>(), ComponentType.ReadOnly<Game.Zones.ValidArea>(),
+                ComponentType.ReadWrite<Game.Zones.Cell>(), ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
             Enabled = false; // woken by Request
         }
 
@@ -98,9 +103,10 @@ namespace Unsquare.Integration.Systems
                 Bake(request.Key, request.Value);
 
             ProcessSimData();
+            RepairZonesIfReady();
             ProcessSwaps();
             SaveIfDirty();
-            Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0;
+            Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0 || _zoneRepairPending;
         }
 
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -111,6 +117,7 @@ namespace Unsquare.Integration.Systems
             _statuses.Clear();
             _simDataPending.Clear();
             _simulationReady = false;
+            _zoneRepairPending = false;
 
             // First preload of the session: nothing is registered yet, so pruning cannot strand a live prefab.
             if (!_stateLoaded)
@@ -130,7 +137,9 @@ namespace Unsquare.Integration.Systems
             _simulationReady = (mode & GameMode.GameOrEditor) != 0;
             // Restored variants: copy before the UI or simulation reads them; the rest waits for OnUpdate.
             ProcessSimData();
-            if (_simDataPending.Count > 0)
+            _zoneRepairPending = mode == GameMode.Game;
+            RepairZonesIfReady();
+            if (_simDataPending.Count > 0 || _zoneRepairPending)
                 Enabled = true;
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
             {
@@ -415,6 +424,26 @@ namespace Unsquare.Integration.Systems
             }
             if (copied > 0)
                 Mod.Log.Info($"Copied sim data to {copied} variants, {_simDataPending.Count} still initializing.");
+        }
+
+        // Restored variants must have their zone flags first, or the recheck would wipe the cells again.
+        private void RepairZonesIfReady()
+        {
+            if (!_zoneRepairPending || _simDataPending.Count > 0)
+                return;
+            _zoneRepairPending = false;
+            try
+            {
+                using var buildings = _buildingQuery.ToEntityArray(Allocator.Temp);
+                using var blocks = _zoneBlockQuery.ToEntityArray(Allocator.Temp);
+                int cells = new LotZoneRepair(EntityManager, _prefabSystem).Repair(buildings, blocks, out int repaired);
+                if (cells > 0)
+                    Mod.Log.Info($"Restored zone of {cells} cells under {repaired} deformed buildings.");
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, "Restoring the zoning under deformed buildings failed.");
+            }
         }
 
         private void ProcessSwaps()
