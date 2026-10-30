@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Game.Prefabs;
+using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Naming;
@@ -32,13 +33,21 @@ namespace Unsquare.Integration.Prefabs
 
         /// <param name="box">The lot cage box.</param>
         /// <param name="buildingBox">The building's mesh box; props align to its faces (facades).</param>
+        /// <param name="frameOrigin">Where <paramref name="basePrefab"/>'s origin sits in the cage's building space:
+        /// zero for the building itself, the extension's position for an upgrade extension.</param>
         /// <param name="coarseLodTwistMeters">Cages twisting more than this drop the coarsest LOD.</param>
         public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box,
-            CageBox buildingBox, CageOffsets offsets, AttachmentOptions attachments, float coarseLodTwistMeters,
-            ISet<string> usedAssets, out ObjectGeometryPrefab variant)
+            CageBox buildingBox, float3 frameOrigin, CageOffsets offsets, AttachmentOptions attachments,
+            float coarseLodTwistMeters, ISet<string> usedAssets, out ObjectGeometryPrefab variant)
         {
             variant = null;
-            var deformation = new TrilinearCageDeformation(box, offsets);
+            IDeformation deformation = new TrilinearCageDeformation(box, offsets);
+            if (!frameOrigin.Equals(float3.zero))
+            {
+                deformation = new TranslatedDeformation(deformation, frameOrigin);
+                box = box.RelativeTo(frameOrigin);
+                buildingBox = buildingBox.RelativeTo(frameOrigin);
+            }
             var context = new AttachmentContext(deformation, box, buildingBox, attachments);
             float twist = CageTwist.MaxResidualMeters(offsets);
             bool skipCoarsestLod = twist > coarseLodTwistMeters;

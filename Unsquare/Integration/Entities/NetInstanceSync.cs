@@ -17,6 +17,7 @@ namespace Unsquare.Integration.Entities
     /// Moves a building's existing lot nets (paths, …) from the old cage deformation to the new one, point by point.
     /// The game splits prefab curves at junctions, so edges are remapped rather than matched to prefab curves.
     /// Path ends attached to a road's side slide along it; nodes shared with outside edges never move.
+    /// A building and its upgrade extensions are synced together, so nets they share stay connected.
     /// </summary>
     internal static class NetInstanceSync
     {
@@ -30,34 +31,42 @@ namespace Unsquare.Integration.Entities
             Fixed,
         }
 
+        /// <param name="transform">The building's transform; every remap works in its building space.</param>
+        /// <param name="owners">The building and its extensions; each one's nets use its own remap.</param>
         /// <param name="failed">Edges and nodes the old cage could not be inverted at; they keep their place.</param>
         /// <param name="slid">Path ends moved along the road they are attached to.</param>
         /// <returns>Number of edges rewritten.</returns>
-        public static int Sync(EntityManager entityManager, Entity building, in Transform transform, LotRemap remap,
+        public static int Sync(EntityManager entityManager, in Transform transform, IReadOnlyList<NetOwner> owners,
             out int failed, out int slid)
         {
             failed = 0;
             slid = 0;
-            if (!entityManager.TryGetBuffer(building, true, out DynamicBuffer<NetSubNet> subNets) || subNets.Length == 0)
-                return 0;
-
             var owned = new HashSet<Entity>();
-            var edges = new List<Entity>();
-            var nodes = new List<Entity>();
-            foreach (var subNet in subNets)
+            var edges = new List<(Entity Net, LotRemap Remap)>();
+            var nodes = new List<(Entity Net, LotRemap Remap)>();
+            foreach (var owner in owners)
             {
-                var net = subNet.m_SubNet;
-                owned.Add(net);
-                if (entityManager.HasComponent<Edge>(net) && entityManager.HasComponent<Curve>(net))
-                    edges.Add(net);
-                else if (entityManager.HasComponent<NetNode>(net))
-                    nodes.Add(net);
+                if (!entityManager.TryGetBuffer(owner.Owner, true, out DynamicBuffer<NetSubNet> subNets))
+                    continue;
+                foreach (var subNet in subNets)
+                {
+                    var net = subNet.m_SubNet;
+                    owned.Add(net);
+                    if (owner.Remap == null)
+                        continue;
+                    if (entityManager.HasComponent<Edge>(net) && entityManager.HasComponent<Curve>(net))
+                        edges.Add((net, owner.Remap));
+                    else if (entityManager.HasComponent<NetNode>(net))
+                        nodes.Add((net, owner.Remap));
+                }
             }
+            if (edges.Count == 0 && nodes.Count == 0)
+                return 0;
 
             var moved = new Dictionary<Entity, float3>();
             var roadEnds = new Dictionary<Entity, Entity[]>();
             var sideEdges = new List<Entity>();
-            foreach (var node in nodes)
+            foreach (var (node, remap) in nodes)
             {
                 var kind = Classify(entityManager, node, owned, sideEdges);
                 if (kind == NodeKind.Fixed)
@@ -80,7 +89,7 @@ namespace Unsquare.Integration.Entities
                     roadEnds[node] = sideEdges.ToArray();
             }
 
-            foreach (var edge in edges)
+            foreach (var (edge, remap) in edges)
             {
                 var curve = ToBuilding(transform, entityManager.GetComponentData<Curve>(edge).m_Bezier);
                 if (remap.TryRemap(CurveConversions.ToCore(curve), IsOnGround(entityManager, edge), out var remapped))
