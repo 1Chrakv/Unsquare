@@ -110,6 +110,38 @@ namespace Unsquare.Tests.Naming
             Assert.That(DeformKey.ForSubmesh(key, left), Does.StartWith(key + "|at-300,0,0|"));
         }
 
+        [Test]
+        public void ExtensionVariantName_UsesExtensionSeedAndParsesToBase()
+        {
+            string owner = VariantNaming.VariantName("ParkingHall03", Offsets);
+            string name = VariantNaming.ExtensionVariantName("ParkingHall03 Floor", owner);
+
+            // Saves reference names from this exact seed.
+            string expected = "ParkingHall03 Floor__uq" +
+                              StableHash.Compute("Unsquare:extension:v1:" + owner).ToHex(6);
+            Assert.That(name, Is.EqualTo(expected));
+            Assert.That(VariantNaming.TryParse(name, out var baseName), Is.True);
+            Assert.That(baseName, Is.EqualTo("ParkingHall03 Floor"));
+        }
+
+        [Test]
+        public void ExtensionVariantName_DiffersPerOwnerVariant()
+        {
+            string a = VariantNaming.VariantName("Base", Offsets);
+            string b = VariantNaming.VariantName("Base", Offsets, flatTerrain: true);
+            Assert.That(VariantNaming.ExtensionVariantName("Ext", a),
+                Is.Not.EqualTo(VariantNaming.ExtensionVariantName("Ext", b)));
+            Assert.That(VariantNaming.ExtensionVariantName("Ext", a),
+                Is.EqualTo(VariantNaming.ExtensionVariantName("Ext", a)));
+        }
+
+        [TestCase("Base")]
+        [TestCase(null)]
+        public void ExtensionVariantName_OwnerNotAVariant_Throws(string owner)
+        {
+            Assert.That(() => VariantNaming.ExtensionVariantName("Ext", owner), Throws.ArgumentException);
+        }
+
         [TestCase(null)]
         [TestCase("UQ_short")]
         [TestCase("XX_0123456789abcdef")]

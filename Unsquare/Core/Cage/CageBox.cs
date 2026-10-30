@@ -41,6 +41,9 @@ namespace Unsquare.Core.Cage
         /// <summary>Maps a point to box coordinates (0..1 inside the box, unclamped outside).</summary>
         public float3 Normalize(float3 p) => (p - Min) / Size;
 
+        /// <summary>The same box seen from a frame whose origin is at <paramref name="origin"/>.</summary>
+        public CageBox RelativeTo(float3 origin) => new(Min - origin, Max - origin);
+
         public bool Equals(CageBox other) => Min.Equals(other.Min) && Max.Equals(other.Max);
         public override bool Equals(object obj) => obj is CageBox other && Equals(other);
         public override int GetHashCode() => (Min.GetHashCode() * 397) ^ Max.GetHashCode();

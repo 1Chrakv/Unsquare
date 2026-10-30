@@ -25,6 +25,12 @@ namespace Unsquare.Core.Persistence
         /// <summary>Geometry asset names (incl. LODs) baked for this variant; needed for safe deletion.</summary>
         public List<string> Assets { get; set; } = new();
 
+        /// <summary>
+        /// Upgrade extensions baked with this variant's cage, as "Type/BaseName" keys; their assets are in
+        /// <see cref="Assets"/>. Missing in older files.
+        /// </summary>
+        public List<string> Extensions { get; set; } = new();
+
         [JsonIgnore]
         public string Key => MakeKey(BaseType, VariantName);
 

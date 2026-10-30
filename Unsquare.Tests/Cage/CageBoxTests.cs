@@ -38,6 +38,14 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void RelativeTo_ShiftsBothCorners()
+        {
+            var shifted = Box.RelativeTo(new float3(1, 20, -2));
+            Assert.That(shifted.Min, Is.EqualTo(new float3(-6, -20, -8)));
+            Assert.That(shifted.Max, Is.EqualTo(new float3(4, 0, 12)));
+        }
+
+        [Test]
         public void Constructor_FlatBox_Throws()
         {
             Assert.That(() => new CageBox(float3.zero, new float3(1, 0, 1)), Throws.ArgumentException);
