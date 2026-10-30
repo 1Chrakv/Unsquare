@@ -186,6 +186,9 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 103 | Without other mods: deform a growable that spawned from zoning, then rezone a cell next to it and run a few in-game days; reset it | No condemned icon; the zone overlay still shows the zone under it; it stays with its residents; after the reset no condemned icon and it still stands |
 | 104 | With Plop the Growables (its zone despawn setting on, then off): deform a plopped and a zoned growable, run a few days, reset both | Both stay; PTG's plopped/level-lock info is unchanged; undeformed buildings follow PTG's setting; no errors in either log |
 | 105 | Load a save with growables deformed under 1.0.0 (with plopped ones too) | No zoning appears under any building; resetting a zoned one and painting its zone again leaves it standing |
+| 106 | Multi-storey car park with the extra storey upgrade: deform it (move a top corner) | The storey bends with the car park and sits on its roof; ramps between them stay connected; log `Upgrades of building …` lists the storey as extension, then `Lot sync … 1 extensions` |
+| 107 | After 106, let the game run a few minutes, then Reset and Ctrl+Z | No crash; Reset puts the storey back to its plain prefab, undo deforms it again |
+| 108 | After 106, save and reload | Storey still deformed; log `Restored … variants (+N upgrade extensions)`; the base car park's upgrade menu shows no extra entries |
 
 ## Reporting problems
 

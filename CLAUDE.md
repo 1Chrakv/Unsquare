@@ -147,6 +147,17 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - `CondemnGuardSystem` stays as a backup (paths blocking cells, rezoning). It removes `Condemned` and the icon
     from variant buildings right after `ModificationEndBarrier`, and never touches other buildings, the zone check
     (the game's or Plop the Growables') or other mods' tags.
+- **Upgrade extensions** (`BuildingExtensionPrefab`, e.g. an extra car park storey): own entities on the owner's lot
+  (`InstalledUpgrade` → `Extension`), placed once at the prefab's `m_Position` and never moved with the owner.
+  - They are baked with the owner's cage in their own frame (`TranslatedDeformation`, boxes `RelativeTo` the
+    position) and swapped together with the owner. Their nets are synced together with the owner's (`NetOwner` per
+    sub-net owner), so shared nodes stay connected. A storey above the roof gets the cage extrapolated upwards.
+  - Name: `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
+    manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
+  - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
+  - A cloned upgrade registers itself as an upgrade option of its buildings (`ServiceUpgrade.LateInitialize`);
+    `UpgradeRegistration` removes that after init. Stand-alone upgrade buildings are deformed like any building.
+  - Open: new upgrades can't be placed on a deformed building yet (the variant isn't in the upgrade's buildings).
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
   street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
   clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,

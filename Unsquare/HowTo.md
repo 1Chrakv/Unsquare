@@ -38,6 +38,9 @@ Saves reference prefabs by name, so every name must be deterministic and must ne
   building already on a variant maps back to its base. Always deform from the base, never from a variant.
 * **Deform key** (`DeformKey`): cage box + offsets + `FormatVersion`; `ForSubmesh` adds the submesh placement,
   because one render prefab can be placed differently in different buildings.
+* **Upgrade extension variants** (`VariantNaming.ExtensionVariantName`): `<ExtensionName>__uq<hash>`, hash of
+  `Unsquare:extension:v1:` + the owner's variant name. They are baked with the owner's cage, moved into the
+  extension's frame by its prefab position, and listed in the owner's manifest entry (`Extensions`).
 * **Geometry assets** (`AssetNaming`): name `UQ_` + 16 hex and GUID, both from `StableHash` of
   `Unsquare:` + render prefab name + `:` + deform key. The prefix makes own files recognisable for the sweep.
 
