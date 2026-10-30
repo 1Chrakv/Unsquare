@@ -42,13 +42,16 @@ from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare` and refuse to while 
 The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModule/` (needs Node.js). Never pass
 `-p:SkipUiModule=true` for a deploy you want to test: without the UI module the Unsquare button is missing.
 
-## Versioning
+## Branches and versioning
 
-Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
-`Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). `BuildInfo` logs version,
-commit, configuration and build time on load. Also keep `"version"` in `UiModule/mod.json` equal.
-Feature branches only bump the patch version; the minor version goes up once, when the branch is merged into `master`
-(the user confirms the number).
+- `master` holds releases only; each merge into it is a publication on Paradox Mods.
+- `develop` collects finished work. Every change gets its own branch (`feature/…`, `fix/…`) off `develop` and goes back
+  into `develop` (PRs target `develop`, never `master`).
+- Only the `develop` → `master` step bumps the version: a patch bump by default, minor or major only when the user says
+  so. Never bump on feature branches or `develop`.
+- Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
+  `Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). Also keep `"version"` in
+  `UiModule/mod.json` equal. `BuildInfo` logs version, commit, configuration and build time on load.
 
 ## C# conventions (C# 9, .NET Framework 4.8)
 
@@ -135,6 +138,15 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   the terrain before lots/roads (CPU heights are read from the modified cascade), so `BaseTerrainSystem` reads a small
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
 - Effects (`EffectSource`) are not deformed yet.
+- **Zoning and condemnation:**
+  - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot
+    cells to "no zone". The zone check then condemns it, and after a reset the base stays condemned.
+    `SimDataCopier` therefore copies the base's `OverrideZone | Overridable | DeleteOverridden` flags.
+  - Zoning that 1.0.0 wiped under deformed growables is not restored automatically: those cells can't be told
+    apart from plopped buildings on unzoned ground (a load-time repair was removed for that reason).
+  - `CondemnGuardSystem` stays as a backup (paths blocking cells, rezoning). It removes `Condemned` and the icon
+    from variant buildings right after `ModificationEndBarrier`, and never touches other buildings, the zone check
+    (the game's or Plop the Growables') or other mods' tags.
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
   street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
   clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,

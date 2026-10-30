@@ -42,6 +42,9 @@ angled streets and slopes.
   shaping there, and diagonal creases come from the game's blending.
 - **The lot itself stays rectangular.** Lot size, zone cells and the plot outline are not deformed; pulling the lot
   outside its plot only shows a warning (magenta cage) and may overlap neighbours.
+- **Deformed growables are never condemned.** Unsquare keeps deformed buildings standing, so rezoning won't replace
+  them either; reset a building to give it back to the game's rules. Works alongside Plop the Growables. Growables
+  deformed with version 1.0.0 may have lost the zoning under them; after resetting one, paint its zone again.
 - **Props are placed rigidly.** They move and turn with the cage but their meshes are not bent, so large props on
   strongly bent lots can look stiff or clip.
 - **Effects** (lights, smoke and similar) are not moved with the deformation yet.
