@@ -42,13 +42,16 @@ from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare` and refuse to while 
 The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModule/` (needs Node.js). Never pass
 `-p:SkipUiModule=true` for a deploy you want to test: without the UI module the Unsquare button is missing.
 
-## Versioning
+## Branches and versioning
 
-Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
-`Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). `BuildInfo` logs version,
-commit, configuration and build time on load. Also keep `"version"` in `UiModule/mod.json` equal.
-Never bump the version on your own: it changes only when the user publishes to Paradox Mods and asks for it. A patch
-bump by default; a minor or major bump only when the user says so.
+- `master` holds releases only; each merge into it is a publication on Paradox Mods.
+- `develop` collects finished work. Every change gets its own branch (`feature/…`, `fix/…`) off `develop` and goes back
+  into `develop` (PRs target `develop`, never `master`).
+- Only the `develop` → `master` step bumps the version: a patch bump by default, minor or major only when the user says
+  so. Never bump on feature branches or `develop`.
+- Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
+  `Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). Also keep `"version"` in
+  `UiModule/mod.json` equal. `BuildInfo` logs version, commit, configuration and build time on load.
 
 ## C# conventions (C# 9, .NET Framework 4.8)
 
