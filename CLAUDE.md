@@ -47,8 +47,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
 `Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). `BuildInfo` logs version,
 commit, configuration and build time on load. Also keep `"version"` in `UiModule/mod.json` equal.
-Feature branches only bump the patch version; the minor version goes up once, when the branch is merged into `master`
-(the user confirms the number).
+Never bump the version on your own: it changes only when the user publishes to Paradox Mods and asks for it. A patch
+bump by default; a minor or major bump only when the user says so.
 
 ## C# conventions (C# 9, .NET Framework 4.8)
 
