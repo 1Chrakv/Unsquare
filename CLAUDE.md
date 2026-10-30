@@ -142,8 +142,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot
     cells to "no zone". The zone check then condemns it, and after a reset the base stays condemned.
     `SimDataCopier` therefore copies the base's `OverrideZone | Overridable | DeleteOverridden` flags.
-  - `LotZoneRepair` runs once per load and gives back cells that earlier versions wiped: overridden, unzoned cells
-    under a deformed growable's own lot.
+  - Zoning that 1.0.0 wiped under deformed growables is not restored automatically: those cells can't be told
+    apart from plopped buildings on unzoned ground (a load-time repair was removed for that reason).
   - `CondemnGuardSystem` stays as a backup (paths blocking cells, rezoning). It removes `Condemned` and the icon
     from variant buildings right after `ModificationEndBarrier`, and never touches other buildings, the zone check
     (the game's or Plop the Growables') or other mods' tags.

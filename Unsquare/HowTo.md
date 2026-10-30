@@ -107,8 +107,6 @@ queues the copy and the swap until it is gone and the simulation is ready.
   most info panel sections. `BuildingSpawnGroupData` is never copied (spawner). It also copies the zone flags
   of `ObjectGeometryData`: initialized without `SpawnableBuilding`, a variant gets `OverrideZone` and would wipe the
   zoning under its lot.
-* `LotZoneRepair` runs once per load, after the restored variants got their flags. It gives back zoning that earlier
-  versions wiped under deformed growables, then marks those zone blocks `Updated` so the game rechecks them.
 * The copy runs for every created variant, including restored ones (`OnGameLoadingComplete`): saved buildings
   already reference their variant, so no swap would trigger it.
 * `PrefabSwapper` sets the building's `PrefabRef`, adds `Updated` (simulation re-evaluates) and `BatchesUpdated`

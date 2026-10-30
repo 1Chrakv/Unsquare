@@ -185,7 +185,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 102 | Corner fits at about 10° and 30°, import | Both keep their far end facing the turned street; the 10° one looks close to FlexIt, the 30° one visibly straighter; log `approximated corner fit … (max deviation X m)` per building |
 | 103 | Without other mods: deform a growable that spawned from zoning, then rezone a cell next to it and run a few in-game days; reset it | No condemned icon; the zone overlay still shows the zone under it; it stays with its residents; after the reset no condemned icon and it still stands |
 | 104 | With Plop the Growables (its zone despawn setting on, then off): deform a plopped and a zoned growable, run a few days, reset both | Both stay; PTG's plopped/level-lock info is unchanged; undeformed buildings follow PTG's setting; no errors in either log |
-| 105 | Load a save with growables deformed under 1.0.0 | Log `Restored zone of N cells under M deformed buildings`; zoning shows under them again; resetting one leaves it standing |
+| 105 | Load a save with growables deformed under 1.0.0 (with plopped ones too) | No zoning appears under any building; resetting a zoned one and painting its zone again leaves it standing |
 
 ## Reporting problems
 
