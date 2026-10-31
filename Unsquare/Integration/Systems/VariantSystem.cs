@@ -497,7 +497,7 @@ namespace Unsquare.Integration.Systems
                     _readyPrefabs.Add(pair.Key);
             }
 
-            int copied = 0;
+            int copied = 0, upgradable = 0;
             foreach (var variantEntity in _readyPrefabs)
             {
                 var basePrefab = _simDataPending[variantEntity];
@@ -508,6 +508,8 @@ namespace Unsquare.Integration.Systems
                     {
                         SimDataCopier.CopyMissing(EntityManager, donor, variantEntity);
                         UpgradeRegistration.RemoveFromBuildings(EntityManager, variantEntity);
+                        if (UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, variantEntity))
+                            upgradable++;
                         copied++;
                     }
                 }
@@ -517,7 +519,8 @@ namespace Unsquare.Integration.Systems
                 }
             }
             if (copied > 0)
-                Mod.Log.Info($"Copied sim data to {copied} variants, {_simDataPending.Count} still initializing.");
+                Mod.Log.Info($"Copied sim data to {copied} variants ({upgradable} given upgrade buffers), " +
+                             $"{_simDataPending.Count} still initializing.");
         }
 
         private void ProcessSwaps()
@@ -562,7 +565,10 @@ namespace Unsquare.Integration.Systems
             try
             {
                 if (_prefabSystem.TryGetEntity(swap.BasePrefab, out var donor) && donor != swap.TargetPrefab)
+                {
                     SimDataCopier.CopyMissing(EntityManager, donor, swap.TargetPrefab);
+                    UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, swap.TargetPrefab);
+                }
                 var netRemap = _resolver.TryGetPrefab(EntityManager, building, out var currentPrefab)
                     ? BuildNetRemap(currentPrefab, swap.BasePrefab, swap.Spec)
                     : null;
