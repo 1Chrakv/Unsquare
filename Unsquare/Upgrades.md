@@ -43,14 +43,13 @@ An upgrade is its own entity: `Owner` = main building, `Game.Buildings.ServiceUp
   (`InstalledExtensions.IsAtPrefabPlacement`).
 - `UpgradeRegistration.RemoveFromBuildings` (after prefab init) removes a cloned upgrade from its buildings' upgrade
   menus. This also covers stand-alone upgrade buildings deformed with their own cage.
-- Every swap marks the swapped building's whole upgrade group `Updated` (`PrefabSwapper.RefreshUpgradeGroup`: the
-  owner, or the owner of a swapped upgrade, plus all its `InstalledUpgrade` entities), so the game reconnects their
-  lanes. Log: `Refreshed N entities of the upgrade group of …`. This is step 0 from section 3.
+- `UpgradeArchetype.AddUpgradeBuffers` gives variant prefabs the upgrade buffers of their base's instance archetype.
+  This is the crash fix, see section 3.
 - Diagnostics: `Upgrades of building …` lists each installed upgrade (prefab, kind, offset, net/area/lane counts) once
   per building and session.
-- In game: the car park storey deforms with the building and **no longer crashes**.
+- In game: the car park storey deforms with the building; no crash when hovering deformed buildings with upgrades.
 
-## 3. The crash
+## 3. The crash (fixed)
 
 Native crash ("Got a UNKNOWN while executing native code", no managed stack, no mod error) a few seconds after
 deforming a building with an upgrade.
@@ -58,24 +57,26 @@ deforming a building with an upgrade.
 | Test | Result |
 |---|---|
 | Car park storey, before this branch | crash |
-| Car park storey, with this branch (storey swapped and updated too) | no crash |
-| School with classroom wing (upgrade building, untouched by the branch) | crash |
+| Car park storey, storey deformed with the building | seemed fine, but the car park wasn't hovered; it crashes on hover too |
+| School with classroom wing (upgrade building) | crash |
 | Same, Settings → attachments: nets and lanes off | still crash; also no "slid to the end of road" warning |
-| School with wing, with the step 0 fix (wing refreshed, log `Refreshed 1 entities …`) | still crash |
+| School with wing, with the upgrade group refresh (see "Disproved" below) | still crash |
 | ElementarySchool02 without the wing: deform, reset, deform again | no crash |
 | Paused: add the wing, deform the school, Alt+T (flat terrain) at once | crash **while still paused** |
 | Paused, after deforming: stay in Unsquare mode, leave it looking away, then hover the school, then click | no crash until the mouse **hovers the school** with the game's default tool |
 | Only the top face moved up (ground paths unchanged), then hover | crash: the path junction is not the cause |
+| With `UpgradeArchetype` (school with wing, car park with storey), hover and click | no crash |
 
-**Cause (found 2026-10-31, from the game code; confirmed by the car park also crashing on hover):**
+**Cause (found 2026-10-31 from the game code, confirmed in game):**
 1. A building prefab's instance archetype (`ObjectData.m_Archetype`) gets `InstalledUpgrade`, `Game.Net.SubNet` and
    `SubRoute` only because upgrades register with it. `ServiceUpgrade.LateInitialize` → `BuildingPrefab.AddUpgrade`
    adds a `BuildingUpgradeElement` buffer → `BuildingPrefab.RefreshArchetype` adds those types when that buffer
    exists.
 2. A variant clone is in no upgrade's `m_Buildings`, so it has no `BuildingUpgradeElement` and its archetype lacks
    `InstalledUpgrade`. Existing instances keep their own archetype, so nothing shows at first.
-3. Hovering makes the default tool create temporary copies of the building and its upgrades. `GenerateObjectsSystem`
-   creates the building copy from the **variant's** archetype, so the copy has no `InstalledUpgrade` buffer.
+3. Hovering makes the default tool (`DefaultToolSystem.CreateDefinitionsJob`) create temporary copies of the building
+   and its upgrades. `GenerateObjectsSystem` creates the building copy from the **variant's** archetype, so the copy
+   has no `InstalledUpgrade` buffer.
 4. `ServiceUpgradeReferencesSystem.UpdateUpgradeReferencesJob` (Burst) then does
    `m_InstalledUpgrades[owner.m_Owner]` for the temporary upgrade, without a check, on that owner copy. That is an
    invalid buffer access, and the game crashes natively.
@@ -83,55 +84,26 @@ deforming a building with an upgrade.
 This fits every test: no upgrade → no temporary upgrade → no crash; crash only on hover, paused or not; terrain, nets
 and lanes don't matter.
 
-**Fix (implemented in `UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; confirmed
-in game 2026-10-31: no more crash on hover):** after a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
-buffer, rebuild the variant's `ObjectData.m_Archetype` with `InstalledUpgrade`, `Game.Net.SubNet` and `SubRoute`
-added (the same types `RefreshArchetype` adds). Copying the base's `BuildingUpgradeElement` buffer would also do
-it, but would offer upgrades in the variant's upgrade menu. That belongs to 5.4 and needs `ServiceUpgradeBuilding`
-too.
-`EntityManager.CreateArchetype` is called by reflection: a direct call also binds its `ReadOnlySpan` overload, which
-the game's mscorlib doesn't provide (CS0518). The log line `Copied sim data to N variants (M given upgrade buffers)`
-shows how many variants got them.
+**Fix (`UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; confirmed in game 2026-10-31):**
+- After a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
+  buffer, rebuild the variant's `ObjectData.m_Archetype` with `InstalledUpgrade`, `Game.Net.SubNet` and `SubRoute`
+  added (the same types `RefreshArchetype` adds).
+- Copying the base's `BuildingUpgradeElement` buffer would also do it, but would offer upgrades in the variant's
+  upgrade menu. That belongs to 5.4 and needs `ServiceUpgradeBuilding` too.
+- `EntityManager.CreateArchetype` is called by reflection: a direct call also binds its `ReadOnlySpan` overload,
+  which the game's mscorlib doesn't provide (CS0518).
+- The log line `Copied sim data to N variants (M given upgrade buffers)` shows how many variants got them.
 
-Ruled out:
-- Path syncing and road-end sliding. They still ran with nets off (that option only switches prefab net
-  deformation, see 5.6), but the crash also happened without any road-end slide.
-- The simulation (pathfinding, services): it crashes while paused.
-- Our terrain lift: it also crashes on the flat-terrain variant.
-- Stale lane references alone: the step 0 refresh didn't help (it stays in, it's harmless).
-
-**Timing clue (all four crash logs):** the crash comes 2–6 s after `[Edit] Unsquare mode off`, never while Unsquare
-mode is on. Leaving the mode hands control back to the game's default tool. Its hover raycast
-(`Game.Objects.RaycastJobs.ValidateResult` follows `InstalledUpgrade` with `RaycastFlags.UpgradeIsMain`) and its
-selection (`DefaultToolSystem` creates Select definitions for the building **and every installed upgrade**, with an
-`OwnerDefinition` carrying the owner's prefab) are the next suspects. The tool's Temp pipeline then matches upgrades
-against the owner prefab (`ObjectToolBaseSystem.CheckParentPrefab`, `ServiceUpgradeBuilding`), and an owner variant
-is in no upgrade's `ServiceUpgradeBuilding` list. Note the car park storey stopped crashing once the storey was a
-variant too.
-
-**Hover is the trigger (2026-10-31):** hovering runs `DefaultToolSystem.CreateDefinitionsJob`. It creates
-temporary Select copies of the building and every installed upgrade (with an `OwnerDefinition` of the owner's
-prefab), and the tool pipeline (`Generate*`/`Apply*` systems) rebuilds their sub-objects and sub-nets. The wing's
-paths share nodes with the school's. With the school's nets deformed and the wing's not, the junction no longer
-matches what the temporary copies expect. Next test without code: move only the school's top face up (ground
-paths then stay where they are), leave the mode, hover. If that doesn't crash, the net junction is the cause.
-
-**First hypothesis (not confirmed, step 0 didn't fix it):** a swap marks only the owner `Updated`. The game rebuilds the owner's sub-lanes,
-so old lane entities are deleted and new ones created. Upgrades keep `LaneConnection` references (start/end lane) to
-the owner's old lanes. `LaneConnectionSystem` re-checks only lanes of `Updated` entities (`CheckUpdatedLanesJob`, query
-`Updated` + `SubLane`), so the upgrade keeps pointing at deleted entities. Pathfinding then reads garbage, which
-crashes natively. This fits all four tests.
-
-**Fix tried first (step 0)** — implemented in `PrefabSwapper.RefreshUpgradeGroup` (2026-10-31); the school still
-crashes, see the table above:
-- `PrefabSwapper.Swap`: after the owner changes prefab, add `Updated` to every `InstalledUpgrade` entity (extensions
-  and upgrade buildings, swapped or not, skipping `Deleted`).
-- If the swapped entity is itself an upgrade (`Owner` + `Game.Buildings.ServiceUpgrade`, e.g. the wing deformed with
-  its own cage), also add `Updated` to its owner.
-- Log the number of refreshed upgrades.
-- Test: school with the wing (deform, reset, run a few minutes), the wing deformed on its own, the car park again.
-
-If it still crashes: next suspects are the upgrade's clear areas and the terrain lot merge. Add diagnostics first.
+**Disproved on the way** (kept so they aren't retried):
+- **Path syncing and road-end sliding:** it crashed with nets off and without any road-end slide.
+- **Simulation (pathfinding, services):** it crashed while paused.
+- **Our terrain lift:** it crashed on the flat-terrain variant too.
+- **Stale `LaneConnection` references:** the theory was that a swap rebuilds the owner's lanes while upgrades keep
+  references to the deleted ones (`LaneConnectionSystem.CheckUpdatedLanesJob` only re-checks `Updated` entities).
+  The fix tried for it marked the whole upgrade group `Updated` on every swap (`PrefabSwapper.RefreshUpgradeGroup`).
+  It didn't help and was removed.
+- **Path junction between the school and the wing:** it crashed with ground paths unchanged.
+- **"The car park stopped crashing once its storey was a variant":** it had only not been hovered.
 
 ## 4. Decided with the user
 
@@ -185,7 +157,6 @@ deformation (`IsDeformable` in `VariantSystem` already excludes them). What they
   entry (`BaseType` `BuildingExtensionPrefab`); the owner isn't involved. Restore already handles any
   `ObjectGeometryPrefab`.
 - **Swap:** the normal path (`PrefabSwapper`, its own areas and nets). Shared nodes with the owner's nets stay fixed.
-  With the step 0 fix, also mark the owner `Updated`, so its lane connections to the extension are rechecked.
 - **Terrain lift:** `LotLiftSystem` only handles building variants. Either extend it to extension lots (the game
   terraforms external extension lots on their own, see `TerrainSystem` and `BuildingUtils.CalculateLotInfo`), or
   keep their terrain flat and document it.
@@ -193,8 +164,8 @@ deformation (`IsDeformable` in `VariantSystem` already excludes them). What they
   that.
 
 ### 5.3 Upgrade buildings deformed on their own
-They already have their own cage. Check, after step 0, that deforming the wing alone doesn't crash and that its
-paths stay connected to the school's.
+They already have their own cage. Check that deforming the wing alone doesn't crash (also when hovering the wing
+and the school) and that its paths stay connected to the school's.
 
 ### 5.4 New upgrades on deformed buildings
 The upgrade tool only offers upgrades whose `ServiceUpgradeBuilding` lists the owner's prefab. Options to research:
