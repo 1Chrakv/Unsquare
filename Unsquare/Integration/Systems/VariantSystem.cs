@@ -40,6 +40,8 @@ namespace Unsquare.Integration.Systems
         private readonly Dictionary<Entity, ObjectGeometryPrefab> _simDataPending = new();
         private readonly List<Entity> _readyPrefabs = new();
         private readonly List<Entity> _extensions = new();
+        private readonly List<Entity> _describedExtensions = new();
+        private readonly Dictionary<BuildingExtensionPrefab, float> _extensionTops = new();
         private readonly HashSet<Entity> _upgradesLogged = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
 
@@ -288,8 +290,36 @@ namespace Unsquare.Integration.Systems
                 !_resolver.TryResolveBase(current, out var basePrefab, out var applied) ||
                 !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return false;
-            description = new BuildingDescription(basePrefab, lotBox, buildingBox, applied);
+            var editBox = ExtendedCage.RaiseTop(lotBox, DeformedExtensionsTop(building));
+            description = new BuildingDescription(basePrefab, lotBox, editBox, buildingBox, applied);
             return true;
+        }
+
+        // Top of the on-lot extensions the owner's cage deforms (PlanExtensionTargets), in building space.
+        private float DeformedExtensionsTop(Entity building)
+        {
+            float top = float.MinValue;
+            InstalledExtensions.Collect(EntityManager, building, _describedExtensions);
+            foreach (var extension in _describedExtensions)
+            {
+                if (TryGetExtensionBase(extension, out var extensionBase) && IsDeformable(extensionBase) &&
+                    InstalledExtensions.IsAtPrefabPlacement(EntityManager, building, extension,
+                        extensionBase.m_Position, out _))
+                    top = math.max(top, ExtensionTop(extensionBase));
+            }
+            return top;
+        }
+
+        private float ExtensionTop(BuildingExtensionPrefab extensionBase)
+        {
+            if (!_extensionTops.TryGetValue(extensionBase, out float top))
+            {
+                top = CageBoxMeasurer.TryMeasureMeshes(extensionBase, out var meshBox)
+                    ? meshBox.Max.y + extensionBase.m_Position.y
+                    : float.MinValue;
+                _extensionTops[extensionBase] = top;
+            }
+            return top;
         }
 
         private bool TryGetBoxes(ObjectGeometryPrefab basePrefab, out CageBox lotBox, out CageBox buildingBox)
@@ -395,8 +425,7 @@ namespace Unsquare.Integration.Systems
             InstalledExtensions.Collect(EntityManager, building, _extensions);
             foreach (var extension in _extensions)
             {
-                if (!_resolver.TryGetPrefab(EntityManager, extension, out var current) ||
-                    !TryResolveExtensionBase(current, out var extensionBase))
+                if (!TryGetExtensionBase(extension, out var extensionBase))
                     continue;
                 ObjectGeometryPrefab target = extensionBase;
                 if (ownerVariantName != null && IsDeformable(extensionBase))
@@ -415,9 +444,11 @@ namespace Unsquare.Integration.Systems
             return targets;
         }
 
-        private bool TryResolveExtensionBase(PrefabBase current, out BuildingExtensionPrefab extensionBase)
+        private bool TryGetExtensionBase(Entity extension, out BuildingExtensionPrefab extensionBase)
         {
             extensionBase = null;
+            if (!_resolver.TryGetPrefab(EntityManager, extension, out var current))
+                return false;
             if (!VariantNaming.TryParse(current.name, out string baseName))
                 extensionBase = current as BuildingExtensionPrefab;
             else if (_resolver.TryFind(current.GetType().Name, baseName, out var found))
