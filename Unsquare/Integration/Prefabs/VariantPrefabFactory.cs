@@ -64,7 +64,7 @@ namespace Unsquare.Integration.Prefabs
                 clone.m_Meshes = meshes;
                 clone.Remove<SpawnableBuilding>();   // the zone spawner must never pick a variant
                 clone.Remove<ObsoleteIdentifiers>(); // would alias the base prefab's old IDs
-                clone.Remove<UIObject>();            // keep it out of build menus
+                KeepOutOfMenus(clone, basePrefab);
                 HideFromAssetBrowsers(clone, basePrefab);
                 var counts = new List<string>(_attachmentDeformers.Count);
                 foreach (var attachmentDeformer in _attachmentDeformers)
@@ -111,6 +111,22 @@ namespace Unsquare.Integration.Prefabs
                 info.m_Mesh = deformed;
             }
             return true;
+        }
+
+        // The info panel lists installed upgrades only if their prefab has UIObjectData, so upgrades keep a UIObject
+        // without menu group; unlock requirements would put them in milestone screens.
+        private static void KeepOutOfMenus(ObjectGeometryPrefab clone, PrefabBase source)
+        {
+            if (!source.Has<ServiceUpgrade>())
+            {
+                clone.Remove<UIObject>();
+                return;
+            }
+            var uiObject = PrefabCloning.GetOwnedComponent<UIObject>(clone, source);
+            if (uiObject != null)
+                uiObject.m_Group = null;
+            clone.Remove<Unlockable>();
+            clone.Remove<ManualUnlockable>();
         }
 
         private static void HideFromAssetBrowsers(ObjectGeometryPrefab clone, PrefabBase source)
