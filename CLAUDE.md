@@ -103,6 +103,10 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   (`CageBoxMeasurer.TryMeasureLot`), at least 8 m tall (`LotBox.MinHeight`) so flat lots have pickable vertical
   edges. Prefabs without a lot are not deformable. A building-only cage was removed
   (0.6.0): it left garden props, ground and paths misplaced.
+- With deformed on-lot upgrades (e.g. a storey), the cage shown and edited (`BuildingDescription.EditBox`,
+  `CageState.Box`) is raised to their top. Variants are still named and baked on the lot box; `DeformService`
+  converts offsets between the two (`ExtendedCage.Convert`, exact up to the 0.1 m grid) and keeps the last edit
+  offsets per building, so converting back never swallows a nudge.
 - The building's mesh box (`TryMeasureMeshes`) is only used as the facade-alignment box for props. Flat or
   meshless lots (parks) fall back to the lot box. The Unsquare tool raycasts building lots, so parks are pickable.
 - All attachments (`IAttachmentDeformer`, per kind switchable in `AttachmentOptions`) are deformed in the clone's
@@ -151,7 +155,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   (`InstalledUpgrade` → `Extension`), placed once at the prefab's `m_Position` and never moved with the owner.
   - They are baked with the owner's cage in their own frame (`TranslatedDeformation`, boxes `RelativeTo` the
     position) and swapped together with the owner. Their nets are synced together with the owner's (`NetOwner` per
-    sub-net owner), so shared nodes stay connected. A storey above the roof gets the cage extrapolated upwards.
+    sub-net owner), so shared nodes stay connected. A storey above the roof gets the lot cage extrapolated upwards,
+    which equals the raised edit cage the user sees.
   - Name: `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
     manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
   - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.

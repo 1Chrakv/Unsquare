@@ -193,6 +193,10 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash, also when hovering the wing and the school; the wing's paths stay connected to the school's |
 | 111 | Repeat 106 and 107 (car park storey) | Still no crash |
 | 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N given upgrade buffers)` with N ≥ 1 |
+| 113 | Car park with the extra storey: select it in Unsquare mode | Green cage and dashed rest box reach the storey's top, not the base roof; the tool window sits above it |
+| 114 | After 113, drag a top corner, with the 0.1 m step nudge it up and sideways a few times (Alt+PageUp, Alt+arrows), then Ctrl+Z and Ctrl+Y | The storey's roof follows the cage corner; every nudge moves the corner; undo and redo restore each step; Reset brings back the plain building and storey |
+| 115 | A building without upgrades, and the car park before the storey is added | Cage ends at the roof as before |
+| 116 | After 114, save and reload | Same shape; the cage again reaches the storey's top |
 
 ## Reporting problems
 

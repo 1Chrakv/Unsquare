@@ -120,28 +120,29 @@ and lanes don't matter.
 
 ## 5. Open work
 
-### 5.1 One cage for the building and its on-lot upgrades (after the crash fix)
+### 5.1 One cage for the building and its on-lot upgrades (done 2026-10-31, in-game test pending)
 - Only extensions on the owner's lot count (the same set `PlanExtensionTargets` deforms with the owner). Extensions
   with their own lot keep their own cage (5.2).
 - A trilinear cage deformation is multilinear in x, y, z. Continued outside its box (how extensions are baked), it
   equals the trilinear deformation of any larger axis-aligned box whose corners go where the small cage sends them.
   - Edit corner offset = `D_lot(editCorner) − editCorner`; lot corner offset = `D_edit(lotCorner) − lotCorner`.
-  - Both conversions evaluate a `TrilinearCageDeformation` and are exact up to 0.1 m quantization.
-- Core: `ExtendedCage.Convert(fromBox, fromOffsets, toBox)` + box union, with tests.
-- `BuildingDescription.EditBox` = lot box ∪ the on-lot extensions' boxes. An extension's box is its mesh box
-  (`CageBoxMeasurer.TryMeasureMeshes`) moved by `m_Position`. Cache per extension prefab. Share the eligibility check
-  with `PlanExtensionTargets`.
+  - Both conversions evaluate a `TrilinearCageDeformation` (`ExtendedCage.Convert`) and are exact up to the 0.1 m
+    grid. Lot → edit → lot always gives the lot offsets back (tested).
+- `BuildingDescription.EditBox` = the lot box with its top raised (`ExtendedCage.RaiseTop`) to the highest deformed
+  on-lot extension: its mesh box top (`CageBoxMeasurer.TryMeasureMeshes`) plus `m_Position.y`, cached per extension
+  prefab (`VariantSystem.DeformedExtensionsTop`).
+- **Scope: only the top is raised.** x/z stay the lot's, like the rule that the cage is the lot rectangle (overhangs
+  aren't enclosed). The bottom corners equal the lot's, so ground fit, align, the "leaves its plot" warning and
+  neighbours' lot outlines are unchanged.
 - `DeformService` works in edit space:
-  - `TryGetCage` returns `EditBox` and converted specs; `SetOffsets`/`Apply`/`MoveHandle` convert edit → lot, then
-    clamp and validate on the lot box.
-  - FlexIt import goes through an internal lot-space `ApplyLot`.
-  - The UI needs no change: it only uses `state.Box` and state offsets.
-- Rounding: a lot → edit → lot round trip can swallow a 0.1 m nudge. Keep the last `(lot, edit)` pair per building in
-  `DeformService` and return that edit cage while the lot offsets still match.
-- On-lot extensions stay inside the lot rectangle, so the edit cage normally only grows upwards (a storey). Its
-  bottom corners then equal the lot's, and ground fit, align and the "leaves its plot" warning behave as today. If
-  an on-lot extension's mesh sticks out sideways, the cage grows there too, and those tools act on the larger
-  footprint.
+  - `TryGetCage` returns `EditBox` with converted specs.
+  - `Apply` (and with it `SetOffsets`, `MoveHandle`, `Reset`, undo) converts edit → lot, then clamps and validates on
+    the lot box.
+  - FlexIt import uses the private lot-space `ApplyLot`.
+  - The UI needed no change.
+- Rounding: edit → lot → edit can swallow a 0.1 m nudge of a top corner. `DeformService` keeps the last
+  `(edit box, lot, edit)` per building and returns those edit offsets while the lot offsets (target or applied) still
+  match.
 
 ### 5.2 Extensions with their own lot: own cage
 Extensions with `m_ExternalLot` are deformed separately, like a building. They stay skipped by the owner's
