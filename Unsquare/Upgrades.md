@@ -2,7 +2,8 @@
 
 Status 2026-10-31, branch `fix/upgrade-deformation` (on `develop` 8cbe44a). The upgrade crash is fixed and confirmed
 in game (section 3), and so is the combined cage over on-lot upgrades (5.1). Picking upgrade buildings inside
-Unsquare mode (5.3) is confirmed too. Other open work is in section 5; 5.2 waits for a real building that needs it.
+Unsquare mode (5.3) is confirmed too. Open: deformed upgrades are missing from the info panel's upgrade list
+(5.7). Other open work is in section 5; 5.2 waits for a real building that needs it.
 
 ## 1. How CS2 models upgrades (from the decompiled `Game.dll`)
 
@@ -219,6 +220,39 @@ A newly placed extension on a deformed owner stays undeformed until the next edi
 - The attachment toggles (Settings) only switch the **prefab** deformation. Area and net **instance** sync
   (`LotInstanceSync`) still runs, so with nets off the saved paths are still moved while the prefab's are not. Either
   gate the instance sync by the same options or document it.
+
+### 5.7 Deformed upgrades missing from the info panel's upgrade list (found 2026-10-31, not fixed)
+**Seen in game:** a school with several classroom wings lists only the undeformed one under Upgrades → Sub-buildings
+in its info panel. The deformed wings are missing, although they are installed and work.
+
+**Cause (from the game code):**
+- `Game.UI.InGame.UpgradesSection` lists an `InstalledUpgrade` entry only if its prefab has `UIObjectData` (line
+  ~154: `HasComponent<UIObjectData>(PrefabRef.m_Prefab)`). The section's list of available upgrades (~115–120) uses
+  the same filter.
+- `VariantPrefabFactory.TryCreate` removes `UIObject` from every clone ("keep it out of build menus"), so variant
+  prefabs have no `UIObjectData`.
+- This hits every deformed upgrade:
+  - upgrade buildings deformed with their own cage (the school wings);
+  - on-lot extensions deformed with their owner (car park storey, hospital Trauma Center / Special Ward / Helipad).
+
+**Fix idea (to research first):** after a variant prefab is initialized (in `ProcessSimData`, next to
+`UpgradeRegistration` / `UpgradeArchetype`), add `UIObjectData` to **upgrade variants only** (prefab has
+`ServiceUpgradeData`), with `m_Group = Entity.Null`. Copy the base's `m_Priority` and the remaining fields.
+- The build menus list prefabs through their group's `UIGroupElement` buffer, which `UIObject` fills at init. A
+  variant without a group shouldn't appear there.
+- Other systems query `UIObjectData` too. Check each that an upgrade variant can't show up there:
+  - `ToolbarUISystem`, `MilestoneUISystem` (unlock lists, queries with `UnlockRequirement`),
+    `SignatureBuildingUISystem`, `ServiceBudgetUISystem`, `UpgradeMenuUISystem`, `PrefabUISystem`, `DevTreeUISystem`.
+  - Restricting to upgrade variants keeps zoned and service-building variants out of all of them.
+- **Name:**
+  - `NameSystem.GetId` uses the prefab's `Localization` component if it has one, otherwise
+    `PrefabUISystem.GetTitleAndDescription`, which is keyed by prefab name.
+  - A variant could therefore show its raw name (`<Base>__uq…`) in the list. Check in game.
+  - If it does, map the variant to its base's title (e.g. give the clone the base's `Localization` id, or a locale
+    entry per variant).
+- Test: the school with deformed and undeformed wings, the car park with the storey, and the hospital with its three
+  extensions. All upgrades are listed with their normal names; no variant appears in build or upgrade menus,
+  milestone lists or Find It.
 
 ## 6. Test notes
 - Logs: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Unsquare.Mod.log` and `Player.log`.
