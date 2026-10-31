@@ -8,7 +8,7 @@ reshaped by a trilinear cage deformation, so it can be tapered, skewed, twisted,
 angled streets and slopes.
 
 **Get it on [Paradox Mods](https://mods.paradoxplaza.com/mods/165185/Windows)** (or in game: Paradox Mods → search
-"Unsquare").
+"Unsquare"). What changed in each version: [`CHANGELOG.md`](CHANGELOG.md).
 
 > [!IMPORTANT]
 > **Deformation is cosmetic only.** It changes how a building and its lot look, not what the game simulates: lot
@@ -31,6 +31,8 @@ angled streets and slopes.
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
 - **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same
   neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
+- **Upgrades.** Deformed buildings keep their upgrades and accept new ones. On-lot upgrades (e.g. an extra car park
+  storey) are reshaped with the building under one cage; upgrade buildings such as school wings have their own cage.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
