@@ -1,7 +1,7 @@
 # Building upgrades: findings and open work
 
-Status 2026-10-30, branch `fix/upgrade-deformation` (on `develop` 8cbe44a, 3 commits: Core pieces, integration,
-docs). Deployed and tested in game once (car park storey, school extension wing).
+Status 2026-10-31, branch `fix/upgrade-deformation` (on `develop` 8cbe44a). The upgrade crash is fixed and confirmed
+in game (section 3). Open work is in section 5.
 
 ## 1. How CS2 models upgrades (from the decompiled `Game.dll`)
 
@@ -83,8 +83,8 @@ deforming a building with an upgrade.
 This fits every test: no upgrade → no temporary upgrade → no crash; crash only on hover, paused or not; terrain, nets
 and lanes don't matter.
 
-**Fix (implemented in `UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; in-game test
-pending):** after a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
+**Fix (implemented in `UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; confirmed
+in game 2026-10-31: no more crash on hover):** after a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
 buffer, rebuild the variant's `ObjectData.m_Archetype` with `InstalledUpgrade`, `Game.Net.SubNet` and `SubRoute`
 added (the same types `RefreshArchetype` adds). Copying the base's `BuildingUpgradeElement` buffer would also do
 it, but would offer upgrades in the variant's upgrade menu. That belongs to 5.4 and needs `ServiceUpgradeBuilding`
