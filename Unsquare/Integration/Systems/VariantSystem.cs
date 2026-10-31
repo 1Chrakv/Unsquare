@@ -44,6 +44,8 @@ namespace Unsquare.Integration.Systems
         private readonly List<Entity> _describedExtensions = new();
         private readonly Dictionary<BuildingExtensionPrefab, float> _extensionTops = new();
         private readonly HashSet<Entity> _upgradesLogged = new();
+        private readonly HashSet<Entity> _extensionRefreshes = new();
+        private readonly List<Entity> _refreshing = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
 
         private PrefabSystem _prefabSystem;
@@ -110,11 +112,43 @@ namespace Unsquare.Integration.Systems
             _debouncer.CollectDue(UnityEngine.Time.realtimeSinceStartupAsDouble, _due);
             foreach (var request in _due)
                 Bake(request.Key, request.Value);
+            ProcessExtensionRefreshes();
 
             ProcessSimData();
             ProcessSwaps();
             SaveIfDirty();
-            Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0;
+            Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0 ||
+                      _extensionRefreshes.Count > 0;
+        }
+
+        /// <summary>
+        /// Bakes newly installed on-lot extensions of a deformed building with its current cage (next update, in the
+        /// prefab phase). Buildings with a pending request are skipped: that request plans their extensions anyway.
+        /// </summary>
+        internal void RequestExtensionRefresh(Entity building)
+        {
+            if (_extensionRefreshes.Add(building))
+                Enabled = true;
+        }
+
+        private void ProcessExtensionRefreshes()
+        {
+            if (_extensionRefreshes.Count == 0)
+                return;
+            _refreshing.Clear();
+            _refreshing.AddRange(_extensionRefreshes);
+            _extensionRefreshes.Clear();
+            foreach (var building in _refreshing)
+            {
+                if (_swaps.ContainsKey(building) || _debouncer.TryPeek(building, out _) ||
+                    !TryDescribe(building, out var description) || description.Applied.Offsets.IsIdentity ||
+                    !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
+                    !_prefabSystem.TryGetEntity(current, out var currentEntity))
+                    continue;
+                Mod.Log.Info($"New upgrade on deformed building {building}: deforming its extensions.");
+                QueueSwap(building, currentEntity, description.BasePrefab, description.Applied,
+                    PlanExtensionTargets(building, description.BasePrefab, description.Applied, current.name));
+            }
         }
 
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -124,6 +158,7 @@ namespace Unsquare.Integration.Systems
             _swaps.Clear();
             _statuses.Clear();
             _simDataPending.Clear();
+            _extensionRefreshes.Clear();
             _upgradesLogged.Clear();
             _simulationReady = false;
 
@@ -557,6 +592,7 @@ namespace Unsquare.Integration.Systems
                         UpgradeRegistration.RemoveFromBuildings(EntityManager, variantEntity);
                         if (UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, variantEntity))
                             upgradable++;
+                        UpgradeOwnership.Share(EntityManager, _prefabSystem, donor, variantEntity);
                         copied++;
                     }
                 }
