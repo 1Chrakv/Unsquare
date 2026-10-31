@@ -42,13 +42,16 @@ from `%CSII_MANAGEDPATH%`. Builds deploy to `Mods\Unsquare` and refuse to while 
 The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModule/` (needs Node.js). Never pass
 `-p:SkipUiModule=true` for a deploy you want to test: without the UI module the Unsquare button is missing.
 
-## Versioning
+## Branches and versioning
 
-Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
-`Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). `BuildInfo` logs version,
-commit, configuration and build time on load. Also keep `"version"` in `UiModule/mod.json` equal.
-Feature branches only bump the patch version; the minor version goes up once, when the branch is merged into `master`
-(the user confirms the number).
+- `master` holds releases only; each merge into it is a publication on Paradox Mods.
+- `develop` collects finished work. Every change gets its own branch (`feature/…`, `fix/…`) off `develop` and goes back
+  into `develop` (PRs target `develop`, never `master`).
+- Only the `develop` → `master` step bumps the version: a patch bump by default, minor or major only when the user says
+  so. Never bump on feature branches or `develop`.
+- Semantic version in `<Version>` of `Unsquare/Unsquare.csproj`; bump `ModVersion` in
+  `Unsquare/Properties/PublishConfiguration.xml` together (the build fails on a mismatch). Also keep `"version"` in
+  `UiModule/mod.json` equal. `BuildInfo` logs version, commit, configuration and build time on load.
 
 ## C# conventions (C# 9, .NET Framework 4.8)
 
@@ -100,6 +103,10 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   (`CageBoxMeasurer.TryMeasureLot`), at least 8 m tall (`LotBox.MinHeight`) so flat lots have pickable vertical
   edges. Prefabs without a lot are not deformable. A building-only cage was removed
   (0.6.0): it left garden props, ground and paths misplaced.
+- With deformed on-lot upgrades (e.g. a storey), the cage shown and edited (`BuildingDescription.EditBox`,
+  `CageState.Box`) is raised to their top. Variants are still named and baked on the lot box; `DeformService`
+  converts offsets between the two (`ExtendedCage.Convert`, exact up to the 0.1 m grid) and keeps the last edit
+  offsets per building, so converting back never swallows a nudge.
 - The building's mesh box (`TryMeasureMeshes`) is only used as the facade-alignment box for props. Flat or
   meshless lots (parks) fall back to the lot box. The Unsquare tool raycasts building lots, so parks are pickable.
 - All attachments (`IAttachmentDeformer`, per kind switchable in `AttachmentOptions`) are deformed in the clone's
@@ -135,6 +142,37 @@ Feature branches only bump the patch version; the minor version goes up once, wh
   the terrain before lots/roads (CPU heights are read from the modified cascade), so `BaseTerrainSystem` reads a small
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
 - Effects (`EffectSource`) are not deformed yet.
+- **Zoning and condemnation:**
+  - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot
+    cells to "no zone". The zone check then condemns it, and after a reset the base stays condemned.
+    `SimDataCopier` therefore copies the base's `OverrideZone | Overridable | DeleteOverridden` flags.
+  - Zoning that 1.0.0 wiped under deformed growables is not restored automatically: those cells can't be told
+    apart from plopped buildings on unzoned ground (a load-time repair was removed for that reason).
+  - `CondemnGuardSystem` stays as a backup (paths blocking cells, rezoning). It removes `Condemned` and the icon
+    from variant buildings right after `ModificationEndBarrier`, and never touches other buildings, the zone check
+    (the game's or Plop the Growables') or other mods' tags.
+- **Upgrade extensions** (`BuildingExtensionPrefab`, e.g. an extra car park storey): own entities on the owner's lot
+  (`InstalledUpgrade` → `Extension`), placed once at the prefab's `m_Position` and never moved with the owner.
+  - They are baked with the owner's cage in their own frame (`TranslatedDeformation`, boxes `RelativeTo` the
+    position) and swapped together with the owner. Their nets are synced together with the owner's (`NetOwner` per
+    sub-net owner), so shared nodes stay connected. A storey above the roof gets the lot cage extrapolated upwards,
+    which equals the raised edit cage the user sees.
+  - Name: `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
+    manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
+  - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
+  - Stand-alone upgrade buildings (school wings) are deformed like any building with their own cage; the Unsquare
+    tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
+  - Prefab setup after init (`VariantSystem.PrepareVariantPrefab`):
+    - `UpgradeRegistration` undoes a cloned upgrade registering itself as an option of its buildings.
+    - `UpgradeArchetype` gives variants the base's upgrade buffers in their instance archetype; without them hover
+      copies lack `InstalledUpgrade` and the game's upgrade job crashes natively.
+    - `UpgradeOwnership` shares the base's upgrade list and lists the variant in the upgrades'
+      `ServiceUpgradeBuilding`, so deformed buildings keep their Upgrades section and accept new upgrades.
+  - Upgrade variants keep a `UIObject` without menu group (the info panel lists only upgrades with `UIObjectData`) and
+    drop `Unlockable`. Every variant aliases its base's locale keys (`VariantLocalization`).
+  - `ExtensionInstallSystem` bakes a new on-lot extension on a deformed building with its cage at once.
+  - Open work, the upgrade crash (cause, fix, disproved theories) and the combined cage design:
+    `Unsquare/Upgrades.md`.
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
   street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
   clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,

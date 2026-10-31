@@ -183,6 +183,29 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 100 | After 99, select an imported building with the Unsquare tool | Green cage with the FlexIt shape; it can be edited and reset like any Unsquare building |
 | 101 | After 99, save; remove FlexIt; reload | All imported buildings look the same; no `Unknown prefab ID` for them in the game log |
 | 102 | Corner fits at about 10° and 30°, import | Both keep their far end facing the turned street; the 10° one looks close to FlexIt, the 30° one visibly straighter; log `approximated corner fit … (max deviation X m)` per building |
+| 103 | Without other mods: deform a growable that spawned from zoning, then rezone a cell next to it and run a few in-game days; reset it | No condemned icon; the zone overlay still shows the zone under it; it stays with its residents; after the reset no condemned icon and it still stands |
+| 104 | With Plop the Growables (its zone despawn setting on, then off): deform a plopped and a zoned growable, run a few days, reset both | Both stay; PTG's plopped/level-lock info is unchanged; undeformed buildings follow PTG's setting; no errors in either log |
+| 105 | Load a save with growables deformed under 1.0.0 (with plopped ones too) | No zoning appears under any building; resetting a zoned one and painting its zone again leaves it standing |
+| 106 | Multi-storey car park with the extra storey upgrade: deform it (move a top corner) | The storey bends with the car park and sits on its roof; ramps between them stay connected; log `Upgrades of building …` lists the storey as extension, then `Lot sync … 1 extensions` |
+| 107 | After 106, let the game run a few minutes, then Reset and Ctrl+Z | No crash; Reset puts the storey back to its plain prefab, undo deforms it again |
+| 108 | After 106, save and reload | Storey still deformed; log `Restored … variants (+N upgrade extensions)`; the base car park's upgrade menu shows no extra entries |
+| 109 | Elementary school with the classroom extension wing (an upgrade building): deform the school, let the game run a few minutes, then Reset | No crash; the wing stays undeformed and its paths stay connected |
+| 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash, also when hovering the wing and the school; the wing's paths stay connected to the school's |
+| 111 | Repeat 106 and 107 (car park storey) | Still no crash |
+| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N given upgrade buffers)` with N ≥ 1 |
+| 113 | Car park with the extra storey: select it in Unsquare mode | Green cage and dashed rest box reach the storey's top, not the base roof; the tool window sits above it |
+| 114 | After 113, drag a top corner, with the 0.1 m step nudge it up and sideways a few times (Alt+PageUp, Alt+arrows), then Ctrl+Z and Ctrl+Y | The storey's roof follows the cage corner; every nudge moves the corner; undo and redo restore each step; Reset brings back the plain building and storey |
+| 115 | A building without upgrades, and the car park before the storey is added | Cage ends at the roof as before |
+| 116 | After 114, save and reload | Same shape; the cage again reaches the storey's top |
+| 117 | Unsquare mode: hover the school's classroom wing, then click it | The dim hover cage and then the green cage are the wing's own; clicking the school or its lot still picks the school |
+| 118 | Unsquare mode: click the car park's extra storey | Picks the car park, with the cage reaching the storey's top |
+| 119 | Deform the wing alone, then hover the wing and the school; Reset, Ctrl+Z, save and reload | No crash; the wing's paths stay connected to the school's; reset, undo and reload restore the shapes |
+| 120 | Select the deformed school (with deformed and undeformed wings) | Normal name in the title; Upgrades section shown, listing every wing under its name; upkeep lines named (e.g. "Extension Wing Maintenance") |
+| 121 | Select the deformed hospital and the deformed car park | Their deformed extensions (Special Ward, Helipad, …, Additional Floors) are listed under Upgrades |
+| 122 | Open the upgrade menu of the deformed school; also check the build menus, Find It and the milestone screen | The usual upgrades are offered; no variant (no `__uq` name, no duplicate) appears anywhere |
+| 123 | Add another storey to a deformed car park | The new storey is deformed with the car park's cage right away (log `New upgrade on deformed building …`, then `Bake for building …`); hovering doesn't crash |
+| 124 | Add a wing to the deformed school | The wing is placed as usual and stays undeformed with its own cage |
+| 125 | Switch the game language in the options and back | Deformed buildings keep their normal names |
 
 ## Reporting problems
 

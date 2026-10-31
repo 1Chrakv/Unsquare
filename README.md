@@ -8,7 +8,7 @@ reshaped by a trilinear cage deformation, so it can be tapered, skewed, twisted,
 angled streets and slopes.
 
 **Get it on [Paradox Mods](https://mods.paradoxplaza.com/mods/165185/Windows)** (or in game: Paradox Mods → search
-"Unsquare").
+"Unsquare"). What changed in each version: [`CHANGELOG.md`](CHANGELOG.md).
 
 > [!IMPORTANT]
 > **Deformation is cosmetic only.** It changes how a building and its lot look, not what the game simulates: lot
@@ -31,6 +31,8 @@ angled streets and slopes.
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
 - **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same
   neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
+- **Upgrades.** Deformed buildings keep their upgrades and accept new ones. On-lot upgrades (e.g. an extra car park
+  storey) are reshaped with the building under one cage; upgrade buildings such as school wings have their own cage.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
@@ -42,9 +44,14 @@ angled streets and slopes.
   shaping there, and diagonal creases come from the game's blending.
 - **The lot itself stays rectangular.** Lot size, zone cells and the plot outline are not deformed; pulling the lot
   outside its plot only shows a warning (magenta cage) and may overlap neighbours.
+- **Deformed growables are never condemned.** Unsquare keeps deformed buildings standing, so rezoning won't replace
+  them either; reset a building to give it back to the game's rules. Works alongside Plop the Growables. Growables
+  deformed with version 1.0.0 may have lost the zoning under them; after resetting one, paint its zone again.
 - **Props are placed rigidly.** They move and turn with the cage but their meshes are not bent, so large props on
   strongly bent lots can look stiff or clip.
 - **Effects** (lights, smoke and similar) are not moved with the deformation yet.
+- **Upgrades** that extend the building on its lot (like an extra car park storey) are deformed with it, also when
+  added later. Upgrades that are buildings of their own (like a school's extension wing) keep their own cage.
 - **Strong twists** drop the coarsest LOD, which can't follow the bend; very distant buildings may pop.
 - **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme
   moves are clamped.

@@ -22,7 +22,10 @@ namespace Unsquare.Api
 
         public Entity Building { get; }
 
-        /// <summary>The undeformed lot cuboid.</summary>
+        /// <summary>
+        /// The undeformed cage: the lot rectangle from the ground to the top of the building and its on-lot upgrades.
+        /// All offsets of this state and all requests to the service refer to it.
+        /// </summary>
         public CageBox Box { get; }
 
         public DeformSpec AppliedSpec { get; }

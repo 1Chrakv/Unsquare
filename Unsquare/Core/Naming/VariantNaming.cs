@@ -14,6 +14,7 @@ namespace Unsquare.Core.Naming
 
         private const string SeedPrefix = "Unsquare:lot-offsets:v1:";
         private const string FlatTerrainSuffix = "|flat-terrain";
+        private const string ExtensionSeedPrefix = "Unsquare:extension:v1:";
 
         // Lifted terrain keeps the original seed, so names from before the flag existed stay valid.
         public static string VariantName(string baseName, CageOffsets offsets, bool flatTerrain = false)
@@ -24,6 +25,20 @@ namespace Unsquare.Core.Naming
                 throw new ArgumentNullException(nameof(offsets));
             string seed = SeedPrefix + offsets.ToCanonicalString() + (flatTerrain ? FlatTerrainSuffix : "");
             return baseName + Separator + StableHash.Compute(seed).ToHex(HashBytes);
+        }
+
+        /// <summary>
+        /// Name of an upgrade extension baked with its building's cage. The owner's variant name stands for the
+        /// owner prefab and deformation; where the extension sits on the owner comes from its own prefab.
+        /// </summary>
+        public static string ExtensionVariantName(string extensionBaseName, string ownerVariantName)
+        {
+            if (string.IsNullOrEmpty(extensionBaseName))
+                throw new ArgumentException("Extension base name required.", nameof(extensionBaseName));
+            if (!IsVariantName(ownerVariantName))
+                throw new ArgumentException($"Not a variant name: {ownerVariantName}.", nameof(ownerVariantName));
+            string seed = ExtensionSeedPrefix + ownerVariantName;
+            return extensionBaseName + Separator + StableHash.Compute(seed).ToHex(HashBytes);
         }
 
         /// <summary>Extracts the base prefab name if <paramref name="name"/> is a variant name.</summary>

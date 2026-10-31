@@ -14,7 +14,10 @@ using Transform = Game.Objects.Transform;
 
 namespace Unsquare.Api
 {
-    /// <summary>Validates and clamps UI requests, then forwards them to the variant pipeline.</summary>
+    /// <summary>
+    /// Validates and clamps UI requests, then forwards them to the variant pipeline. The UI works on the edit cage
+    /// (raised over on-lot upgrades); the pipeline names and bakes on the lot cage, so offsets are converted here.
+    /// </summary>
     internal sealed class DeformService : IBuildingDeformService
     {
         private const float DiagnosticMarginMeters = 50f;
@@ -26,6 +29,7 @@ namespace Unsquare.Api
         private readonly List<NeighbourEdge> _edges = new();
         private readonly List<Line3.Segment> _roadPieces = new();
         private readonly List<Entity> _buildings = new();
+        private readonly Dictionary<Entity, EditOffsets> _editOffsets = new();
 
         public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain, NeighbourQuery neighbours,
             EntityManager entityManager)
@@ -53,8 +57,22 @@ namespace Unsquare.Api
             var applied = description.Applied;
             var target = _pipeline.TryGetRequested(building, out var requested) ? requested : applied;
             var status = MapStatus(_pipeline.GetStatus(building), applied);
-            state = new CageState(building, description.LotBox, applied, target, status);
+            if (_editOffsets.TryGetValue(building, out var cached) && !cached.Matches(description.EditBox, target) &&
+                !cached.Matches(description.EditBox, applied))
+                _editOffsets.Remove(building);
+            state = new CageState(building, description.EditBox, ToEdit(building, description, applied),
+                ToEdit(building, description, target), status);
             return true;
+        }
+
+        // Prefers the edit offsets last sent: converting the lot offsets back could swallow a one-step nudge.
+        private DeformSpec ToEdit(Entity building, in BuildingDescription description, DeformSpec lotSpec)
+        {
+            if (description.EditBox.Equals(description.LotBox))
+                return lotSpec;
+            if (_editOffsets.TryGetValue(building, out var cached) && cached.Matches(description.EditBox, lotSpec))
+                return lotSpec.WithOffsets(cached.Edit);
+            return lotSpec.WithOffsets(ExtendedCage.Convert(description.LotBox, lotSpec.Offsets, description.EditBox));
         }
 
         public DeformRequestResult SetOffsets(Entity building, CageOffsets offsets)
@@ -166,15 +184,37 @@ namespace Unsquare.Api
             NeighbourEdge.AddLotOutline(ground, _edges);
         }
 
+        /// <summary>Requests a deformation given on the edit cage (what <see cref="TryGetCage"/> returns).</summary>
         public DeformRequestResult Apply(Entity building, DeformSpec spec)
         {
             if (spec == null)
                 throw new ArgumentNullException(nameof(spec));
             if (!_pipeline.TryDescribe(building, out var description))
                 return DeformRequestResult.NotDeformable;
+            if (description.EditBox.Equals(description.LotBox))
+            {
+                _editOffsets.Remove(building);
+                return ApplyLot(building, description, spec, out _);
+            }
 
+            var lotOffsets = ExtendedCage.Convert(description.EditBox, spec.Offsets, description.LotBox);
+            var result = ApplyLot(building, description, spec.WithOffsets(lotOffsets), out var clamped);
+            if (result == DeformRequestResult.Accepted || result == DeformRequestResult.Clamped)
+            {
+                var edit = clamped.Equals(lotOffsets)
+                    ? spec.Offsets
+                    : ExtendedCage.Convert(description.LotBox, clamped, description.EditBox);
+                _editOffsets[building] = new EditOffsets(description.EditBox, clamped, edit);
+            }
+            return result;
+        }
+
+        // Lot-cage request: clamps and validates against the lot box the variant is baked on.
+        private DeformRequestResult ApplyLot(Entity building, in BuildingDescription description, DeformSpec spec,
+            out CageOffsets clamped)
+        {
             var box = description.LotBox;
-            var clamped = CageValidator.Clamp(box, spec.Offsets, Options.Limits);
+            clamped = CageValidator.Clamp(box, spec.Offsets, Options.Limits);
             if (CageValidator.Validate(box, clamped, Options.Limits) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
             _pipeline.Request(building, spec.WithOffsets(clamped));
@@ -198,7 +238,10 @@ namespace Unsquare.Api
             int converted = 0, approximated = 0, clamped = 0, failed = batch.FailedCount;
             foreach (var (building, spec, source, isApproximation) in batch.Conversions)
             {
-                var result = Apply(building, spec);
+                // FlexIt conversions are lot-cage offsets.
+                var result = _pipeline.TryDescribe(building, out var description)
+                    ? ApplyLot(building, description, spec, out _)
+                    : DeformRequestResult.NotDeformable;
                 if (result == DeformRequestResult.Accepted || result == DeformRequestResult.Clamped)
                 {
                     converted++;
@@ -218,6 +261,23 @@ namespace Unsquare.Api
                 clamped, batch.ResetCount, failed);
             Mod.Log.Info($"FlexIt import done: {summary}.");
             return summary;
+        }
+
+        private readonly struct EditOffsets
+        {
+            public EditOffsets(CageBox editBox, CageOffsets lot, CageOffsets edit)
+            {
+                EditBox = editBox;
+                Lot = lot;
+                Edit = edit;
+            }
+
+            public CageBox EditBox { get; }
+            public CageOffsets Lot { get; }
+            public CageOffsets Edit { get; }
+
+            public bool Matches(CageBox editBox, DeformSpec lotSpec) =>
+                EditBox.Equals(editBox) && Lot.Equals(lotSpec.Offsets);
         }
 
         private static DeformStatus MapStatus(VariantStatus status, DeformSpec applied) => status switch
