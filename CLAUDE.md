@@ -165,7 +165,11 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     the Unsquare tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
   - Variant prefabs get the upgrade buffers of their base's instance archetype (`UpgradeArchetype`): no upgrade
     registers with a variant, so hover copies lacked `InstalledUpgrade` and the game's upgrade job crashed natively.
-  - Open: new upgrades can't be placed on a deformed building yet (the variant isn't in the upgrade's buildings).
+  - Info panel and menus: upgrade variants keep a `UIObject` without menu group and drop `Unlockable`, so the
+    panel's upgrade list shows them. Every variant aliases its base's locale keys (`VariantLocalization`).
+  - Variants share the base's upgrade list and are appended to the upgrades' `ServiceUpgradeBuilding`
+    (`UpgradeOwnership`), so deformed buildings keep their Upgrades section and can get new upgrades.
+    `ExtensionInstallSystem` bakes a new on-lot extension on a deformed building with its cage at once.
   - Open work, the upgrade crash (cause, fix, disproved theories) and the combined cage design:
     `Unsquare/Upgrades.md`.
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the

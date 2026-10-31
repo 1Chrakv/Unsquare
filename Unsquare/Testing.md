@@ -200,6 +200,12 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 117 | Unsquare mode: hover the school's classroom wing, then click it | The dim hover cage and then the green cage are the wing's own; clicking the school or its lot still picks the school |
 | 118 | Unsquare mode: click the car park's extra storey | Picks the car park, with the cage reaching the storey's top |
 | 119 | Deform the wing alone, then hover the wing and the school; Reset, Ctrl+Z, save and reload | No crash; the wing's paths stay connected to the school's; reset, undo and reload restore the shapes |
+| 120 | Select the deformed school (with deformed and undeformed wings) | Normal name in the title; Upgrades section shown, listing every wing under its name; upkeep lines named (e.g. "Extension Wing Maintenance") |
+| 121 | Select the deformed hospital and the deformed car park | Their deformed extensions (Special Ward, Helipad, …, Additional Floors) are listed under Upgrades |
+| 122 | Open the upgrade menu of the deformed school; also check the build menus, Find It and the milestone screen | The usual upgrades are offered; no variant (no `__uq` name, no duplicate) appears anywhere |
+| 123 | Add another storey to a deformed car park | The new storey is deformed with the car park's cage right away (log `New upgrade on deformed building …`, then `Bake for building …`); hovering doesn't crash |
+| 124 | Add a wing to the deformed school | The wing is placed as usual and stays undeformed with its own cage |
+| 125 | Switch the game language in the options and back | Deformed buildings keep their normal names |
 
 ## Reporting problems
 
