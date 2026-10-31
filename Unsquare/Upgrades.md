@@ -2,7 +2,7 @@
 
 Status 2026-10-31, branch `fix/upgrade-deformation` (on `develop` 8cbe44a). The upgrade crash is fixed and confirmed
 in game (section 3), and so is the combined cage over on-lot upgrades (5.1). Picking upgrade buildings inside
-Unsquare mode (5.3) is implemented, in-game test pending. Other open work is in section 5.
+Unsquare mode (5.3) is confirmed too. Other open work is in section 5; 5.2 waits for a real building that needs it.
 
 ## 1. How CS2 models upgrades (from the decompiled `Game.dll`)
 
@@ -146,6 +146,15 @@ and lanes don't matter.
   match.
 
 ### 5.2 Extensions with their own lot: own cage
+**No real case found yet (2026-10-31):** the `Upgrades of building …` log lines so far show only extensions on the
+owner's lot and upgrade buildings:
+- `Hospital01`: Trauma Center, Special Ward, Helipad, all `external False` at position 0, deformed fine with the
+  hospital's cage.
+- `ParkingHall03`: Additional Floors, `external False`.
+- `ElementarySchool02`: Classroom Extension Building and Gymnasium, both upgrade buildings (5.3).
+
+Do this step only once a log line shows `external True`.
+
 Extensions with `m_ExternalLot` are deformed separately, like a building. They stay skipped by the owner's
 deformation (`IsDeformable` in `VariantSystem` already excludes them). What they still need:
 - **Cage box:** `CageBoxMeasurer.TryMeasureLot` only knows `BuildingPrefab`. Add `BuildingExtensionPrefab` with
@@ -165,7 +174,7 @@ deformation (`IsDeformable` in `VariantSystem` already excludes them). What they
 - **Upgrade menu:** a cloned extension registers itself as an upgrade option; `UpgradeRegistration` already removes
   that.
 
-### 5.3 Upgrade buildings deformed on their own: picking in Unsquare mode (fix implemented, in-game test pending)
+### 5.3 Upgrade buildings deformed on their own: picking in Unsquare mode (done, confirmed in game 2026-10-31)
 **Works already (tested 2026-10-31 with the school's classroom wing):** an upgrade building has its own cage and
 deforms like any building. Selecting the wing with the game's default tool and then switching to Unsquare mode keeps
 it as the target (`UnsquareToolSystem.OnStartRunning` → `TryResolveBuilding(m_ToolSystem.selected)`), and it
