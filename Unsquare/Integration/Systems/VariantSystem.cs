@@ -121,36 +121,6 @@ namespace Unsquare.Integration.Systems
                       _extensionRefreshes.Count > 0;
         }
 
-        /// <summary>
-        /// Bakes newly installed on-lot extensions of a deformed building with its current cage (next update, in the
-        /// prefab phase). Buildings with a pending request are skipped: that request plans their extensions anyway.
-        /// </summary>
-        internal void RequestExtensionRefresh(Entity building)
-        {
-            if (_extensionRefreshes.Add(building))
-                Enabled = true;
-        }
-
-        private void ProcessExtensionRefreshes()
-        {
-            if (_extensionRefreshes.Count == 0)
-                return;
-            _refreshing.Clear();
-            _refreshing.AddRange(_extensionRefreshes);
-            _extensionRefreshes.Clear();
-            foreach (var building in _refreshing)
-            {
-                if (_swaps.ContainsKey(building) || _debouncer.TryPeek(building, out _) ||
-                    !TryDescribe(building, out var description) || description.Applied.Offsets.IsIdentity ||
-                    !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
-                    !_prefabSystem.TryGetEntity(current, out var currentEntity))
-                    continue;
-                Mod.Log.Info($"New upgrade on deformed building {building}: deforming its extensions.");
-                QueueSwap(building, currentEntity, description.BasePrefab, description.Applied,
-                    PlanExtensionTargets(building, description.BasePrefab, description.Applied, current.name));
-            }
-        }
-
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
         {
             base.OnGamePreload(purpose, mode);
@@ -346,9 +316,8 @@ namespace Unsquare.Integration.Systems
             InstalledExtensions.Collect(EntityManager, building, _describedExtensions);
             foreach (var extension in _describedExtensions)
             {
-                if (TryGetExtensionBase(extension, out var extensionBase) && IsDeformable(extensionBase) &&
-                    InstalledExtensions.IsAtPrefabPlacement(EntityManager, building, extension,
-                        extensionBase.m_Position, out _))
+                if (TryGetExtensionBase(extension, out var extensionBase) &&
+                    IsDeformedExtension(building, extension, extensionBase, out _))
                     top = math.max(top, ExtensionTop(extensionBase));
             }
             return top;
@@ -465,6 +434,36 @@ namespace Unsquare.Integration.Systems
             return true;
         }
 
+        /// <summary>
+        /// Bakes newly installed on-lot extensions of a deformed building with its current cage (next update, in the
+        /// prefab phase). Buildings with a pending request are skipped: that request plans their extensions anyway.
+        /// </summary>
+        internal void RequestExtensionRefresh(Entity building)
+        {
+            if (_extensionRefreshes.Add(building))
+                Enabled = true;
+        }
+
+        private void ProcessExtensionRefreshes()
+        {
+            if (_extensionRefreshes.Count == 0)
+                return;
+            _refreshing.Clear();
+            _refreshing.AddRange(_extensionRefreshes);
+            _extensionRefreshes.Clear();
+            foreach (var building in _refreshing)
+            {
+                if (_swaps.ContainsKey(building) || _debouncer.TryPeek(building, out _) ||
+                    !TryDescribe(building, out var description) || description.Applied.Offsets.IsIdentity ||
+                    !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
+                    !_prefabSystem.TryGetEntity(current, out var currentEntity))
+                    continue;
+                Mod.Log.Info($"New upgrade on deformed building {building}: deforming its extensions.");
+                QueueSwap(building, currentEntity, description.BasePrefab, description.Applied,
+                    PlanExtensionTargets(building, description.BasePrefab, description.Applied, current.name));
+            }
+        }
+
         // Base targets when ownerVariantName is null; an extension that can't be deformed goes back to its base.
         private List<(Entity Extension, Entity Target)> PlanExtensionTargets(Entity building,
             ObjectGeometryPrefab ownerBase, DeformSpec spec, string ownerVariantName)
@@ -478,8 +477,7 @@ namespace Unsquare.Integration.Systems
                 ObjectGeometryPrefab target = extensionBase;
                 if (ownerVariantName != null && IsDeformable(extensionBase))
                 {
-                    if (!InstalledExtensions.IsAtPrefabPlacement(EntityManager, building, extension,
-                            extensionBase.m_Position, out var offset))
+                    if (!IsDeformedExtension(building, extension, extensionBase, out var offset))
                         Mod.Log.Warn($"Extension {extensionBase.name} of building {building} was moved (at {offset}, " +
                                      $"prefab {extensionBase.m_Position}); it stays undeformed.");
                     else if (TryGetOrCreateExtensionVariant(ownerBase, spec, ownerVariantName, extensionBase,
@@ -502,6 +500,15 @@ namespace Unsquare.Integration.Systems
             else if (_resolver.TryFind(current.GetType().Name, baseName, out var found))
                 extensionBase = found as BuildingExtensionPrefab;
             return extensionBase != null;
+        }
+
+        // Extensions the owner's cage bends: deformable and still where the prefab puts them.
+        private bool IsDeformedExtension(Entity building, Entity extension, BuildingExtensionPrefab extensionBase,
+            out float3 offset)
+        {
+            offset = default;
+            return IsDeformable(extensionBase) && InstalledExtensions.IsAtPrefabPlacement(EntityManager, building,
+                extension, extensionBase.m_Position, out offset);
         }
 
         // External lots lie outside the cage; option-only upgrades have nothing to bend.
@@ -588,11 +595,8 @@ namespace Unsquare.Integration.Systems
                 {
                     if (EntityManager.Exists(variantEntity) && _prefabSystem.TryGetEntity(basePrefab, out var donor))
                     {
-                        SimDataCopier.CopyMissing(EntityManager, donor, variantEntity);
-                        UpgradeRegistration.RemoveFromBuildings(EntityManager, variantEntity);
-                        if (UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, variantEntity))
+                        if (PrepareVariantPrefab(donor, variantEntity))
                             upgradable++;
-                        UpgradeOwnership.Share(EntityManager, _prefabSystem, donor, variantEntity);
                         copied++;
                     }
                 }
@@ -604,6 +608,16 @@ namespace Unsquare.Integration.Systems
             if (copied > 0)
                 Mod.Log.Info($"Copied sim data to {copied} variants ({upgradable} given upgrade buffers), " +
                              $"{_simDataPending.Count} still initializing.");
+        }
+
+        // Everything a variant prefab needs from its base once initialized; each step is safe to repeat.
+        private bool PrepareVariantPrefab(Entity donor, Entity variant)
+        {
+            SimDataCopier.CopyMissing(EntityManager, donor, variant);
+            UpgradeRegistration.RemoveFromBuildings(EntityManager, variant);
+            bool upgradable = UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, variant);
+            UpgradeOwnership.Share(EntityManager, _prefabSystem, donor, variant);
+            return upgradable;
         }
 
         private void ProcessSwaps()
@@ -648,10 +662,7 @@ namespace Unsquare.Integration.Systems
             try
             {
                 if (_prefabSystem.TryGetEntity(swap.BasePrefab, out var donor) && donor != swap.TargetPrefab)
-                {
-                    SimDataCopier.CopyMissing(EntityManager, donor, swap.TargetPrefab);
-                    UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, swap.TargetPrefab);
-                }
+                    PrepareVariantPrefab(donor, swap.TargetPrefab);
                 var netRemap = _resolver.TryGetPrefab(EntityManager, building, out var currentPrefab)
                     ? BuildNetRemap(currentPrefab, swap.BasePrefab, swap.Spec)
                     : null;
