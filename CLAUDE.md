@@ -161,7 +161,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
   - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
   - A cloned upgrade registers itself as an upgrade option of its buildings (`ServiceUpgrade.LateInitialize`);
-    `UpgradeRegistration` removes that after init. Stand-alone upgrade buildings are deformed like any building.
+    `UpgradeRegistration` removes that after init. Stand-alone upgrade buildings are deformed like any building;
+    the Unsquare tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
   - Variant prefabs get the upgrade buffers of their base's instance archetype (`UpgradeArchetype`): no upgrade
     registers with a variant, so hover copies lacked `InstalledUpgrade` and the game's upgrade job crashed natively.
   - Open: new upgrades can't be placed on a deformed building yet (the variant isn't in the upgrade's buildings).

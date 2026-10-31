@@ -197,6 +197,9 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 114 | After 113, drag a top corner, with the 0.1 m step nudge it up and sideways a few times (Alt+PageUp, Alt+arrows), then Ctrl+Z and Ctrl+Y | The storey's roof follows the cage corner; every nudge moves the corner; undo and redo restore each step; Reset brings back the plain building and storey |
 | 115 | A building without upgrades, and the car park before the storey is added | Cage ends at the roof as before |
 | 116 | After 114, save and reload | Same shape; the cage again reaches the storey's top |
+| 117 | Unsquare mode: hover the school's classroom wing, then click it | The dim hover cage and then the green cage are the wing's own; clicking the school or its lot still picks the school |
+| 118 | Unsquare mode: click the car park's extra storey | Picks the car park, with the cage reaching the storey's top |
+| 119 | Deform the wing alone, then hover the wing and the school; Reset, Ctrl+Z, save and reload | No crash; the wing's paths stay connected to the school's; reset, undo and reload restore the shapes |
 
 ## Reporting problems
 

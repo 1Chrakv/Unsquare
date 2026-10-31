@@ -1,8 +1,8 @@
 # Building upgrades: findings and open work
 
 Status 2026-10-31, branch `fix/upgrade-deformation` (on `develop` 8cbe44a). The upgrade crash is fixed and confirmed
-in game (section 3), and so is the combined cage over on-lot upgrades (5.1). **Next step: 5.3**, picking upgrade
-buildings inside Unsquare mode. Other open work is in section 5.
+in game (section 3), and so is the combined cage over on-lot upgrades (5.1). Picking upgrade buildings inside
+Unsquare mode (5.3) is implemented, in-game test pending. Other open work is in section 5.
 
 ## 1. How CS2 models upgrades (from the decompiled `Game.dll`)
 
@@ -165,7 +165,7 @@ deformation (`IsDeformable` in `VariantSystem` already excludes them). What they
 - **Upgrade menu:** a cloned extension registers itself as an upgrade option; `UpgradeRegistration` already removes
   that.
 
-### 5.3 Upgrade buildings deformed on their own: picking in Unsquare mode (next step)
+### 5.3 Upgrade buildings deformed on their own: picking in Unsquare mode (fix implemented, in-game test pending)
 **Works already (tested 2026-10-31 with the school's classroom wing):** an upgrade building has its own cage and
 deforms like any building. Selecting the wing with the game's default tool and then switching to Unsquare mode keeps
 it as the target (`UnsquareToolSystem.OnStartRunning` → `TryResolveBuilding(m_ToolSystem.selected)`), and it
@@ -173,22 +173,21 @@ deforms fine.
 
 **Doesn't work:** clicking the wing **inside** Unsquare mode targets the school instead.
 
-Likely cause (from the game code, to verify):
-- The game's raycast walks a hit up the `Owner` chain (`Game.Objects.RaycastJobs.ValidateResult`, similar in
-  `Game.Areas.RaycastJobs`).
+Cause (verified in the game code):
+- The game's raycast walks a hit up the `Owner` chain: object hits in `Game.Objects.RaycastJobs.ValidateResult`, lot
+  hits in `Game.Areas.RaycastJobs`.
 - It stops at an upgrade building only if the raycast has `RaycastFlags.SubBuildings`: `ServiceUpgrade` +
   (`Building` or a net hit).
 - The default tool sets that flag outside the editor (`DefaultToolSystem.InitializeRaycast`); the Unsquare tool
   doesn't (`UnsquareToolSystem.InitializeRaycast` sets only `RaycastFlags.BuildingLots`). So the hit continues to
   the wing's owner, the school. `TryResolveBuilding` itself would stop at the wing, since it has `Building`.
 
-Fix to try:
-- Add `RaycastFlags.SubBuildings` in `UnsquareToolSystem.InitializeRaycast`. Check that hovering (dim cage) and
-  clicking now pick the wing.
-- Check that the school is still picked when clicking the school, its lot or an on-lot extension like the car park
-  storey. Extensions have no `Building`, so the walk should go on to the owner.
+Fix (commit 56c620b): `UnsquareToolSystem.InitializeRaycast` adds `RaycastFlags.SubBuildings`.
 
-Then check:
+To check in game (`Testing.md` rows 117–119):
+- Hovering (dim cage) and clicking now pick the wing.
+- The school is still picked when clicking the school, its lot or an on-lot extension like the car park storey.
+  Extensions have no `Building`, so the walk goes on to the owner.
 - Deforming the wing alone doesn't crash (also when hovering the wing and the school).
 - Its paths stay connected to the school's.
 - Reset, undo and reload work.
