@@ -281,6 +281,8 @@ New on-lot extensions on a deformed building are baked at once:
 ### 5.8 More than one storey on a deformed car park (found 2026-10-31, not fixed)
 **Seen in game:** on a deformed `ParkingHall03`, Additional Floors can be placed several times. The log showed five
 `New upgrade on deformed building` lines for one car park. Without Unsquare only one storey is allowed.
+Stacking needs Anarchy. Deleting a stacked storey crashes the game natively (1.0.1 test, 2026-10-31); a single storey
+deletes fine. Won't fix for now; 1.0.1 lists it as a known issue.
 
 **Cause (from the game code):**
 - Extensions and upgrades with `ServiceUpgradeData.m_ForbidMultiple` may be installed only once

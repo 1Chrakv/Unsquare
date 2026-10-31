@@ -69,6 +69,8 @@ A small window above the building has more tools: terrain, fit to ground, align 
 - Upgrade buildings such as school wings can be picked and reshaped on their own.
 - Reshaped buildings show their real names in info panels.
 - Fixed: reshaped growables lost the zoning under them and could be condemned. Growables reshaped with 1.0.0 may still be missing their zone; reset them and paint the zone again.
+
+Known issue: forcing an upgrade onto a deformed building (only possible with Anarchy) leads to undefined behaviour; deleting such an upgrade can crash the game.
 	</ChangeLog>
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/1Chrakv/Unsquare" />

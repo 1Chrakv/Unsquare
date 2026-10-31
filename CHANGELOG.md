@@ -9,6 +9,9 @@
 - Fixed: deformed growables lost the zoning under them and could be condemned. Growables deformed with 1.0.0 may
   still be missing their zone; reset them and paint the zone again.
 
+Known issue: forcing an upgrade onto a deformed building (only possible with Anarchy) leads to undefined
+behaviour; deleting such an upgrade can crash the game.
+
 ## 1.0.0
 
 - First public release.
