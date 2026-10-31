@@ -2,8 +2,8 @@
 
 Status 2026-10-31, branch `fix/upgrade-deformation` (on `develop` 8cbe44a). The upgrade crash is fixed and confirmed
 in game (section 3), and so is the combined cage over on-lot upgrades (5.1). Picking upgrade buildings inside
-Unsquare mode (5.3) is confirmed too. Implemented, in-game test pending: deformed buildings keep and gain
-upgrades (5.4), and deformed upgrades and names show correctly in the info panel (5.7). 5.2 waits for a real building
+Unsquare mode (5.3) is confirmed too, as are deformed buildings keeping and gaining upgrades (5.4) and upgrades and
+names in the info panel (5.7). Open: a car park can get more than one storey (5.8). 5.2 waits for a real building
 that needs it.
 
 ## 1. How CS2 models upgrades (from the decompiled `Game.dll`)
@@ -203,7 +203,15 @@ To check in game (`Testing.md` rows 117–119):
 - Its paths stay connected to the school's.
 - Reset, undo and reload work.
 
-### 5.4 New upgrades on deformed buildings (implemented 2026-10-31, in-game test pending)
+### 5.4 New upgrades on deformed buildings (done, confirmed in game 2026-10-31)
+Tested (`Testing.md` 122, 123):
+- The deformed school's upgrade menu offers the usual upgrades.
+- A storey added to a deformed car park was swapped to the deformed storey right away. The log shows
+  `New upgrade on deformed building …` and `Lot sync … 1 extensions`; there's no `Bake` line because the extension
+  variant already existed.
+- The same worked for a new hospital extension.
+- Side effect found: more than one storey can be added (5.8).
+
 Found together with 5.7: once the main building is deformed, its info panel hides the whole Upgrades section, even
 for undeformed upgrades. `UpgradesSection.Visible` needs a `BuildingUpgradeElement` buffer on the building's prefab.
 The upgrade menu (`UpgradeMenuUISystem`) uses the same buffer, and placement only accepts an owner prefab listed in the
@@ -232,7 +240,7 @@ New on-lot extensions on a deformed building are baked at once:
   (`LotInstanceSync`) still runs, so with nets off the saved paths are still moved while the prefab's are not. Either
   gate the instance sync by the same options or document it.
 
-### 5.7 Upgrades and names in the info panel (implemented 2026-10-31, in-game test pending)
+### 5.7 Upgrades and names in the info panel (done, confirmed in game 2026-10-31: `Testing.md` 120–122)
 **Seen in game (school with several wings):**
 - The info panel listed only the undeformed wing under Upgrades → Sub-buildings.
 - A deformed school's title read `Assets.NAME[ElementarySchool02__uq…]`.
@@ -264,6 +272,30 @@ New on-lot extensions on a deformed building are baked at once:
   names and named upkeep lines. Same for the hospital's and car park's deformed extensions.
 - No variant appears in build menus, the upgrade menu, Find It or milestone screens.
 - Names stay normal after a language switch.
+
+### 5.8 More than one storey on a deformed car park (found 2026-10-31, not fixed)
+**Seen in game:** on a deformed `ParkingHall03`, Additional Floors can be placed several times. The log showed five
+`New upgrade on deformed building` lines for one car park. Without Unsquare only one storey is allowed.
+
+**Cause (from the game code):**
+- Extensions and upgrades with `ServiceUpgradeData.m_ForbidMultiple` may be installed only once
+  (`UpgradeMenuUISystem`: `BuildingExtensionData` or `m_ForbidMultiple`, ~line 200).
+- The check for "already installed" compares each installed upgrade's `PrefabRef` with the upgrade prefab:
+  `UpgradeMenuUISystem` ~line 355, `component.m_Prefab == upgradeEntity`. `ObjectToolSystem.ForbidMultipleUpgrades`
+  (~line 3597) likely checks the same way.
+- A deformed storey's prefab is a variant, so the game sees no storey installed and offers it again.
+- All storeys of one building get the same extension variant: same owner variant, same extension, same name. They
+  sit in the same place.
+
+**Fix ideas (to research):**
+- Keep installed extensions on a prefab the check recognizes. Not possible while each deformed storey needs its own
+  baked meshes.
+- Patch the two checks to compare base prefabs (variant → base by `VariantNaming.TryParse`). That needs a Harmony
+  dependency, which the project doesn't use yet; ask first.
+- Hide or lock the already-installed upgrade for that building some other way. The menu reads the owner prefab's
+  `BuildingUpgradeElement`, which variants share across buildings, so a per-building filter there isn't possible.
+- Upgrade buildings with their own lot (school wings) may be placed several times anyway; only extensions and
+  `m_ForbidMultiple` upgrades are affected.
 
 ## 6. Test notes
 - Logs: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Unsquare.Mod.log` and `Player.log`.
