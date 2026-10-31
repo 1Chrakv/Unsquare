@@ -64,6 +64,7 @@ deforming a building with an upgrade.
 | School with wing, with the step 0 fix (wing refreshed, log `Refreshed 1 entities …`) | still crash |
 | ElementarySchool02 without the wing: deform, reset, deform again | no crash |
 | Paused: add the wing, deform the school, Alt+T (flat terrain) at once | crash **while still paused** |
+| Paused, after deforming: stay in Unsquare mode, leave it looking away, then hover the school, then click | no crash until the mouse **hovers the school** with the game's default tool |
 
 Ruled out:
 - Path syncing and road-end sliding. They still ran with nets off (that option only switches prefab net
@@ -79,8 +80,14 @@ selection (`DefaultToolSystem` creates Select definitions for the building **and
 `OwnerDefinition` carrying the owner's prefab) are the next suspects. The tool's Temp pipeline then matches upgrades
 against the owner prefab (`ObjectToolBaseSystem.CheckParentPrefab`, `ServiceUpgradeBuilding`), and an owner variant
 is in no upgrade's `ServiceUpgradeBuilding` list. Note the car park storey stopped crashing once the storey was a
-variant too. Next tests: stay in Unsquare mode for a minute (paused); leave the mode with the mouse far from the
-school; then only hover the school; then click it.
+variant too.
+
+**Hover is the trigger (2026-10-31):** hovering runs `DefaultToolSystem.CreateDefinitionsJob`. It creates
+temporary Select copies of the building and every installed upgrade (with an `OwnerDefinition` of the owner's
+prefab), and the tool pipeline (`Generate*`/`Apply*` systems) rebuilds their sub-objects and sub-nets. The wing's
+paths share nodes with the school's. With the school's nets deformed and the wing's not, the junction no longer
+matches what the temporary copies expect. Next test without code: move only the school's top face up (ground
+paths then stay where they are), leave the mode, hover. If that doesn't crash, the net junction is the cause.
 
 **First hypothesis (not confirmed, step 0 didn't fix it):** a swap marks only the owner `Updated`. The game rebuilds the owner's sub-lanes,
 so old lane entities are deleted and new ones created. Upgrades keep `LaneConnection` references (start/end lane) to
