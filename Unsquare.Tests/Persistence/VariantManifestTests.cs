@@ -157,6 +157,72 @@ namespace Unsquare.Tests.Persistence
         }
 
         [Test]
+        public void AddExtension_ListsKeyAndAssetsOnce()
+        {
+            using var temp = new TempDirectory();
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V", "UQ_a"), "City", Now);
+            manifest.Save(temp.File("m.json"));
+
+            Assert.That(manifest.AddExtension("BuildingPrefab/V", "BuildingExtensionPrefab/Ext", new[] { "UQ_e" }),
+                Is.True);
+            Assert.That(manifest.AddExtension("BuildingPrefab/V", "BuildingExtensionPrefab/Ext", new[] { "UQ_e" }),
+                Is.False);
+            Assert.That(manifest.AddExtension("BuildingPrefab/Missing", "BuildingExtensionPrefab/Ext", new string[0]),
+                Is.False);
+
+            manifest.TryGet("BuildingPrefab/V", out var entry);
+            Assert.That(entry.Extensions, Is.EqualTo(new[] { "BuildingExtensionPrefab/Ext" }));
+            Assert.That(entry.Assets, Is.EqualTo(new[] { "UQ_a", "UQ_e" }));
+            Assert.That(entry.LastUsedUtc, Is.EqualTo(Now));
+            Assert.That(manifest.IsDirty, Is.True);
+        }
+
+        [Test]
+        public void Register_Existing_KeepsExtensions()
+        {
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V"), "City", Now);
+            manifest.AddExtension("BuildingPrefab/V", "BuildingExtensionPrefab/Ext", new string[0]);
+            manifest.Register(Entry("V"), "City", Now);
+
+            manifest.TryGet("BuildingPrefab/V", out var entry);
+            Assert.That(entry.Extensions, Is.EqualTo(new[] { "BuildingExtensionPrefab/Ext" }));
+        }
+
+        [Test]
+        public void SaveAndLoad_RoundTripsExtensions()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("m.json");
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V"), "City", Now);
+            manifest.AddExtension("BuildingPrefab/V", "BuildingExtensionPrefab/Ext", new[] { "UQ_e" });
+            manifest.Save(path);
+
+            VariantManifest.Load(path, out var loaded);
+
+            Assert.That(loaded.TryGet("BuildingPrefab/V", out var entry), Is.True);
+            Assert.That(entry.Extensions, Is.EqualTo(new[] { "BuildingExtensionPrefab/Ext" }));
+        }
+
+        [Test]
+        public void Load_MissingExtensions_DefaultsToEmpty()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("m.json");
+            System.IO.File.WriteAllText(path,
+                "{\"Version\":" + VariantManifest.FormatVersion + ",\"Entries\":[{\"BaseType\":\"BuildingPrefab\"," +
+                "\"BaseName\":\"B\",\"VariantName\":\"B__uq000000000001\",\"Offsets\":[],\"Assets\":[]," +
+                "\"Extensions\":null}]}");
+
+            VariantManifest.Load(path, out var manifest);
+
+            Assert.That(manifest.TryGet("BuildingPrefab/B__uq000000000001", out var entry), Is.True);
+            Assert.That(entry.Extensions, Is.Empty);
+        }
+
+        [Test]
         public void Remove_MarksDirty()
         {
             using var temp = new TempDirectory();

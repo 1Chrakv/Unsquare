@@ -42,6 +42,8 @@ namespace Unsquare
             updateSystem.UpdateAfter<LotLiftSystem, LotHeightSystem>(SystemUpdatePhase.Modification5);
             // Zone checks (the game's or a mod's) condemn through ModificationEndBarrier; undo it before simulation.
             updateSystem.UpdateAfter<CondemnGuardSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
+            // New extensions still carry Created here; their deformation is baked in the next prefab update.
+            updateSystem.UpdateAfter<ExtensionInstallSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<BaseTerrainSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);

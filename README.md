@@ -48,6 +48,8 @@ angled streets and slopes.
 - **Props are placed rigidly.** They move and turn with the cage but their meshes are not bent, so large props on
   strongly bent lots can look stiff or clip.
 - **Effects** (lights, smoke and similar) are not moved with the deformation yet.
+- **Upgrades** that extend the building on its lot (like an extra car park storey) are deformed with it, also when
+  added later. Upgrades that are buildings of their own (like a school's extension wing) keep their own cage.
 - **Strong twists** drop the coarsest LOD, which can't follow the bend; very distant buildings may pop.
 - **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme
   moves are clamped.

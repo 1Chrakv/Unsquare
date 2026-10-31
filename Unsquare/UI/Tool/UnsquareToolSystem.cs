@@ -77,6 +77,8 @@ namespace Unsquare.UI.Tool
             m_ToolRaycastSystem.typeMask = TypeMask.StaticObjects | TypeMask.Areas;
             m_ToolRaycastSystem.areaTypeMask = AreaTypeMask.Lots;
             m_ToolRaycastSystem.raycastFlags |= RaycastFlags.BuildingLots;
+            // Upgrade buildings (e.g. a school wing) have their own lot and cage; without this hits go to the owner.
+            m_ToolRaycastSystem.raycastFlags |= RaycastFlags.SubBuildings;
             m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground;
         }
 

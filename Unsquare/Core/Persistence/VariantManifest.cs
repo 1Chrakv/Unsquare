@@ -34,6 +34,8 @@ namespace Unsquare.Core.Persistence
             {
                 foreach (var asset in entry.Assets)
                     AddUnique(existing.Assets, asset);
+                foreach (var extension in entry.Extensions)
+                    AddUnique(existing.Extensions, extension);
                 existing.Offsets = entry.Offsets;
                 existing.FlatTerrain = entry.FlatTerrain;
                 entry = existing;
@@ -61,6 +63,20 @@ namespace Unsquare.Core.Persistence
             if (!_entries.TryGetValue(key, out var entry))
                 return false;
             bool changed = false;
+            foreach (var asset in assets)
+                changed |= AddUnique(entry.Assets, asset);
+            IsDirty |= changed;
+            return changed;
+        }
+
+        /// <summary>Lists an upgrade extension and its assets under an owner entry, keeping usage data.</summary>
+        public bool AddExtension(string key, string extensionKey, IEnumerable<string> assets)
+        {
+            if (string.IsNullOrEmpty(extensionKey))
+                throw new ArgumentException("Extension key required.", nameof(extensionKey));
+            if (!_entries.TryGetValue(key, out var entry))
+                return false;
+            bool changed = AddUnique(entry.Extensions, extensionKey);
             foreach (var asset in assets)
                 changed |= AddUnique(entry.Assets, asset);
             IsDirty |= changed;
@@ -106,6 +122,7 @@ namespace Unsquare.Core.Persistence
                     continue;
                 entry.Cities ??= new List<string>();
                 entry.Assets ??= new List<string>();
+                entry.Extensions ??= new List<string>();
                 manifest._entries[entry.Key] = entry;
             }
             return status;

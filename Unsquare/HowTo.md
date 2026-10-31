@@ -17,9 +17,13 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
           Debouncer (PipelineOptions.RebakeDelaySeconds) ─▶ VariantPrefabFactory:
               clone prefab, RenderVariantBuilder deforms meshes + LODs, GeometryAssetStore saves them,
               attachment deformers place props/areas/lanes/nets, AddPrefab, manifest entry
-          ─▶ wait until the prefab entity loses `Created` ─▶ SimDataCopier ─▶ PrefabSwapper
+          ─▶ wait until the prefab entity loses `Created` ─▶ PrepareVariantPrefab ─▶ PrefabSwapper
 Next session: OnGamePreload ─▶ VariantManifest ─▶ re-create every variant (assets + BoundsCache reused)
-              OnGameLoadingComplete ─▶ SimDataCopier ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
+              OnGameLoadingComplete ─▶ PrepareVariantPrefab ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
+
+PrepareVariantPrefab = SimDataCopier + upgrade setup (UpgradeRegistration, UpgradeArchetype, UpgradeOwnership).
+On-lot upgrade extensions get their own variants with the owner's cage and swap with the owner; the UI edits a
+cage raised over them (ExtendedCage). Details: Upgrades.md.
 ```
 
 `VariantSystem` runs in `PrefabUpdate`, before `PrefabInitializeSystem` (`Mod.OnLoad`), so prefabs it adds are
@@ -38,6 +42,9 @@ Saves reference prefabs by name, so every name must be deterministic and must ne
   building already on a variant maps back to its base. Always deform from the base, never from a variant.
 * **Deform key** (`DeformKey`): cage box + offsets + `FormatVersion`; `ForSubmesh` adds the submesh placement,
   because one render prefab can be placed differently in different buildings.
+* **Upgrade extension variants** (`VariantNaming.ExtensionVariantName`): `<ExtensionName>__uq<hash>`, hash of
+  `Unsquare:extension:v1:` + the owner's variant name. They are baked with the owner's cage, moved into the
+  extension's frame by its prefab position, and listed in the owner's manifest entry (`Extensions`).
 * **Geometry assets** (`AssetNaming`): name `UQ_` + 16 hex and GUID, both from `StableHash` of
   `Unsquare:` + render prefab name + `:` + deform key. The prefix makes own files recognisable for the sweep.
 
