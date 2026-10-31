@@ -1,7 +1,8 @@
 # Building upgrades: findings and open work
 
 Status 2026-10-31, branch `fix/upgrade-deformation` (on `develop` 8cbe44a). The upgrade crash is fixed and confirmed
-in game (section 3). Open work is in section 5.
+in game (section 3), and so is the combined cage over on-lot upgrades (5.1). **Next step: 5.3**, picking upgrade
+buildings inside Unsquare mode. Other open work is in section 5.
 
 ## 1. How CS2 models upgrades (from the decompiled `Game.dll`)
 
@@ -120,7 +121,7 @@ and lanes don't matter.
 
 ## 5. Open work
 
-### 5.1 One cage for the building and its on-lot upgrades (done 2026-10-31, in-game test pending)
+### 5.1 One cage for the building and its on-lot upgrades (done, confirmed in game 2026-10-31)
 - Only extensions on the owner's lot count (the same set `PlanExtensionTargets` deforms with the owner). Extensions
   with their own lot keep their own cage (5.2).
 - A trilinear cage deformation is multilinear in x, y, z. Continued outside its box (how extensions are baked), it
@@ -164,9 +165,33 @@ deformation (`IsDeformable` in `VariantSystem` already excludes them). What they
 - **Upgrade menu:** a cloned extension registers itself as an upgrade option; `UpgradeRegistration` already removes
   that.
 
-### 5.3 Upgrade buildings deformed on their own
-They already have their own cage. Check that deforming the wing alone doesn't crash (also when hovering the wing
-and the school) and that its paths stay connected to the school's.
+### 5.3 Upgrade buildings deformed on their own: picking in Unsquare mode (next step)
+**Works already (tested 2026-10-31 with the school's classroom wing):** an upgrade building has its own cage and
+deforms like any building. Selecting the wing with the game's default tool and then switching to Unsquare mode keeps
+it as the target (`UnsquareToolSystem.OnStartRunning` → `TryResolveBuilding(m_ToolSystem.selected)`), and it
+deforms fine.
+
+**Doesn't work:** clicking the wing **inside** Unsquare mode targets the school instead.
+
+Likely cause (from the game code, to verify):
+- The game's raycast walks a hit up the `Owner` chain (`Game.Objects.RaycastJobs.ValidateResult`, similar in
+  `Game.Areas.RaycastJobs`).
+- It stops at an upgrade building only if the raycast has `RaycastFlags.SubBuildings`: `ServiceUpgrade` +
+  (`Building` or a net hit).
+- The default tool sets that flag outside the editor (`DefaultToolSystem.InitializeRaycast`); the Unsquare tool
+  doesn't (`UnsquareToolSystem.InitializeRaycast` sets only `RaycastFlags.BuildingLots`). So the hit continues to
+  the wing's owner, the school. `TryResolveBuilding` itself would stop at the wing, since it has `Building`.
+
+Fix to try:
+- Add `RaycastFlags.SubBuildings` in `UnsquareToolSystem.InitializeRaycast`. Check that hovering (dim cage) and
+  clicking now pick the wing.
+- Check that the school is still picked when clicking the school, its lot or an on-lot extension like the car park
+  storey. Extensions have no `Building`, so the walk should go on to the owner.
+
+Then check:
+- Deforming the wing alone doesn't crash (also when hovering the wing and the school).
+- Its paths stay connected to the school's.
+- Reset, undo and reload work.
 
 ### 5.4 New upgrades on deformed buildings
 The upgrade tool only offers upgrades whose `ServiceUpgradeBuilding` lists the owner's prefab. Options to research:
