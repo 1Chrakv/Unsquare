@@ -43,6 +43,9 @@ An upgrade is its own entity: `Owner` = main building, `Game.Buildings.ServiceUp
   (`InstalledExtensions.IsAtPrefabPlacement`).
 - `UpgradeRegistration.RemoveFromBuildings` (after prefab init) removes a cloned upgrade from its buildings' upgrade
   menus. This also covers stand-alone upgrade buildings deformed with their own cage.
+- Every swap marks the swapped building's whole upgrade group `Updated` (`PrefabSwapper.RefreshUpgradeGroup`: the
+  owner, or the owner of a swapped upgrade, plus all its `InstalledUpgrade` entities), so the game reconnects their
+  lanes. Log: `Refreshed N entities of the upgrade group of …`. This is step 0 from section 3.
 - Diagnostics: `Upgrades of building …` lists each installed upgrade (prefab, kind, offset, net/area/lane counts) once
   per building and session.
 - In game: the car park storey deforms with the building and **no longer crashes**.
@@ -68,7 +71,8 @@ the owner's old lanes. `LaneConnectionSystem` re-checks only lanes of `Updated` 
 `Updated` + `SubLane`), so the upgrade keeps pointing at deleted entities. Pathfinding then reads garbage, which
 crashes natively. This fits all four tests.
 
-**Fix to try first (step 0):**
+**Fix to try first (step 0)** — implemented in `PrefabSwapper.RefreshUpgradeGroup` (2026-10-31), not yet confirmed
+in game:
 - `PrefabSwapper.Swap`: after the owner changes prefab, add `Updated` to every `InstalledUpgrade` entity (extensions
   and upgrade buildings, swapped or not, skipping `Deleted`).
 - If the swapped entity is itself an upgrade (`Owner` + `Game.Buildings.ServiceUpgrade`, e.g. the wing deformed with

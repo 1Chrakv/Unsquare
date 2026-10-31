@@ -189,6 +189,9 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 106 | Multi-storey car park with the extra storey upgrade: deform it (move a top corner) | The storey bends with the car park and sits on its roof; ramps between them stay connected; log `Upgrades of building …` lists the storey as extension, then `Lot sync … 1 extensions` |
 | 107 | After 106, let the game run a few minutes, then Reset and Ctrl+Z | No crash; Reset puts the storey back to its plain prefab, undo deforms it again |
 | 108 | After 106, save and reload | Storey still deformed; log `Restored … variants (+N upgrade extensions)`; the base car park's upgrade menu shows no extra entries |
+| 109 | Elementary school with the classroom extension wing (an upgrade building): deform the school, let the game run a few minutes, then Reset | No crash; the wing stays undeformed and its paths stay connected; log `Refreshed 1 entities of the upgrade group of <school> …` after each swap |
+| 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash; the school is refreshed too (log `Refreshed … upgrade group of <school> after swapping <wing>`) |
+| 111 | Repeat 106 and 107 (car park storey) | Still no crash; the refresh line appears with the storey counted |
 
 ## Reporting problems
 
