@@ -8,6 +8,7 @@ using Game.Buildings;
 using Game.City;
 using Game.Common;
 using Game.Prefabs;
+using Game.SceneFlow;
 using Game.Tools;
 using Unity.Collections;
 using Unity.Entities;
@@ -51,6 +52,7 @@ namespace Unsquare.Integration.Systems
         private GeometryAssetStore _store;
         private RenderVariantBuilder _renderBuilder;
         private VariantPrefabFactory _factory;
+        private VariantLocalization _localization;
         private VariantManifest _manifest = new();
         private PipelineOptions _options = PipelineOptions.Default;
         private EntityQuery _buildingQuery;
@@ -89,10 +91,17 @@ namespace Unsquare.Integration.Systems
                 {
                     new SubObjectDeformer(), new SubAreaDeformer(), new SubLaneDeformer(), new SubNetDeformer(),
                 });
+            _localization = new VariantLocalization(GameManager.instance?.localizationManager);
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
             Enabled = false; // woken by Request
+        }
+
+        protected override void OnDestroy()
+        {
+            _localization?.Dispose();
+            base.OnDestroy();
         }
 
         protected override void OnUpdate()
@@ -374,7 +383,10 @@ namespace Unsquare.Integration.Systems
             {
                 variant = existing as ObjectGeometryPrefab;
                 if (variant != null)
+                {
                     _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, spec));
+                    _localization.Register(variantName, basePrefab.name);
+                }
                 return variant != null;
             }
             if (!TryGetBoxes(basePrefab, out var box, out var buildingBox))
@@ -395,6 +407,7 @@ namespace Unsquare.Integration.Systems
                     _options.Attachments, _options.CoarseLodTwistMeters, assets, out variant))
                 return false;
             _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, spec));
+            _localization.Register(variantName, basePrefab.name);
             // Restored variants are never swapped to, so the copy cannot wait for TrySwap.
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
                 _simDataPending[variantEntity] = basePrefab;
@@ -473,6 +486,8 @@ namespace Unsquare.Integration.Systems
             if (_resolver.TryFind(typeName, variantName, out var existing))
             {
                 variant = existing as ObjectGeometryPrefab;
+                if (variant != null)
+                    _localization.Register(variantName, extensionBase.name);
                 return variant != null;
             }
             if (!TryGetBoxes(ownerBase, out var box, out var buildingBox))
@@ -482,6 +497,7 @@ namespace Unsquare.Integration.Systems
             if (!_factory.TryCreate(extensionBase, variantName, box, buildingBox, extensionBase.m_Position,
                     spec.Offsets, _options.Attachments, _options.CoarseLodTwistMeters, assets, out variant))
                 return false;
+            _localization.Register(variantName, extensionBase.name);
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
                 _simDataPending[variantEntity] = extensionBase;
             _manifest.AddExtension(ManifestEntry.MakeKey(ownerBase.GetType().Name, ownerVariantName),
