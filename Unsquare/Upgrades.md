@@ -61,18 +61,35 @@ deforming a building with an upgrade.
 | Car park storey, with this branch (storey swapped and updated too) | no crash |
 | School with classroom wing (upgrade building, untouched by the branch) | crash |
 | Same, Settings → attachments: nets and lanes off | still crash; also no "slid to the end of road" warning |
+| School with wing, with the step 0 fix (wing refreshed, log `Refreshed 1 entities …`) | still crash |
+| ElementarySchool02 without the wing: deform, reset, deform again | no crash |
+| Paused: add the wing, deform the school, Alt+T (flat terrain) at once | crash **while still paused** |
 
-Ruled out: path syncing and road-end sliding. They still ran with nets off (that option only switches prefab net
-deformation, see 5.6), but the crash also happened without any road-end slide.
+Ruled out:
+- Path syncing and road-end sliding. They still ran with nets off (that option only switches prefab net
+  deformation, see 5.6), but the crash also happened without any road-end slide.
+- The simulation (pathfinding, services): it crashes while paused.
+- Our terrain lift: it also crashes on the flat-terrain variant.
+- Stale lane references alone: the step 0 refresh didn't help (it stays in, it's harmless).
 
-**Likely cause (not yet confirmed):** a swap marks only the owner `Updated`. The game rebuilds the owner's sub-lanes,
+**Timing clue (all four crash logs):** the crash comes 2–6 s after `[Edit] Unsquare mode off`, never while Unsquare
+mode is on. Leaving the mode hands control back to the game's default tool. Its hover raycast
+(`Game.Objects.RaycastJobs.ValidateResult` follows `InstalledUpgrade` with `RaycastFlags.UpgradeIsMain`) and its
+selection (`DefaultToolSystem` creates Select definitions for the building **and every installed upgrade**, with an
+`OwnerDefinition` carrying the owner's prefab) are the next suspects. The tool's Temp pipeline then matches upgrades
+against the owner prefab (`ObjectToolBaseSystem.CheckParentPrefab`, `ServiceUpgradeBuilding`), and an owner variant
+is in no upgrade's `ServiceUpgradeBuilding` list. Note the car park storey stopped crashing once the storey was a
+variant too. Next tests: stay in Unsquare mode for a minute (paused); leave the mode with the mouse far from the
+school; then only hover the school; then click it.
+
+**First hypothesis (not confirmed, step 0 didn't fix it):** a swap marks only the owner `Updated`. The game rebuilds the owner's sub-lanes,
 so old lane entities are deleted and new ones created. Upgrades keep `LaneConnection` references (start/end lane) to
 the owner's old lanes. `LaneConnectionSystem` re-checks only lanes of `Updated` entities (`CheckUpdatedLanesJob`, query
 `Updated` + `SubLane`), so the upgrade keeps pointing at deleted entities. Pathfinding then reads garbage, which
 crashes natively. This fits all four tests.
 
-**Fix to try first (step 0)** — implemented in `PrefabSwapper.RefreshUpgradeGroup` (2026-10-31), not yet confirmed
-in game:
+**Fix tried first (step 0)** — implemented in `PrefabSwapper.RefreshUpgradeGroup` (2026-10-31); the school still
+crashes, see the table above:
 - `PrefabSwapper.Swap`: after the owner changes prefab, add `Updated` to every `InstalledUpgrade` entity (extensions
   and upgrade buildings, swapped or not, skipping `Deleted`).
 - If the swapped entity is itself an upgrade (`Owner` + `Game.Buildings.ServiceUpgrade`, e.g. the wing deformed with
