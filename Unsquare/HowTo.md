@@ -17,9 +17,13 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
           Debouncer (PipelineOptions.RebakeDelaySeconds) ─▶ VariantPrefabFactory:
               clone prefab, RenderVariantBuilder deforms meshes + LODs, GeometryAssetStore saves them,
               attachment deformers place props/areas/lanes/nets, AddPrefab, manifest entry
-          ─▶ wait until the prefab entity loses `Created` ─▶ SimDataCopier ─▶ PrefabSwapper
+          ─▶ wait until the prefab entity loses `Created` ─▶ PrepareVariantPrefab ─▶ PrefabSwapper
 Next session: OnGamePreload ─▶ VariantManifest ─▶ re-create every variant (assets + BoundsCache reused)
-              OnGameLoadingComplete ─▶ SimDataCopier ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
+              OnGameLoadingComplete ─▶ PrepareVariantPrefab ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
+
+PrepareVariantPrefab = SimDataCopier + upgrade setup (UpgradeRegistration, UpgradeArchetype, UpgradeOwnership).
+On-lot upgrade extensions get their own variants with the owner's cage and swap with the owner; the UI edits a
+cage raised over them (ExtendedCage). Details: Upgrades.md.
 ```
 
 `VariantSystem` runs in `PrefabUpdate`, before `PrefabInitializeSystem` (`Mod.OnLoad`), so prefabs it adds are

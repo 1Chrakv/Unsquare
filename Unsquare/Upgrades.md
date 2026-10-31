@@ -34,23 +34,30 @@ An upgrade is its own entity: `Owner` = main building, `Game.Buildings.ServiceUp
 
 ## 2. What the branch does now
 
-- Extensions (not upgrade buildings) are baked with the owner's cage in their own frame and swapped together with
-  the owner (`VariantSystem.PlanExtensionTargets`, `TranslatedDeformation`, `VariantPrefabFactory.TryCreate(...,
-  frameOrigin, ...)`).
-- Their nets are synced together with the owner's, each with its own remap (`NetOwner`, `ExtensionSwap`,
-  `NetInstanceSync.Sync(owners)`), so shared nodes stay connected. Their areas are synced with their own transform.
-- Name: `VariantNaming.ExtensionVariantName` = `<Ext>__uq<hash>`, seed `Unsquare:extension:v1:` + owner variant name.
-  The owner's manifest entry lists `Extensions` ("Type/BaseName") and holds their assets (`VariantManifest.AddExtension`,
-  no FormatVersion bump; 1.0.0 ignores the field). Restored after the owner (`RestoreExtensions`).
-- Skipped: `m_ExternalLot`, extensions without meshes or attachments, extensions moved off their prefab place
-  (`InstalledExtensions.IsAtPrefabPlacement`).
-- `UpgradeRegistration.RemoveFromBuildings` (after prefab init) removes a cloned upgrade from its buildings' upgrade
-  menus. This also covers stand-alone upgrade buildings deformed with their own cage.
-- `UpgradeArchetype.AddUpgradeBuffers` gives variant prefabs the upgrade buffers of their base's instance archetype.
-  This is the crash fix, see section 3.
-- Diagnostics: `Upgrades of building …` lists each installed upgrade (prefab, kind, offset, net/area/lane counts) once
-  per building and session.
-- In game: the car park storey deforms with the building; no crash when hovering deformed buildings with upgrades.
+- **Extensions on the owner's lot** (storey, hospital wards, helipad) are baked with the owner's cage in their own
+  frame and swapped together with it (`VariantSystem.PlanExtensionTargets`, `TranslatedDeformation`,
+  `VariantPrefabFactory.TryCreate(..., frameOrigin, ...)`).
+  - Their nets sync together with the owner's, each with its own remap (`NetOwner`, `ExtensionSwap`,
+    `NetInstanceSync.Sync(owners)`); their areas sync with their own transform.
+  - Name `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
+    manifest entry lists them in `Extensions` and holds their assets (no FormatVersion bump; 1.0.0 ignores the
+    field). They are restored after the owner.
+  - Skipped: `m_ExternalLot` (5.2), extensions without meshes or attachments, extensions moved off their prefab place.
+- **One cage over the building and its on-lot extensions** (5.1): `ExtendedCage`, `BuildingDescription.EditBox`;
+  `DeformService` converts to the lot cage.
+- **Upgrade buildings** (school wings) have their own cage and can be picked in Unsquare mode
+  (`RaycastFlags.SubBuildings`, 5.3).
+- **Crash fix:** variant prefabs get the base's upgrade buffers in their instance archetype (`UpgradeArchetype`,
+  section 3).
+- **Info panel and menus** (5.7):
+  - upgrade variants keep a group-less `UIObject` and drop their unlock requirements;
+  - every variant aliases its base's locale keys (`VariantLocalization`);
+  - `UpgradeRegistration` keeps cloned upgrades out of upgrade menus.
+- **Upgrades on deformed buildings** (5.4): variants share the base's upgrade list and are accepted as owner
+  (`UpgradeOwnership`). `ExtensionInstallSystem` bakes a new on-lot extension at once.
+- All prefab setup after init runs in `VariantSystem.PrepareVariantPrefab`.
+- **Diagnostics:** `Upgrades of building …` lists each installed upgrade (prefab, kind, offset, net/area/lane counts)
+  once per building and session.
 
 ## 3. The crash (fixed)
 
@@ -230,8 +237,6 @@ New on-lot extensions on a deformed building are baked at once:
 - New upgrade buildings with their own lot stay undeformed (own cage).
 
 ### 5.5 Smaller items
-- Extensions above the lot box (the storey) are bent by the cage continued upwards. Fine for a storey; very large
-  top moves may look odd.
 - The `m_Position` placement check skips extensions moved by Move It. Consider using the instance offset (would need
   it in the name).
 
@@ -298,8 +303,13 @@ New on-lot extensions on a deformed building are baked at once:
   `m_ForbidMultiple` upgrades are affected.
 
 ## 6. Test notes
-- Logs: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Unsquare.Mod.log` and `Player.log`.
-  No crash dump is written.
-- `Testing.md` rows 106–108 cover the car park storey. Add rows for the school wing, the combined cage and own-lot extensions.
+- Logs: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Unsquare.Mod.log` and
+  `Player.log`. No crash dump is written.
+- `Testing.md` rows:
+  - 106–108: car park storey;
+  - 109–112: school wing and the hover crash;
+  - 113–116: combined cage;
+  - 117–119: picking upgrade buildings;
+  - 120–125: info panel, menus and new upgrades.
 - Build: compile-check from PowerShell (`dotnet msbuild Unsquare/Unsquare.csproj -t:Restore,Compile`; Git Bash broke
   the mscorlib path). Deploy (`dotnet build Unsquare.sln`) only when the user asks.

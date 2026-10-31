@@ -160,16 +160,17 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - Name: `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
     manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
   - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
-  - A cloned upgrade registers itself as an upgrade option of its buildings (`ServiceUpgrade.LateInitialize`);
-    `UpgradeRegistration` removes that after init. Stand-alone upgrade buildings are deformed like any building;
-    the Unsquare tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
-  - Variant prefabs get the upgrade buffers of their base's instance archetype (`UpgradeArchetype`): no upgrade
-    registers with a variant, so hover copies lacked `InstalledUpgrade` and the game's upgrade job crashed natively.
-  - Info panel and menus: upgrade variants keep a `UIObject` without menu group and drop `Unlockable`, so the
-    panel's upgrade list shows them. Every variant aliases its base's locale keys (`VariantLocalization`).
-  - Variants share the base's upgrade list and are appended to the upgrades' `ServiceUpgradeBuilding`
-    (`UpgradeOwnership`), so deformed buildings keep their Upgrades section and can get new upgrades.
-    `ExtensionInstallSystem` bakes a new on-lot extension on a deformed building with its cage at once.
+  - Stand-alone upgrade buildings (school wings) are deformed like any building with their own cage; the Unsquare
+    tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
+  - Prefab setup after init (`VariantSystem.PrepareVariantPrefab`):
+    - `UpgradeRegistration` undoes a cloned upgrade registering itself as an option of its buildings.
+    - `UpgradeArchetype` gives variants the base's upgrade buffers in their instance archetype; without them hover
+      copies lack `InstalledUpgrade` and the game's upgrade job crashes natively.
+    - `UpgradeOwnership` shares the base's upgrade list and lists the variant in the upgrades'
+      `ServiceUpgradeBuilding`, so deformed buildings keep their Upgrades section and accept new upgrades.
+  - Upgrade variants keep a `UIObject` without menu group (the info panel lists only upgrades with `UIObjectData`) and
+    drop `Unlockable`. Every variant aliases its base's locale keys (`VariantLocalization`).
+  - `ExtensionInstallSystem` bakes a new on-lot extension on a deformed building with its cage at once.
   - Open work, the upgrade crash (cause, fix, disproved theories) and the combined cage design:
     `Unsquare/Upgrades.md`.
 - **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
