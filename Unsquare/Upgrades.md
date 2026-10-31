@@ -65,6 +65,29 @@ deforming a building with an upgrade.
 | ElementarySchool02 without the wing: deform, reset, deform again | no crash |
 | Paused: add the wing, deform the school, Alt+T (flat terrain) at once | crash **while still paused** |
 | Paused, after deforming: stay in Unsquare mode, leave it looking away, then hover the school, then click | no crash until the mouse **hovers the school** with the game's default tool |
+| Only the top face moved up (ground paths unchanged), then hover | crash: the path junction is not the cause |
+
+**Cause (found 2026-10-31, from the game code; fix not yet tested):**
+1. A building prefab's instance archetype (`ObjectData.m_Archetype`) gets `InstalledUpgrade`, `Game.Net.SubNet` and
+   `SubRoute` only because upgrades register with it. `ServiceUpgrade.LateInitialize` → `BuildingPrefab.AddUpgrade`
+   adds a `BuildingUpgradeElement` buffer → `BuildingPrefab.RefreshArchetype` adds those types when that buffer
+   exists.
+2. A variant clone is in no upgrade's `m_Buildings`, so it has no `BuildingUpgradeElement` and its archetype lacks
+   `InstalledUpgrade`. Existing instances keep their own archetype, so nothing shows at first.
+3. Hovering makes the default tool create temporary copies of the building and its upgrades. `GenerateObjectsSystem`
+   creates the building copy from the **variant's** archetype, so the copy has no `InstalledUpgrade` buffer.
+4. `ServiceUpgradeReferencesSystem.UpdateUpgradeReferencesJob` (Burst) then does
+   `m_InstalledUpgrades[owner.m_Owner]` for the temporary upgrade, without a check, on that owner copy. That is an
+   invalid buffer access, and the game crashes natively.
+
+This fits every test: no upgrade → no temporary upgrade → no crash; crash only on hover, paused or not; terrain, nets
+and lanes don't matter.
+
+**Fix:** after a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
+buffer, rebuild the variant's `ObjectData.m_Archetype` with `InstalledUpgrade`, `Game.Net.SubNet` and `SubRoute`
+added (the same types `RefreshArchetype` adds). Copying the base's `BuildingUpgradeElement` buffer would also do
+it, but would offer upgrades in the variant's upgrade menu. That belongs to 5.4 and needs `ServiceUpgradeBuilding`
+too.
 
 Ruled out:
 - Path syncing and road-end sliding. They still ran with nets off (that option only switches prefab net
