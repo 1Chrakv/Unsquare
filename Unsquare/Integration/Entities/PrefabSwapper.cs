@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Colossal.Entities;
 using Game.Common;
 using Game.Prefabs;
 using Unity.Entities;
 using Unsquare.Core.Deformation;
+using BuildingServiceUpgrade = Game.Buildings.ServiceUpgrade;
+using InstalledUpgrade = Game.Buildings.InstalledUpgrade;
 
 namespace Unsquare.Integration.Entities
 {
@@ -45,8 +48,39 @@ namespace Unsquare.Integration.Entities
                 MarkUpdated(entityManager, building);
             foreach (var (swap, _) in changed)
                 MarkUpdated(entityManager, swap.Extension);
+            RefreshUpgradeGroup(entityManager, building);
             return true;
         }
+
+        // The swap rebuilds lanes; the rest of the group keeps LaneConnection references to the deleted ones
+        // (a native crash later) unless the game re-checks its lanes too, which it only does for Updated entities.
+        private static void RefreshUpgradeGroup(EntityManager entityManager, Entity swapped)
+        {
+            var root = swapped;
+            if (entityManager.HasComponent<BuildingServiceUpgrade>(swapped) &&
+                entityManager.TryGetComponent(swapped, out Owner owner) && IsAlive(entityManager, owner.m_Owner))
+                root = owner.m_Owner;
+            if (!entityManager.TryGetBuffer(root, true, out DynamicBuffer<InstalledUpgrade> installed) ||
+                (installed.Length == 0 && root == swapped))
+                return;
+
+            var group = new List<Entity>(installed.Length + 1) { root };
+            foreach (var upgrade in installed)
+                group.Add(upgrade.m_Upgrade);
+            int refreshed = 0;
+            foreach (var entity in group)
+            {
+                if (!IsAlive(entityManager, entity) || entityManager.HasComponent<Updated>(entity))
+                    continue;
+                entityManager.AddComponent<Updated>(entity);
+                refreshed++;
+            }
+            Mod.Log.Info($"Refreshed {refreshed} entities of the upgrade group of {root} after swapping {swapped} " +
+                         $"({installed.Length} upgrades).");
+        }
+
+        private static bool IsAlive(EntityManager entityManager, Entity entity) =>
+            entityManager.Exists(entity) && !entityManager.HasComponent<Deleted>(entity);
 
         // Updated: simulation systems re-evaluate; BatchesUpdated: renderer rebuilds mesh batches.
         private static void MarkUpdated(EntityManager entityManager, Entity entity)
