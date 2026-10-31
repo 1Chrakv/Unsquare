@@ -192,6 +192,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 109 | Elementary school with the classroom extension wing (an upgrade building): deform the school, let the game run a few minutes, then Reset | No crash; the wing stays undeformed and its paths stay connected; log `Refreshed 1 entities of the upgrade group of <school> …` after each swap |
 | 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash; the school is refreshed too (log `Refreshed … upgrade group of <school> after swapping <wing>`) |
 | 111 | Repeat 106 and 107 (car park storey) | Still no crash; the refresh line appears with the storey counted |
+| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N given upgrade buffers)` with N ≥ 1 |
 
 ## Reporting problems
 

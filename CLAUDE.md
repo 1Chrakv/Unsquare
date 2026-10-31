@@ -157,6 +157,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
   - A cloned upgrade registers itself as an upgrade option of its buildings (`ServiceUpgrade.LateInitialize`);
     `UpgradeRegistration` removes that after init. Stand-alone upgrade buildings are deformed like any building.
+  - Variant prefabs get the upgrade buffers of their base's instance archetype (`UpgradeArchetype`): no upgrade
+    registers with a variant, so hover copies lacked `InstalledUpgrade` and the game's upgrade job crashed natively.
   - Every swap marks the building's upgrade group `Updated` (`PrefabSwapper.RefreshUpgradeGroup`): upgrades keep
     `LaneConnection` references to the owner's lanes (and back), which the rebuild replaces; stale ones crash later.
   - Open: new upgrades can't be placed on a deformed building yet (the variant isn't in the upgrade's buildings).

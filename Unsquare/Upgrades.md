@@ -67,7 +67,7 @@ deforming a building with an upgrade.
 | Paused, after deforming: stay in Unsquare mode, leave it looking away, then hover the school, then click | no crash until the mouse **hovers the school** with the game's default tool |
 | Only the top face moved up (ground paths unchanged), then hover | crash: the path junction is not the cause |
 
-**Cause (found 2026-10-31, from the game code; fix not yet tested):**
+**Cause (found 2026-10-31, from the game code; confirmed by the car park also crashing on hover):**
 1. A building prefab's instance archetype (`ObjectData.m_Archetype`) gets `InstalledUpgrade`, `Game.Net.SubNet` and
    `SubRoute` only because upgrades register with it. `ServiceUpgrade.LateInitialize` → `BuildingPrefab.AddUpgrade`
    adds a `BuildingUpgradeElement` buffer → `BuildingPrefab.RefreshArchetype` adds those types when that buffer
@@ -83,11 +83,15 @@ deforming a building with an upgrade.
 This fits every test: no upgrade → no temporary upgrade → no crash; crash only on hover, paused or not; terrain, nets
 and lanes don't matter.
 
-**Fix:** after a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
+**Fix (implemented in `UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; in-game test
+pending):** after a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
 buffer, rebuild the variant's `ObjectData.m_Archetype` with `InstalledUpgrade`, `Game.Net.SubNet` and `SubRoute`
 added (the same types `RefreshArchetype` adds). Copying the base's `BuildingUpgradeElement` buffer would also do
 it, but would offer upgrades in the variant's upgrade menu. That belongs to 5.4 and needs `ServiceUpgradeBuilding`
 too.
+`EntityManager.CreateArchetype` is called by reflection: a direct call also binds its `ReadOnlySpan` overload, which
+the game's mscorlib doesn't provide (CS0518). The log line `Copied sim data to N variants (M given upgrade buffers)`
+shows how many variants got them.
 
 Ruled out:
 - Path syncing and road-end sliding. They still ran with nets off (that option only switches prefab net
