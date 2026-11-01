@@ -18,6 +18,7 @@ namespace Unsquare.UI.Input
         private readonly CageEditSession _session;
         private readonly CageOverlaySystem _overlay;
         private string _lastSummary;
+        private bool _savingEditMode;
 
         public SettingsApplier(UnsquareSettings settings, IBuildingDeformService service, CageEditSession session,
             CageOverlaySystem overlay)
@@ -59,15 +60,27 @@ namespace Unsquare.UI.Input
             _session.EditModeChanged -= OnEditModeChanged;
         }
 
-        private void OnSettingsApplied(Setting setting) => Apply();
+        private void OnSettingsApplied(Setting setting)
+        {
+            if (!_savingEditMode)
+                Apply();
+        }
 
-        // Remembers the mode chosen in the tool window; saving applies the (unchanged) options once more.
+        // Remembers the mode chosen in the tool window; only the file is written, the options stay as they are.
         private void OnEditModeChanged(CageTarget mode)
         {
             if (_settings.EditMode == mode)
                 return;
             _settings.EditMode = mode;
-            _settings.ApplyAndSave();
+            _savingEditMode = true;
+            try
+            {
+                _settings.ApplyAndSave();
+            }
+            finally
+            {
+                _savingEditMode = false;
+            }
         }
     }
 }

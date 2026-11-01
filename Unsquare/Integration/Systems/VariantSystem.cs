@@ -510,15 +510,9 @@ namespace Unsquare.Integration.Systems
                 extension, extensionBase.m_Position, out offset);
         }
 
-        // Storeys and wings stand on the building and follow its cage; car parks beside it follow the lot. Saved names
-        // depend on this rule (it decides the baked shape), so never change it.
-        private static bool IsOverBuilding(BuildingExtensionPrefab extension, CageBox ownerBuildingBox)
-        {
-            if (!CageBoxMeasurer.TryMeasureMeshes(extension, out var meshBox))
-                return false;
-            float2 centre = meshBox.Center.xz + extension.m_Position.xz;
-            return math.all(centre >= ownerBuildingBox.Min.xz) && math.all(centre <= ownerBuildingBox.Max.xz);
-        }
+        private static bool IsOverBuilding(BuildingExtensionPrefab extension, CageBox ownerBuildingBox) =>
+            CageBoxMeasurer.TryMeasureMeshes(extension, out var meshBox) &&
+            ExtensionCage.FollowsBuilding(meshBox, extension.m_Position, ownerBuildingBox);
 
         // External lots lie outside the cage; option-only upgrades have nothing to bend.
         private static bool IsDeformable(BuildingExtensionPrefab extension) =>

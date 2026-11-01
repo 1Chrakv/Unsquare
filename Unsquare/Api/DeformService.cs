@@ -54,6 +54,7 @@ namespace Unsquare.Api
             if (!_pipeline.TryDescribe(building, out var description))
                 return false;
 
+            target = EffectiveTarget(description, target);
             var applied = description.Applied;
             var requested = _pipeline.TryGetRequested(building, out var pending) ? pending : applied;
             var status = MapStatus(_pipeline.GetStatus(building), applied);
@@ -67,6 +68,20 @@ namespace Unsquare.Api
                 View(building, description, target, applied), View(building, description, target, requested),
                 applied, requested, status, description.LotBox, ghostBox, ghost, description.HasOwnBuildingBox,
                 BuildingSeat.IsOffGround(description.LotBox, description.BuildingBox, requested));
+            return true;
+        }
+
+        // Flat or meshless lots (parks) have no building of their own: their only cage is the lot's.
+        private static CageTarget EffectiveTarget(in BuildingDescription description, CageTarget target) =>
+            description.HasOwnBuildingBox ? target : CageTarget.Both;
+
+        // The latest request if one is in flight, otherwise the applied deformation; both cages on the lot box.
+        private bool TryDescribeTarget(Entity building, out BuildingDescription description, out DeformSpec spec)
+        {
+            spec = null;
+            if (!_pipeline.TryDescribe(building, out description))
+                return false;
+            spec = _pipeline.TryGetRequested(building, out var pending) ? pending : description.Applied;
             return true;
         }
 
@@ -106,7 +121,7 @@ namespace Unsquare.Api
 
             var lotBox = description.LotBox;
             var buildingBox = description.BuildingEditBox;
-            switch (start.Target)
+            switch (EffectiveTarget(description, start.Target))
             {
                 case CageTarget.Building:
                     return Request(building, description,
@@ -132,11 +147,11 @@ namespace Unsquare.Api
 
         public DeformRequestResult SetTerrainLift(Entity building, bool lift)
         {
-            if (!TryGetCage(building, CageTarget.Lot, out var state))
+            if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
-            if (!state.LotDeformed)
+            if (spec.LotOffsets.IsIdentity)
                 return DeformRequestResult.Rejected;
-            return Apply(building, state.TargetSpec.WithFlatTerrain(!lift));
+            return Request(building, description, spec.WithFlatTerrain(!lift));
         }
 
         public bool TryFitToGround(Entity building, CageTarget target, GroundFitMode mode,
@@ -253,7 +268,6 @@ namespace Unsquare.Api
                 throw new ArgumentNullException(nameof(spec));
             if (!_pipeline.TryDescribe(building, out var description))
                 return DeformRequestResult.NotDeformable;
-            _editOffsets.Remove(building);
             return Request(building, description, spec);
         }
 
@@ -286,21 +300,20 @@ namespace Unsquare.Api
 
         public DeformRequestResult Reset(Entity building, CageTarget target)
         {
-            if (!TryGetCage(building, target, out var state) || !_pipeline.TryDescribe(building, out var description))
+            if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
             _editOffsets.Remove(building);
-            return Request(building, description,
-                SplitCageEdit.Reset(description.LotBox, description.BuildingEditBox, state.TargetSpec, target));
+            return Request(building, description, SplitCageEdit.Reset(description.LotBox,
+                description.BuildingEditBox, spec, EffectiveTarget(description, target)));
         }
 
         public DeformRequestResult Link(Entity building)
         {
-            if (!TryGetCage(building, CageTarget.Both, out var state) ||
-                !_pipeline.TryDescribe(building, out var description))
+            if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
-            if (!state.IsSplit)
+            if (spec.IsLinked)
                 return DeformRequestResult.Rejected;
-            return Request(building, description, SplitCageEdit.Link(state.TargetSpec));
+            return Request(building, description, SplitCageEdit.Link(spec));
         }
 
         public int ResetAll() => _pipeline.ResetAll();

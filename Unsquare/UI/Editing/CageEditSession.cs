@@ -271,7 +271,7 @@ namespace Unsquare.UI.Editing
             Changed?.Invoke();
         }
 
-        /// <summary>Restores the offsets from drag start.</summary>
+        /// <summary>Restores the cage from drag start (the start view applied as an edit, so it lands exactly).</summary>
         public void CancelDrag()
         {
             if (ActiveDrag == null)
@@ -279,7 +279,8 @@ namespace Unsquare.UI.Editing
             var drag = ActiveDrag;
             ActiveDrag = null;
             DragAxis = -1;
-            Record($"Drag of {drag.Handle} cancelled", _service.Apply(Target, _dragStart.TargetSpec));
+            Record($"Drag of {drag.Handle} cancelled",
+                _service.SetOffsets(Target, _dragStart, _dragStart.TargetOffsets));
         }
 
         public DeformRequestResult Reset()
