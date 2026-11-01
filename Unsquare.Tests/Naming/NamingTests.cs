@@ -66,6 +66,30 @@ namespace Unsquare.Tests.Naming
             Assert.That(VariantNaming.VariantName("Base", Offsets, flatTerrain: false), Is.EqualTo(lifted));
         }
 
+        [Test]
+        public void VariantName_LinkedSpec_KeepsSingleCageName()
+        {
+            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(Offsets, false)),
+                Is.EqualTo(VariantNaming.VariantName("Base", Offsets)));
+            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(Offsets, true)),
+                Is.EqualTo(VariantNaming.VariantName("Base", Offsets, flatTerrain: true)));
+        }
+
+        [Test]
+        public void VariantName_SplitSpec_UsesSplitSeed()
+        {
+            var building = Offsets.Move(CageHandle.Corner(7), new float3(0.5f, 0, 0));
+            var spec = new DeformSpec(Offsets, building, false);
+
+            // Saves reference names from this exact seed.
+            string expected = "Base__uq" + StableHash.Compute("Unsquare:split:v1:" + Offsets.ToCanonicalString() +
+                                                             "|" + building.ToCanonicalString()).ToHex(6);
+            Assert.That(VariantNaming.VariantName("Base", spec), Is.EqualTo(expected));
+            Assert.That(VariantNaming.VariantName("Base", spec.WithFlatTerrain(true)), Is.Not.EqualTo(expected));
+            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(building, Offsets, false)),
+                Is.Not.EqualTo(expected));
+        }
+
         [TestCase("Plain_Building")]
         [TestCase("Base__uq123")]
         [TestCase("Base__uqZZZZZZZZZZZZ")]

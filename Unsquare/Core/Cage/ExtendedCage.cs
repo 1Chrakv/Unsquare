@@ -28,5 +28,29 @@ namespace Unsquare.Core.Cage
             }
             return CageOffsets.FromMeters(meters);
         }
+
+        /// <summary>
+        /// Converts a change of offsets. The map is linear and evaluated on displacements only, so a change and its
+        /// negation convert to exact negations: +d followed by −d always returns to the start.
+        /// </summary>
+        public static CageOffsets ConvertDelta(CageBox fromBox, CageOffsets delta, CageBox toBox)
+        {
+            if (fromBox.Equals(toBox) || delta.IsIdentity)
+                return delta;
+            var meters = new float3[CageTopology.CornerCount];
+            for (int i = 0; i < meters.Length; i++)
+            {
+                float3 u = fromBox.Normalize(toBox.Corner(i));
+                float3 v = 1f - u;
+                float3 sum = float3.zero;
+                for (int c = 0; c < CageTopology.CornerCount; c++)
+                {
+                    float wx = (c & 1) != 0 ? u.x : v.x, wy = (c & 2) != 0 ? u.y : v.y, wz = (c & 4) != 0 ? u.z : v.z;
+                    sum += wx * wy * wz * delta.Meters(c);
+                }
+                meters[i] = sum;
+            }
+            return CageOffsets.FromMeters(meters);
+        }
     }
 }

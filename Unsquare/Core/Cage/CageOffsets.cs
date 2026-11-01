@@ -110,6 +110,22 @@ namespace Unsquare.Core.Cage
             return steps == null ? this : new CageOffsets(steps);
         }
 
+        /// <summary>Corner-wise sum in grid steps, e.g. to add an edit's change to another cage.</summary>
+        public CageOffsets Plus(CageOffsets other) => Combine(other, 1);
+
+        /// <summary>Corner-wise difference in grid steps: the change from <paramref name="other"/> to this.</summary>
+        public CageOffsets Minus(CageOffsets other) => Combine(other, -1);
+
+        private CageOffsets Combine(CageOffsets other, int sign)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+            var steps = new int3[CageTopology.CornerCount];
+            for (int i = 0; i < steps.Length; i++)
+                steps[i] = _steps[i] + sign * other._steps[i];
+            return new CageOffsets(steps);
+        }
+
         /// <summary>Returns offsets with a single corner set to an absolute value in steps.</summary>
         public CageOffsets WithCornerSteps(int corner, int3 steps)
         {

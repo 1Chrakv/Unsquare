@@ -48,7 +48,8 @@ namespace Unsquare.Core.Housekeeping
             var claimed = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in manifest.Entries)
             {
-                if (entry.Assets.Count == 0)
+                // Lot-only variants reuse the base meshes; any other entry without assets means lost bookkeeping.
+                if (entry.Assets.Count == 0 && !entry.IsLotOnly)
                     return OrphanSweepPlan.Refuse($"Entry {entry.Key} lists no assets.");
                 claimed.UnionWith(entry.Assets);
             }

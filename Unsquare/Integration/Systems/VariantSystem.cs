@@ -179,7 +179,7 @@ namespace Unsquare.Integration.Systems
             if (!TryDescribe(building, out var description))
                 return;
             spec ??= DeformSpec.Identity;
-            if (spec.Offsets.IsIdentity)
+            if (spec.LotOffsets.IsIdentity)
                 spec = DeformSpec.Identity; // the base prefab has no terrain flag
             _swaps.Remove(building);
 
@@ -189,7 +189,7 @@ namespace Unsquare.Integration.Systems
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
-            if (spec.Offsets.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
+            if (spec.LotOffsets.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
             {
                 _debouncer.Cancel(building); // reverting needs no bake
                 QueueSwap(building, baseEntity, description.BasePrefab, spec,
@@ -294,7 +294,7 @@ namespace Unsquare.Integration.Systems
         }
 
         private static IDeformation Deformation(CageBox lotBox, DeformSpec spec) =>
-            spec == null || spec.Offsets.IsIdentity ? null : new TrilinearCageDeformation(lotBox, spec.Offsets);
+            spec == null || spec.LotOffsets.IsIdentity ? null : new TrilinearCageDeformation(lotBox, spec.LotOffsets);
 
         private bool TryDescribe(Entity building, out BuildingDescription description)
         {
@@ -380,7 +380,7 @@ namespace Unsquare.Integration.Systems
             out ObjectGeometryPrefab variant)
         {
             variant = null;
-            var offsets = spec.Offsets;
+            var offsets = spec.LotOffsets;
             string typeName = basePrefab.GetType().Name;
             string variantName = VariantNaming.VariantName(basePrefab.name, offsets, spec.FlatTerrain);
             if (_resolver.TryFind(typeName, variantName, out var existing))
@@ -454,7 +454,7 @@ namespace Unsquare.Integration.Systems
             foreach (var building in _refreshing)
             {
                 if (_swaps.ContainsKey(building) || _debouncer.TryPeek(building, out _) ||
-                    !TryDescribe(building, out var description) || description.Applied.Offsets.IsIdentity ||
+                    !TryDescribe(building, out var description) || description.Applied.LotOffsets.IsIdentity ||
                     !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
                     !_prefabSystem.TryGetEntity(current, out var currentEntity))
                     continue;
@@ -537,7 +537,7 @@ namespace Unsquare.Integration.Systems
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
             if (!_factory.TryCreate(extensionBase, variantName, box, buildingBox, extensionBase.m_Position,
-                    spec.Offsets, _options.Attachments, _options.CoarseLodTwistMeters, assets, out variant))
+                    spec.LotOffsets, _options.Attachments, _options.CoarseLodTwistMeters, assets, out variant))
                 return false;
             _localization.Register(variantName, extensionBase.name);
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
@@ -743,7 +743,7 @@ namespace Unsquare.Integration.Systems
             {
                 try
                 {
-                    var spec = new DeformSpec(CageOffsets.FromArray(entry.Offsets), entry.FlatTerrain);
+                    var spec = entry.ToSpec();
                     if (_resolver.TryFind(entry.BaseType, entry.BaseName, out var found) &&
                         found is ObjectGeometryPrefab basePrefab &&
                         TryGetOrCreateVariant(basePrefab, spec, isRestore: true, out var variant))

@@ -9,7 +9,11 @@ namespace Unsquare.Core.Persistence
     /// </summary>
     public sealed class VariantManifest
     {
-        public const int FormatVersion = 2;
+        /// <summary>3 added the building cage (<see cref="ManifestEntry.BuildingOffsets"/>).</summary>
+        public const int FormatVersion = 3;
+
+        // Version 2 entries are linked variants: a missing building cage already reads as linked.
+        private const int OldestMigratedVersion = 2;
 
         private readonly Dictionary<string, ManifestEntry> _entries = new(StringComparer.Ordinal);
 
@@ -37,6 +41,7 @@ namespace Unsquare.Core.Persistence
                 foreach (var extension in entry.Extensions)
                     AddUnique(existing.Extensions, extension);
                 existing.Offsets = entry.Offsets;
+                existing.BuildingOffsets = entry.BuildingOffsets;
                 existing.FlatTerrain = entry.FlatTerrain;
                 entry = existing;
             }
@@ -109,13 +114,14 @@ namespace Unsquare.Core.Persistence
             var status = AtomicJsonFile.Read(path, out Document document);
             if (document?.Entries == null)
                 return status;
-            if (document.Version != FormatVersion)
+            if (document.Version < OldestMigratedVersion || document.Version > FormatVersion)
             {
-                // Older formats are not migrated (early development): their variants are dropped.
+                // Formats from before the 1.0.0 release are not migrated: their variants are dropped.
                 manifest.DiscardedOutdatedCount = document.Entries.Count;
                 manifest.IsDirty = true;
                 return status;
             }
+            manifest.IsDirty = document.Version != FormatVersion;
             foreach (var entry in document.Entries)
             {
                 if (entry?.BaseType == null || entry.VariantName == null)

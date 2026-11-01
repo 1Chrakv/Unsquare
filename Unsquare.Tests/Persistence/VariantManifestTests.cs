@@ -115,6 +115,69 @@ namespace Unsquare.Tests.Persistence
         }
 
         [Test]
+        public void Load_Version2_MigratesAsLinked()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("v2.json");
+            string offsets = "[" + string.Join(",", Enumerable.Repeat("1", 24)) + "]";
+            System.IO.File.WriteAllText(path,
+                "{\"Version\":2,\"Entries\":[{\"BaseType\":\"BuildingPrefab\",\"BaseName\":\"B\"," +
+                "\"VariantName\":\"B__uq000000000001\",\"Offsets\":" + offsets + ",\"Assets\":[\"UQ_a\"]}]}");
+
+            VariantManifest.Load(path, out var manifest);
+
+            Assert.That(manifest.TryGet("BuildingPrefab/B__uq000000000001", out var entry), Is.True);
+            Assert.That(entry.ToSpec().IsLinked, Is.True);
+            Assert.That(entry.IsLotOnly, Is.False);
+            Assert.That(manifest.DiscardedOutdatedCount, Is.EqualTo(0));
+            Assert.That(manifest.IsDirty, Is.True);
+        }
+
+        [Test]
+        public void SaveAndLoad_SplitEntry_RoundTripsSpec()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("m.json");
+            var lot = CageOffsets.Identity.Move(CageHandle.Face(3), new Unity.Mathematics.float3(0, 1, 0));
+            var spec = new DeformSpec(lot, CageOffsets.Identity, true);
+            var entry = Entry("V");
+            entry.SetSpec(spec);
+            var manifest = new VariantManifest();
+            manifest.Register(entry, "City", Now);
+            manifest.Save(path);
+
+            VariantManifest.Load(path, out var loaded);
+
+            Assert.That(loaded.TryGet("BuildingPrefab/V", out var read), Is.True);
+            Assert.That(read.ToSpec(), Is.EqualTo(spec));
+            Assert.That(read.IsLotOnly, Is.True);
+            Assert.That(loaded.IsDirty, Is.False);
+        }
+
+        [Test]
+        public void SetSpec_Linked_LeavesBuildingOffsetsOut()
+        {
+            var entry = Entry("V");
+            entry.SetSpec(new DeformSpec(CageOffsets.Identity.Move(CageHandle.Corner(1),
+                new Unity.Mathematics.float3(1, 0, 0)), false));
+            Assert.That(entry.BuildingOffsets, Is.Null);
+        }
+
+        [Test]
+        public void Register_Existing_UpdatesBuildingOffsets()
+        {
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V"), "City", Now);
+            var split = Entry("V");
+            split.BuildingOffsets = new int[24];
+            split.Offsets = Enumerable.Repeat(1, 24).ToArray();
+            manifest.Register(split, "City", Now);
+
+            manifest.TryGet("BuildingPrefab/V", out var entry);
+            Assert.That(entry.BuildingOffsets, Is.EqualTo(new int[24]));
+        }
+
+        [Test]
         public void SaveAndLoad_CurrentFormat_KeepsEntries()
         {
             using var temp = new TempDirectory();

@@ -179,7 +179,7 @@ namespace Unsquare.Integration.Systems
             // Flat-terrain variants keep the game's flat pad.
             if (!_variants.TryGetVariantCage(prefab, out var lotBox, out var spec) || spec.FlatTerrain)
                 return TerrainSlope.Empty;
-            var slope = TerrainSlopePlanner.Plan(lotBox, spec.Offsets);
+            var slope = TerrainSlopePlanner.Plan(lotBox, spec.LotOffsets);
             if (slope.IsEmpty)
                 return slope;
             try

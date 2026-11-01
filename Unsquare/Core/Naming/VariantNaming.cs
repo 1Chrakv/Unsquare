@@ -4,8 +4,8 @@ using Unsquare.Core.Cage;
 namespace Unsquare.Core.Naming
 {
     /// <summary>
-    /// Variant prefab names: "&lt;BaseName&gt;__uq&lt;12 hex&gt;", hashed from the lot cage offsets (and the flat-terrain
-    /// flag when set). Saves reference prefabs by this name, so changing the scheme or seed breaks saves.
+    /// Variant prefab names: "&lt;BaseName&gt;__uq&lt;12 hex&gt;", hashed from the cage offsets (and the flat-terrain flag when
+    /// set). Saves reference prefabs by this name, so changing the scheme or seeds breaks saves.
     /// </summary>
     public static class VariantNaming
     {
@@ -13,8 +13,26 @@ namespace Unsquare.Core.Naming
         private const int HashBytes = 6;
 
         private const string SeedPrefix = "Unsquare:lot-offsets:v1:";
+        private const string SplitSeedPrefix = "Unsquare:split:v1:";
         private const string FlatTerrainSuffix = "|flat-terrain";
         private const string ExtensionSeedPrefix = "Unsquare:extension:v1:";
+
+        /// <summary>
+        /// Name of a spec's variant. Linked cages keep the single-cage name from before the split; split cages hash
+        /// both offset sets with their own seed.
+        /// </summary>
+        public static string VariantName(string baseName, DeformSpec spec)
+        {
+            if (spec == null)
+                throw new ArgumentNullException(nameof(spec));
+            if (spec.IsLinked)
+                return VariantName(baseName, spec.LotOffsets, spec.FlatTerrain);
+            if (string.IsNullOrEmpty(baseName))
+                throw new ArgumentException("Base name required.", nameof(baseName));
+            string seed = SplitSeedPrefix + spec.LotOffsets.ToCanonicalString() + "|" +
+                          spec.BuildingOffsets.ToCanonicalString() + (spec.FlatTerrain ? FlatTerrainSuffix : "");
+            return baseName + Separator + StableHash.Compute(seed).ToHex(HashBytes);
+        }
 
         // Lifted terrain keeps the original seed, so names from before the flag existed stay valid.
         public static string VariantName(string baseName, CageOffsets offsets, bool flatTerrain = false)

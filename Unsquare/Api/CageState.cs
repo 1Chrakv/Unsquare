@@ -32,8 +32,8 @@ namespace Unsquare.Api
         public DeformSpec TargetSpec { get; }
         public DeformStatus Status { get; }
 
-        public CageOffsets AppliedOffsets => AppliedSpec.Offsets;
-        public CageOffsets TargetOffsets => TargetSpec.Offsets;
+        public CageOffsets AppliedOffsets => AppliedSpec.LotOffsets;
+        public CageOffsets TargetOffsets => TargetSpec.LotOffsets;
 
         /// <summary>Whether the target is deformed at all; only then can its terrain be lifted.</summary>
         public bool IsDeformed => !TargetOffsets.IsIdentity;

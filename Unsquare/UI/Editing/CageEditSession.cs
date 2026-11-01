@@ -221,7 +221,7 @@ namespace Unsquare.UI.Editing
                 return;
             var handle = ActiveDrag.Handle;
             if (TryGetCage(out var state))
-                _history.Record(Target, state.TargetSpec.WithOffsets(ActiveDrag.StartOffsets), state.TargetSpec);
+                _history.Record(Target, new DeformSpec(ActiveDrag.StartOffsets, state.TargetSpec.FlatTerrain), state.TargetSpec);
             ActiveDrag = null;
             DragAxis = -1;
             Log($"Drag of {handle} ended -> {LastResult?.ToString() ?? "unchanged"}");

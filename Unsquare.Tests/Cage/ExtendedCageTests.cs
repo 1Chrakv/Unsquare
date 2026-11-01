@@ -30,6 +30,28 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void ConvertDelta_Negated_GivesExactNegation()
+        {
+            var building = new CageBox(new float3(-3, 0, -4), new float3(3, 9, 4));
+            var delta = Skewed();
+            var negated = CageOffsets.Identity.Minus(delta);
+            var forward = ExtendedCage.ConvertDelta(building, delta, Lot);
+            var backward = ExtendedCage.ConvertDelta(building, negated, Lot);
+            Assert.That(forward.Plus(backward).IsIdentity, Is.True);
+            Assert.That(forward.IsIdentity, Is.False);
+        }
+
+        [Test]
+        public void ConvertDelta_FromIdentity_MatchesConvert()
+        {
+            var offsets = Skewed();
+            var converted = ExtendedCage.Convert(Lot, offsets, Edit);
+            var delta = ExtendedCage.ConvertDelta(Lot, offsets, Edit);
+            for (int i = 0; i < CageTopology.CornerCount; i++)
+                Assert.That(math.distance(delta.Meters(i), converted.Meters(i)), Is.LessThanOrEqualTo(0.11f));
+        }
+
+        [Test]
         public void Convert_Identity_StaysIdentity()
         {
             Assert.That(ExtendedCage.Convert(Lot, CageOffsets.Identity, Edit).IsIdentity, Is.True);

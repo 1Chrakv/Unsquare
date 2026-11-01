@@ -71,8 +71,8 @@ namespace Unsquare.Api
             if (description.EditBox.Equals(description.LotBox))
                 return lotSpec;
             if (_editOffsets.TryGetValue(building, out var cached) && cached.Matches(description.EditBox, lotSpec))
-                return lotSpec.WithOffsets(cached.Edit);
-            return lotSpec.WithOffsets(ExtendedCage.Convert(description.LotBox, lotSpec.Offsets, description.EditBox));
+                return new DeformSpec(cached.Edit, lotSpec.FlatTerrain);
+            return new DeformSpec(ExtendedCage.Convert(description.LotBox, lotSpec.LotOffsets, description.EditBox), lotSpec.FlatTerrain);
         }
 
         public DeformRequestResult SetOffsets(Entity building, CageOffsets offsets)
@@ -81,7 +81,7 @@ namespace Unsquare.Api
                 throw new ArgumentNullException(nameof(offsets));
             if (!TryGetCage(building, out var state))
                 return DeformRequestResult.NotDeformable;
-            return Apply(building, state.TargetSpec.WithOffsets(offsets));
+            return Apply(building, new DeformSpec(offsets, state.TargetSpec.FlatTerrain));
         }
 
         public DeformRequestResult SetTerrainLift(Entity building, bool lift)
@@ -197,12 +197,12 @@ namespace Unsquare.Api
                 return ApplyLot(building, description, spec, out _);
             }
 
-            var lotOffsets = ExtendedCage.Convert(description.EditBox, spec.Offsets, description.LotBox);
-            var result = ApplyLot(building, description, spec.WithOffsets(lotOffsets), out var clamped);
+            var lotOffsets = ExtendedCage.Convert(description.EditBox, spec.LotOffsets, description.LotBox);
+            var result = ApplyLot(building, description, new DeformSpec(lotOffsets, spec.FlatTerrain), out var clamped);
             if (result == DeformRequestResult.Accepted || result == DeformRequestResult.Clamped)
             {
                 var edit = clamped.Equals(lotOffsets)
-                    ? spec.Offsets
+                    ? spec.LotOffsets
                     : ExtendedCage.Convert(description.LotBox, clamped, description.EditBox);
                 _editOffsets[building] = new EditOffsets(description.EditBox, clamped, edit);
             }
@@ -214,11 +214,11 @@ namespace Unsquare.Api
             out CageOffsets clamped)
         {
             var box = description.LotBox;
-            clamped = CageValidator.Clamp(box, spec.Offsets, Options.Limits);
+            clamped = CageValidator.Clamp(box, spec.LotOffsets, Options.Limits);
             if (CageValidator.Validate(box, clamped, Options.Limits) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
-            _pipeline.Request(building, spec.WithOffsets(clamped));
-            return clamped.Equals(spec.Offsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
+            _pipeline.Request(building, new DeformSpec(clamped, spec.FlatTerrain));
+            return clamped.Equals(spec.LotOffsets) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
         }
 
         public DeformRequestResult MoveHandle(Entity building, CageHandle handle, float3 delta)
@@ -277,7 +277,7 @@ namespace Unsquare.Api
             public CageOffsets Edit { get; }
 
             public bool Matches(CageBox editBox, DeformSpec lotSpec) =>
-                EditBox.Equals(editBox) && Lot.Equals(lotSpec.Offsets);
+                EditBox.Equals(editBox) && Lot.Equals(lotSpec.LotOffsets);
         }
 
         private static DeformStatus MapStatus(VariantStatus status, DeformSpec applied) => status switch
@@ -285,7 +285,7 @@ namespace Unsquare.Api
             VariantStatus.Pending => DeformStatus.Pending,
             VariantStatus.WaitingForPrefab => DeformStatus.Applying,
             VariantStatus.Failed => DeformStatus.Failed,
-            _ => applied.Offsets.IsIdentity ? DeformStatus.Undeformed : DeformStatus.Applied,
+            _ => applied.LotOffsets.IsIdentity ? DeformStatus.Undeformed : DeformStatus.Applied,
         };
     }
 }

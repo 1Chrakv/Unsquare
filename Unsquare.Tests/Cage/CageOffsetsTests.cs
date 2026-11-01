@@ -14,6 +14,16 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void PlusMinus_RoundTrip_GivesStart()
+        {
+            var a = CageOffsets.Identity.Move(CageHandle.Face(3), new float3(1f, 2f, 0f));
+            var b = CageOffsets.Identity.Move(CageHandle.Corner(6), new float3(-0.3f, 0f, 0.5f));
+            Assert.That(a.Plus(b).Minus(b), Is.EqualTo(a));
+            Assert.That(a.Minus(a).IsIdentity, Is.True);
+            Assert.That(a.Plus(b).Steps(6), Is.EqualTo(a.Steps(6) + b.Steps(6)));
+        }
+
+        [Test]
         public void Move_Corner_OnlyMovesThatCorner()
         {
             var moved = CageOffsets.Identity.Move(CageHandle.Corner(6), new float3(0, 1, 0));

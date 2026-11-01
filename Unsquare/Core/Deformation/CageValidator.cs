@@ -8,6 +8,7 @@ namespace Unsquare.Core.Deformation
     public static class CageValidator
     {
         private const int SamplesPerAxis = 3;
+        private const int BlendSamplesPerAxis = 12;
 
         /// <summary>
         /// Max corner offset per axis. The vertical one scales with the largest box side, so long, low lots can still
@@ -25,6 +26,25 @@ namespace Unsquare.Core.Deformation
             if (!IsWithinLimit(box, offsets, limits))
                 return CageValidity.OutOfRange;
             return IsOrientationPreserving(box, offsets, limits) ? CageValidity.Valid : CageValidity.Inverted;
+        }
+
+        /// <summary>
+        /// Validates both cages: the lot cage on the lot box, the building cage on the building's box, and for split
+        /// cages the blend between them. Linked specs are validated exactly as a single lot cage.
+        /// </summary>
+        public static CageValidity ValidateSplit(CageBox lotBox, CageBox buildingBox, DeformSpec spec,
+            CageLimits limits)
+        {
+            var lot = Validate(lotBox, spec.LotOffsets, limits);
+            if (lot != CageValidity.Valid || spec.IsLinked)
+                return lot;
+            var building = Validate(buildingBox, ExtendedCage.Convert(lotBox, spec.BuildingOffsets, buildingBox),
+                limits);
+            if (building != CageValidity.Valid)
+                return building;
+            return IsBlendOrientationPreserving(lotBox, buildingBox, spec, limits)
+                ? CageValidity.Valid
+                : CageValidity.Inverted;
         }
 
         /// <summary>Clamps every corner offset to <see cref="OffsetLimit"/>.</summary>
@@ -58,6 +78,27 @@ namespace Unsquare.Core.Deformation
             {
                 float3 t = new float3(x, y, z) / (SamplesPerAxis - 1);
                 deformation.Apply(math.lerp(box.Min, box.Max, t), out float3x3 jacobian);
+                if (math.determinant(jacobian) < limits.MinVolumeRatio)
+                    return false;
+            }
+            return true;
+        }
+
+        // Paths, lanes and markers lie on the ground, so the blend ring is sampled at ground height.
+        private static bool IsBlendOrientationPreserving(CageBox lotBox, CageBox buildingBox, DeformSpec spec,
+            CageLimits limits)
+        {
+            float margin = CageBlend.Margin(lotBox, buildingBox, spec);
+            var blend = SplitDeformations.Create(lotBox, buildingBox, spec).Blend;
+            float3 grow = new(margin, 0f, margin);
+            float3 min = buildingBox.Min - grow, max = buildingBox.Max + grow;
+            float groundY = math.clamp(0f, lotBox.Min.y, lotBox.Max.y);
+            for (int x = 0; x <= BlendSamplesPerAxis; x++)
+            for (int z = 0; z <= BlendSamplesPerAxis; z++)
+            {
+                float2 t = new float2(x, z) / BlendSamplesPerAxis;
+                float2 xz = math.lerp(min.xz, max.xz, t);
+                blend.Apply(new float3(xz.x, groundY, xz.y), out float3x3 jacobian);
                 if (math.determinant(jacobian) < limits.MinVolumeRatio)
                     return false;
             }
