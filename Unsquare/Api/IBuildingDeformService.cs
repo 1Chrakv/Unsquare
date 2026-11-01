@@ -9,55 +9,62 @@ using Unsquare.Core.Terrain;
 namespace Unsquare.Api
 {
     /// <summary>
-    /// UI entry point for deforming buildings via their lot cage. All positions and deltas are in building space
-    /// (see <see cref="BuildingSpace"/>). Main thread only; obtain it via <see cref="UnsquareApi"/>.
+    /// UI entry point for deforming buildings via their two cages (building and lot, see <see cref="CageTarget"/>).
+    /// All positions and deltas are in building space (see <see cref="BuildingSpace"/>). Main thread only; obtain it
+    /// via <see cref="UnsquareApi"/>.
     /// </summary>
     public interface IBuildingDeformService
     {
         /// <summary>Raised when a building's cage state changed; query it with <see cref="TryGetCage"/>.</summary>
         event Action<Entity> CageChanged;
 
-        /// <summary>Lot cage of a building; false for objects without a lot (not deformable).</summary>
-        bool TryGetCage(Entity building, out CageState state);
+        /// <summary>A building's cage as the target sees it; false for objects without a lot (not deformable).</summary>
+        bool TryGetCage(Entity building, CageTarget target, out CageState state);
 
         /// <summary>
-        /// Requests absolute offsets (debounced), keeping the terrain flag. For drags, keep the offsets from drag
-        /// start and pass <c>start.Move(handle, totalDelta)</c> to avoid rounding drift.
+        /// Moves the start state's cage to <paramref name="view"/> (offsets on <see cref="CageState.Box"/>), debounced.
+        /// Drags pass the state from drag start, so rounding never drifts; other edits pass the current state.
         /// </summary>
-        DeformRequestResult SetOffsets(Entity building, CageOffsets offsets);
+        DeformRequestResult SetOffsets(Entity building, in CageState start, CageOffsets view);
 
-        /// <summary>Switches whether the lot terrain follows the cage; rejected while the building is undeformed.</summary>
+        /// <summary>Switches whether the lot terrain follows the lot cage; rejected while the lot is undeformed.</summary>
         DeformRequestResult SetTerrainLift(Entity building, bool lift);
 
         /// <summary>
-        /// Moves the bottom corners (with the top corners above them) onto the original terrain, before lots and roads
-        /// flattened it; see <see cref="GroundFitMode"/>. Asynchronous: <paramref name="done"/> gets the deformation
-        /// before the fit and the result.
+        /// Lot and Both: moves the bottom corners onto the original terrain, before lots and roads flattened it (see
+        /// <see cref="GroundFitMode"/>). Building: seats the building on its lot's ground. <paramref name="done"/> gets
+        /// the deformation before the fit and the result, possibly before this returns.
         /// </summary>
         /// <returns>False if the building is not deformable or the terrain cannot be read.</returns>
-        bool TryFitToGround(Entity building, GroundFitMode mode, Action<DeformSpec, DeformRequestResult> done);
+        bool TryFitToGround(Entity building, CageTarget target, GroundFitMode mode,
+            Action<DeformSpec, DeformRequestResult> done);
 
         /// <summary>
-        /// Aligns the lot's left, back or right face to the nearest road edge or neighbouring lot edge
-        /// (see <see cref="AlignMode"/>); rejected when there is no neighbour within the options' reach.
+        /// Aligns the target cage's left, back or right face to the nearest road or neighbour edge (see
+        /// <see cref="AlignMode"/>): their building cages in Building mode, their lots otherwise. Rejected when there
+        /// is no neighbour within the options' reach.
         /// </summary>
-        DeformRequestResult AlignToNeighbour(Entity building, AlignSide side, AlignMode mode,
+        DeformRequestResult AlignToNeighbour(Entity building, CageTarget target, AlignSide side, AlignMode mode,
             NeighbourAlignOptions options);
 
         /// <summary>
-        /// Moves the bottom of the lot's left, back or right side up or down to the ground height of the neighbour that
-        /// <see cref="AlignToNeighbour"/> would use; rejected when there is none.
+        /// Moves the bottom of the target cage's left, back or right side up or down to the ground height of the
+        /// neighbour that <see cref="AlignToNeighbour"/> would use; rejected when there is none.
         /// </summary>
-        DeformRequestResult AlignGroundToNeighbour(Entity building, AlignSide side, NeighbourAlignOptions options);
+        DeformRequestResult AlignGroundToNeighbour(Entity building, CageTarget target, AlignSide side,
+            NeighbourAlignOptions options);
 
-        /// <summary>Requests offsets and terrain flag together, e.g. to replay an undo step.</summary>
+        /// <summary>Requests both cages and the terrain flag as given on the lot box, e.g. to replay an undo step.</summary>
         DeformRequestResult Apply(Entity building, DeformSpec spec);
 
-        /// <summary>Nudges a handle relative to the current target offsets, e.g. for +/- buttons.</summary>
-        DeformRequestResult MoveHandle(Entity building, CageHandle handle, float3 delta);
+        /// <summary>Nudges a handle of the target cage relative to its current view, e.g. for +/- buttons.</summary>
+        DeformRequestResult MoveHandle(Entity building, CageTarget target, CageHandle handle, float3 delta);
 
-        /// <summary>Reverts the building to its original prefab.</summary>
-        DeformRequestResult Reset(Entity building);
+        /// <summary>Reverts the target cage to its original shape; Both reverts the building to its original prefab.</summary>
+        DeformRequestResult Reset(Entity building, CageTarget target);
+
+        /// <summary>Makes the building cage follow the lot cage again, dropping the building's own shape.</summary>
+        DeformRequestResult Link(Entity building);
 
         /// <summary>Reverts every deformed building in the city (uninstall path); returns how many.</summary>
         int ResetAll();
