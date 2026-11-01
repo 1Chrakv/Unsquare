@@ -1,6 +1,7 @@
 using System;
 using Game.Settings;
 using Unsquare.Api;
+using Unsquare.Core.Cage;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Overlay;
 
@@ -26,6 +27,7 @@ namespace Unsquare.UI.Input
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _overlay = overlay ?? throw new ArgumentNullException(nameof(overlay));
             _settings.onSettingsApplied += OnSettingsApplied;
+            _session.EditModeChanged += OnEditModeChanged;
         }
 
         public void Apply()
@@ -37,6 +39,7 @@ namespace Unsquare.UI.Input
                 _service.Configure(pipeline);
                 _session.Configure(edit);
                 _overlay.Style = _settings.ToOverlayStyle();
+                _session.SetEditMode(_settings.ToEditMode());
 
                 // The options page applies on every slider step; log only real changes.
                 string summary = $"{edit}; {pipeline}";
@@ -50,8 +53,21 @@ namespace Unsquare.UI.Input
             }
         }
 
-        public void Dispose() => _settings.onSettingsApplied -= OnSettingsApplied;
+        public void Dispose()
+        {
+            _settings.onSettingsApplied -= OnSettingsApplied;
+            _session.EditModeChanged -= OnEditModeChanged;
+        }
 
         private void OnSettingsApplied(Setting setting) => Apply();
+
+        // Remembers the mode chosen in the tool window; saving applies the (unchanged) options once more.
+        private void OnEditModeChanged(CageTarget mode)
+        {
+            if (_settings.EditMode == mode)
+                return;
+            _settings.EditMode = mode;
+            _settings.ApplyAndSave();
+        }
     }
 }

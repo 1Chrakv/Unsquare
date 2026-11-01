@@ -1,6 +1,9 @@
 // The anchor is the point above the roof; the window sits centered on top of it with a gap.
 .anchor {
     position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     transform: translate(-50%, -100%);
     padding-bottom: 24rem;
     pointer-events: none;
@@ -25,6 +28,18 @@
 
 .spacer {
     width: 6rem;
+}
+
+// One line under the window, e.g. when the building is not on its lot's ground.
+.hint {
+    margin-top: 4rem;
+    padding: 3rem 8rem;
+    border-radius: 4rem;
+    background-color: rgba(24, 33, 51, 0.85);
+    color: rgb(255, 196, 92);
+    font-size: 12rem;
+    text-align: center;
+    white-space: nowrap;
 }
 
 // A labelled group: small header above two rows of controls.

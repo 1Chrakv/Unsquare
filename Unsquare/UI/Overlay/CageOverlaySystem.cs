@@ -92,6 +92,8 @@ namespace Unsquare.UI.Overlay
             CageEditSession session)
         {
             DrawWireframe(buffer, transform, cage.Box, CageOffsets.Identity, _style.RestBox, dashed: true);
+            if (cage.HasGhost)
+                DrawWireframe(buffer, transform, cage.GhostBox, cage.GhostOffsets, _style.Ghost, dashed: true);
             var cageColor = cage.ExceedsLot ? _style.LotWarning : _style.Cage(cage.Status);
             DrawWireframe(buffer, transform, cage.Box, cage.TargetOffsets, cageColor, dashed: false);
 

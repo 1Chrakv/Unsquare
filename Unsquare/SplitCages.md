@@ -1,7 +1,7 @@
 # Split cages: building and lot (concept)
 
-Status: concept, no code yet. Model, UI and persistence decided with the user (sections 2, 5 and 7); reviewed
-against the code in a separate design review.
+Status: implemented on `feature/split-cages` (steps 1–4 of section 8); in-game tests (`Testing.md` 126–138)
+pending. Model, UI and persistence decided with the user; reviewed against the code in a separate design review.
 
 ## 1. Goal
 

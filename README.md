@@ -19,6 +19,10 @@ angled streets and slopes.
 
 - **Cage deformation of the lot box.** The cage spans the whole lot (lot rectangle from the ground to the roof), with
   8 corners, 12 edges and 6 faces as handles. All LODs of the building are deformed.
+- **Building, lot or both.** Each building has two cages: one for the building and what hangs on it, one for its lot
+  (ground, paths, ground props, terrain). Edit the building alone (its cage hugs the building), the lot alone, or both
+  together, which is the default and works as before. Paths and lanes into the building blend between the two cages,
+  so they stay connected; props standing inside the building's footprint (steps, bins) move with it.
 - **The lot follows.** Props, sub-buildings, ground areas (paving, grass), lanes and paths on the lot move with the
   cage. Props stay rigid but follow position and rotation, and turn with the nearest facade; ground props stay upright.
   Path ends at the road slide along it and stay connected.
@@ -78,10 +82,16 @@ Highly recommended, but not required; Unsquare works without them:
 
 While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
 
+The edit mode (Deform section of the tool window, Alt+D) picks what an edit moves: **Building**, **Lot** or **Both**.
+Both carries the building along with the lot and keeps any shape you gave the building on its own; **Link** (Alt+K)
+makes the building follow the lot again. Lot edits never move the building, so after lifting the ground it can end
+up buried or floating: the tool window then shows a hint, and Fit to ground in Building mode sets it back onto its
+ground. The mode is remembered.
+
 ### Tool window
 
 While a building is selected, a small window floats above its roof, in labelled sections with toggles in the top
-row and buttons below: the pick mode (corners, edges, faces); terrain lift (follow or flat) and fit to ground with its
+row and buttons below: the edit mode (building, lot, both) and Link; the pick mode (corners, edges, faces); terrain lift (follow or flat) and fit to ground with its
 mode (back only or all corners); align the sides to their neighbours or level them with their ground (a toggle picks
 the align mode: angle, flush or full); and reset the selected handle or the whole building.
 
@@ -92,6 +102,8 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
+| Cycle edit mode (both → building → lot) | Alt+D |
+| Make the building follow the lot again (Link) | Alt+K |
 | Cycle pick mode (edges → faces → corners) | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle | Alt+Q / Alt+E |
@@ -111,7 +123,8 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 
 ### Overlay
 
-Dashed lines show the original box. The cage colour shows its state: white undeformed, yellow pending, green applied,
+Dashed lines show the original box; a faint violet dashed cage is the other cage (lot or building) while the two
+differ. The cage colour shows its state: white undeformed, yellow pending, green applied,
 red failed, magenta when the lot outline leaves its plot (the edit still applies). The selected handle is orange,
 the hovered one cyan.
 

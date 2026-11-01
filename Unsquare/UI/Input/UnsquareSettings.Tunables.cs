@@ -5,6 +5,7 @@ using Game.SceneFlow;
 using Game.Settings;
 using Game.UI;
 using Unity.Mathematics;
+using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
@@ -29,6 +30,10 @@ namespace Unsquare.UI.Input
 
         private Func<string> _importFlexIt;
         private string _importFlexItStatus = "";
+
+        /// <summary>The last edit mode, so it survives a restart; set from the tool window, not shown here.</summary>
+        [SettingsUIHidden]
+        public CageTarget EditMode { get; set; }
 
         [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
@@ -198,6 +203,8 @@ namespace Unsquare.UI.Input
             new NeighbourAlignOptions(Clamped(AlignReach, nameof(AlignReach)),
                 Clamped(AlignMaxAngle, nameof(AlignMaxAngle))));
 
+        public CageTarget ToEditMode() => Defined(EditMode, CageTarget.Both);
+
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
             Clamped(AxisLength, nameof(AxisLength)), Clamped(GizmoSize, nameof(GizmoSize)) / 100f);
@@ -205,6 +212,7 @@ namespace Unsquare.UI.Input
         private void SetSettingsDefaults()
         {
             var edit = CageEditOptions.Default;
+            EditMode = CageTarget.Both;
             SmallStep = edit.SmallStep;
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;

@@ -15,6 +15,8 @@ namespace Unsquare.UI.Input
         public const string ToggleMode = "UnsquareToggleMode";
         public const string ToggleModeLabel = "Toggle Unsquare mode";
 
+        public const string CycleEditMode = "UnsquareCycleEditMode";
+        public const string LinkBuildingToLot = "UnsquareLinkBuildingToLot";
         public const string CyclePickKind = "UnsquareCyclePickKind";
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";
@@ -47,6 +49,10 @@ namespace Unsquare.UI.Input
 
         public static readonly IReadOnlyList<HotkeyDefinition> All = new[]
         {
+            new HotkeyDefinition(CycleEditMode, nameof(UnsquareSettings.CycleEditModeBinding),
+                "Cycle edit mode (both, building, lot)", s => s.CycleEditMode()),
+            new HotkeyDefinition(LinkBuildingToLot, nameof(UnsquareSettings.LinkBuildingToLotBinding),
+                "Make the building follow the lot again", s => s.LinkBuildingToLot()),
             new HotkeyDefinition(CyclePickKind, nameof(UnsquareSettings.CyclePickKindBinding),
                 "Cycle pick mode (edges, faces, corners)", s => s.CyclePickKind()),
             new HotkeyDefinition(KindCorner, nameof(UnsquareSettings.KindCornerBinding), "Pick corners",

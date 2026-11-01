@@ -16,6 +16,9 @@ namespace Unsquare.UI.Input
     [SettingsUIShowGroupName(EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
         PerformanceGroup, FlexItGroup, HotkeyGroup)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.CycleEditMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.LinkBuildingToLot, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CyclePickKind, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -64,6 +67,14 @@ namespace Unsquare.UI.Input
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.U, CageHotkeys.ToggleMode, alt: true)]
         public ProxyBinding ToggleModeBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.D, CageHotkeys.CycleEditMode, alt: true)]
+        public ProxyBinding CycleEditModeBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.K, CageHotkeys.LinkBuildingToLot, alt: true)]
+        public ProxyBinding LinkBuildingToLotBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.W, CageHotkeys.CyclePickKind, alt: true)]
