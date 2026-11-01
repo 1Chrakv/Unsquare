@@ -4,8 +4,9 @@ using Unsquare.Core.Deformation;
 namespace Unsquare.Integration.Prefabs.Attachments
 {
     /// <summary>
-    /// Moves and rotates the building's props (sub-objects) rigidly with the cage; props near a facade turn with
-    /// it. SubObjectSystem places them from these poses, so changing the clone's data moves the instances.
+    /// Moves and rotates the building's props (sub-objects) rigidly: attached ones with the building cage, ground
+    /// ones with the lot cage or the blend; props near a facade turn with it. SubObjectSystem places them from these
+    /// poses, so changing the clone's data moves the instances.
     /// </summary>
     internal sealed class SubObjectDeformer : IAttachmentDeformer
     {
@@ -33,8 +34,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
                     continue;
                 }
                 var info = PrefabCloning.ShallowCopy(original);
-                var mode = info.m_ParentMesh == GroundParentMesh ? PlacementMode.Upright : context.Options.AttachedPropMode;
-                var pose = RigidDeformer.Place(context.Deformation, context.AlignmentBox,
+                bool onGround = info.m_ParentMesh == GroundParentMesh;
+                var mode = onGround ? PlacementMode.Upright : context.Options.AttachedPropMode;
+                var pose = RigidDeformer.Place(DeformationOf(info, onGround, context), context.AlignmentBox,
                     context.Options.FacadeReachMeters, new RigidPose(info.m_Position, info.m_Rotation), mode);
                 info.m_Position = pose.Position;
                 info.m_Rotation = pose.Rotation;
@@ -43,6 +45,16 @@ namespace Unsquare.Integration.Prefabs.Attachments
             }
             subObjects.m_SubObjects = deformed;
             return new AttachmentCount("props", deformed.Length, deformedCount);
+        }
+
+        // Markers (spawn points, entrances) belong to doors; ground props over the footprint (steps) to the walls.
+        private static IDeformation DeformationOf(ObjectSubObjectInfo info, bool onGround, AttachmentContext context)
+        {
+            if (!onGround)
+                return context.Building;
+            if (info.m_Object is MarkerObjectPrefab || context.IsInFootprint(info.m_Position))
+                return context.Blend;
+            return context.Lot;
         }
     }
 }

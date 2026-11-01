@@ -35,27 +35,49 @@ namespace Unsquare.Integration.Prefabs
         /// <param name="buildingBox">The building's mesh box; props align to its faces (facades).</param>
         /// <param name="frameOrigin">Where <paramref name="basePrefab"/>'s origin sits in the cage's building space:
         /// zero for the building itself, the extension's position for an upgrade extension.</param>
+        /// <param name="meshesFollowLot">Bake the meshes (and what hangs on them) with the lot cage, e.g. a car park
+        /// extension beside the building.</param>
         /// <param name="coarseLodTwistMeters">Cages twisting more than this drop the coarsest LOD.</param>
         public bool TryCreate(ObjectGeometryPrefab basePrefab, string variantName, CageBox box,
-            CageBox buildingBox, float3 frameOrigin, CageOffsets offsets, AttachmentOptions attachments,
-            float coarseLodTwistMeters, ISet<string> usedAssets, out ObjectGeometryPrefab variant)
+            CageBox buildingBox, float3 frameOrigin, DeformSpec spec, bool meshesFollowLot,
+            AttachmentOptions attachments, float coarseLodTwistMeters, ISet<string> usedAssets,
+            out ObjectGeometryPrefab variant)
         {
             variant = null;
-            IDeformation deformation = new TrilinearCageDeformation(box, offsets);
+            var split = SplitDeformations.Create(box, buildingBox, spec);
+            IDeformation building = meshesFollowLot ? split.Lot : split.Building, lot = split.Lot, blend = split.Blend;
+            var meshOffsets = meshesFollowLot ? spec.LotOffsets : spec.BuildingOffsets;
+            float twist = meshesFollowLot
+                ? CageTwist.MaxResidualMeters(meshOffsets)
+                : SplitDeformations.BuildingTwistMeters(box, buildingBox, spec);
             if (!frameOrigin.Equals(float3.zero))
             {
-                deformation = new TranslatedDeformation(deformation, frameOrigin);
+                building = new TranslatedDeformation(building, frameOrigin);
+                lot = new TranslatedDeformation(lot, frameOrigin);
+                blend = new TranslatedDeformation(blend, frameOrigin);
                 box = box.RelativeTo(frameOrigin);
                 buildingBox = buildingBox.RelativeTo(frameOrigin);
             }
-            var context = new AttachmentContext(deformation, box, buildingBox, attachments);
-            float twist = CageTwist.MaxResidualMeters(offsets);
-            bool skipCoarsestLod = twist > coarseLodTwistMeters;
-            Mod.Log.Info($"LODs of {variantName}: twist {twist:0.00} m, coarsest LOD " +
-                (skipCoarsestLod ? "dropped" : "kept"));
-            if (!TryDeformMeshes(basePrefab, deformation, DeformKey.Create(box, offsets), skipCoarsestLod, usedAssets,
-                    out var meshes))
-                return false;
+            var context = new AttachmentContext(building, lot, blend, box, buildingBox, attachments);
+
+            ObjectMeshInfo[] meshes;
+            if (meshOffsets.IsIdentity)
+            {
+                // Only the lot is deformed: the base meshes fit as they are, no bake and no assets.
+                Mod.Log.Info($"Meshes of {variantName}: undeformed, reusing the base meshes");
+                meshes = new ObjectMeshInfo[basePrefab.m_Meshes.Length];
+                for (int i = 0; i < meshes.Length; i++)
+                    meshes[i] = PrefabCloning.ShallowCopy(basePrefab.m_Meshes[i]);
+            }
+            else
+            {
+                bool skipCoarsestLod = twist > coarseLodTwistMeters;
+                Mod.Log.Info($"LODs of {variantName}: twist {twist:0.00} m, coarsest LOD " +
+                    (skipCoarsestLod ? "dropped" : "kept"));
+                if (!TryDeformMeshes(basePrefab, building, DeformKey.Create(box, meshOffsets), skipCoarsestLod,
+                        usedAssets, out meshes))
+                    return false;
+            }
 
             ObjectGeometryPrefab clone = null;
             try

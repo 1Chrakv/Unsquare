@@ -51,8 +51,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
             var after = new float2[nodes.Length];
             for (int n = 0; n < nodes.Length; n++)
             {
-                float3 p = context.Deformation.Apply(nodes[n], out _);
-                if (IsGround(original, n))
+                bool ground = IsGround(original, n);
+                float3 p = (ground ? context.Blend : context.Building).Apply(nodes[n], out _);
+                if (ground)
                     p.y = nodes[n].y; // projected onto the terrain anyway
                 positions[n] = p;
                 before[n] = nodes[n].xz;

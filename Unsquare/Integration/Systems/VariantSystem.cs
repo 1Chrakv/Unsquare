@@ -178,9 +178,7 @@ namespace Unsquare.Integration.Systems
         {
             if (!TryDescribe(building, out var description))
                 return;
-            spec ??= DeformSpec.Identity;
-            if (spec.LotOffsets.IsIdentity)
-                spec = DeformSpec.Identity; // the base prefab has no terrain flag
+            spec = (spec ?? DeformSpec.Identity).Normalized(); // the base prefab has no terrain flag
             _swaps.Remove(building);
 
             if (spec.Equals(description.Applied))
@@ -189,7 +187,7 @@ namespace Unsquare.Integration.Systems
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
-            if (spec.LotOffsets.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
+            if (spec.IsIdentity && _prefabSystem.TryGetEntity(description.BasePrefab, out var baseEntity))
             {
                 _debouncer.Cancel(building); // reverting needs no bake
                 QueueSwap(building, baseEntity, description.BasePrefab, spec,
@@ -281,20 +279,21 @@ namespace Unsquare.Integration.Systems
         // Same deformations the variants were baked with; null if the current variant's cage is unknown.
         private LotRemap BuildNetRemap(PrefabBase current, ObjectGeometryPrefab basePrefab, DeformSpec target)
         {
-            if (!TryGetBoxes(basePrefab, out var lotBox, out _))
+            if (!TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return null;
             IDeformation from = null;
             if (VariantNaming.IsVariantName(current.name))
             {
                 if (!_resolver.TryGetVariant(current.name, out var info))
                     return null;
-                from = Deformation(lotBox, info.Spec);
+                from = Deformation(lotBox, buildingBox, info.Spec);
             }
-            return new LotRemap(from, Deformation(lotBox, target));
+            return new LotRemap(from, Deformation(lotBox, buildingBox, target));
         }
 
-        private static IDeformation Deformation(CageBox lotBox, DeformSpec spec) =>
-            spec == null || spec.LotOffsets.IsIdentity ? null : new TrilinearCageDeformation(lotBox, spec.LotOffsets);
+        // Nets and areas on the lot follow the blend: the building's cage at its footprint, the lot's beyond.
+        private static IDeformation Deformation(CageBox lotBox, CageBox buildingBox, DeformSpec spec) =>
+            spec == null || spec.IsIdentity ? null : SplitDeformations.Create(lotBox, buildingBox, spec).Blend;
 
         private bool TryDescribe(Entity building, out BuildingDescription description)
         {
@@ -304,8 +303,9 @@ namespace Unsquare.Integration.Systems
                 !_resolver.TryResolveBase(current, out var basePrefab, out var applied) ||
                 !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return false;
-            var editBox = ExtendedCage.RaiseTop(lotBox, DeformedExtensionsTop(building));
-            description = new BuildingDescription(basePrefab, lotBox, editBox, buildingBox, applied);
+            float extensionsTop = DeformedExtensionsTop(building);
+            description = new BuildingDescription(basePrefab, lotBox, ExtendedCage.RaiseTop(lotBox, extensionsTop),
+                buildingBox, ExtendedCage.RaiseTop(buildingBox, extensionsTop), !buildingBox.Equals(lotBox), applied);
             return true;
         }
 
@@ -380,9 +380,8 @@ namespace Unsquare.Integration.Systems
             out ObjectGeometryPrefab variant)
         {
             variant = null;
-            var offsets = spec.LotOffsets;
             string typeName = basePrefab.GetType().Name;
-            string variantName = VariantNaming.VariantName(basePrefab.name, offsets, spec.FlatTerrain);
+            string variantName = VariantNaming.VariantName(basePrefab.name, spec);
             if (_resolver.TryFind(typeName, variantName, out var existing))
             {
                 variant = existing as ObjectGeometryPrefab;
@@ -400,14 +399,14 @@ namespace Unsquare.Integration.Systems
             }
 
             // Restores skip validation: a save already references the variant, refusing it breaks the building.
-            if (!isRestore && CageValidator.Validate(box, offsets, _options.Limits) != CageValidity.Valid)
+            if (!isRestore && CageValidator.ValidateSplit(box, buildingBox, spec, _options.Limits) != CageValidity.Valid)
             {
-                Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {offsets}");
+                Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {spec}");
                 return false;
             }
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
-            if (!_factory.TryCreate(basePrefab, variantName, box, buildingBox, float3.zero, offsets,
+            if (!_factory.TryCreate(basePrefab, variantName, box, buildingBox, float3.zero, spec, false,
                     _options.Attachments, _options.CoarseLodTwistMeters, assets, out variant))
                 return false;
             _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, spec));
@@ -422,15 +421,15 @@ namespace Unsquare.Integration.Systems
                 _manifest.MergeAssets(key, assets);
                 return true;
             }
-            _manifest.Register(new ManifestEntry
+            var entry = new ManifestEntry
             {
                 BaseType = typeName,
                 BaseName = basePrefab.name,
                 VariantName = variantName,
-                Offsets = offsets.ToArray(),
-                FlatTerrain = spec.FlatTerrain,
                 Assets = new List<string>(assets),
-            }, _citySystem.cityName, DateTime.UtcNow);
+            };
+            entry.SetSpec(spec);
+            _manifest.Register(entry, _citySystem.cityName, DateTime.UtcNow);
             return true;
         }
 
@@ -454,7 +453,7 @@ namespace Unsquare.Integration.Systems
             foreach (var building in _refreshing)
             {
                 if (_swaps.ContainsKey(building) || _debouncer.TryPeek(building, out _) ||
-                    !TryDescribe(building, out var description) || description.Applied.LotOffsets.IsIdentity ||
+                    !TryDescribe(building, out var description) || description.Applied.IsIdentity ||
                     !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
                     !_prefabSystem.TryGetEntity(current, out var currentEntity))
                     continue;
@@ -511,6 +510,16 @@ namespace Unsquare.Integration.Systems
                 extension, extensionBase.m_Position, out offset);
         }
 
+        // Storeys and wings stand on the building and follow its cage; car parks beside it follow the lot. Saved names
+        // depend on this rule (it decides the baked shape), so never change it.
+        private static bool IsOverBuilding(BuildingExtensionPrefab extension, CageBox ownerBuildingBox)
+        {
+            if (!CageBoxMeasurer.TryMeasureMeshes(extension, out var meshBox))
+                return false;
+            float2 centre = meshBox.Center.xz + extension.m_Position.xz;
+            return math.all(centre >= ownerBuildingBox.Min.xz) && math.all(centre <= ownerBuildingBox.Max.xz);
+        }
+
         // External lots lie outside the cage; option-only upgrades have nothing to bend.
         private static bool IsDeformable(BuildingExtensionPrefab extension) =>
             !extension.m_ExternalLot &&
@@ -536,8 +545,9 @@ namespace Unsquare.Integration.Systems
                 return false;
 
             var assets = new HashSet<string>(StringComparer.Ordinal);
-            if (!_factory.TryCreate(extensionBase, variantName, box, buildingBox, extensionBase.m_Position,
-                    spec.LotOffsets, _options.Attachments, _options.CoarseLodTwistMeters, assets, out variant))
+            if (!_factory.TryCreate(extensionBase, variantName, box, buildingBox, extensionBase.m_Position, spec,
+                    !IsOverBuilding(extensionBase, buildingBox), _options.Attachments, _options.CoarseLodTwistMeters,
+                    assets, out variant))
                 return false;
             _localization.Register(variantName, extensionBase.name);
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
@@ -559,8 +569,8 @@ namespace Unsquare.Integration.Systems
                 {
                     if (VariantNaming.IsVariantName(current.name))
                         remap = buildingRemap;
-                    else if (TryGetBoxes(ownerBase, out var lotBox, out _))
-                        remap = new LotRemap(null, Deformation(lotBox, spec));
+                    else if (TryGetBoxes(ownerBase, out var lotBox, out var buildingBox))
+                        remap = new LotRemap(null, Deformation(lotBox, buildingBox, spec));
                 }
                 swaps.Add(new ExtensionSwap(extension, target, remap));
             }
