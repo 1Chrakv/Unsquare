@@ -9,10 +9,11 @@ namespace Unsquare.Core.Deformation
     public sealed class AttachmentOptions
     {
         public static readonly AttachmentOptions Default = new(true, true, true, true, PlacementMode.Follow,
-            FaceAlignment.DefaultReachMeters, true);
+            FaceAlignment.DefaultReachMeters, true, true);
 
         public AttachmentOptions(bool deformProps, bool deformAreas, bool deformLanes, bool deformNets,
-            PlacementMode attachedPropMode, float facadeReachMeters, bool lotPropsFollowGround)
+            PlacementMode attachedPropMode, float facadeReachMeters, bool lotPropsFollowGround,
+            bool alignLinearProps)
         {
             if (!(facadeReachMeters >= 0f))
                 throw new ArgumentException("Facade reach must not be negative.", nameof(facadeReachMeters));
@@ -23,6 +24,7 @@ namespace Unsquare.Core.Deformation
             AttachedPropMode = attachedPropMode;
             FacadeReachMeters = facadeReachMeters;
             LotPropsFollowGround = lotPropsFollowGround;
+            AlignLinearProps = alignLinearProps;
         }
 
         public bool DeformProps { get; }
@@ -42,6 +44,9 @@ namespace Unsquare.Core.Deformation
         /// </summary>
         public bool LotPropsFollowGround { get; }
 
+        /// <summary>Long ground props (<see cref="LinearFootprint"/>) turn with the line through them.</summary>
+        public bool AlignLinearProps { get; }
+
         public bool IsEnabled(AttachmentKind kind) => kind switch
         {
             AttachmentKind.Props => DeformProps,
@@ -54,6 +59,6 @@ namespace Unsquare.Core.Deformation
         public override string ToString() =>
             $"props {DeformProps}, areas {DeformAreas}, lanes {DeformLanes}, nets {DeformNets}, " +
             $"attached {AttachedPropMode}, facade reach {FacadeReachMeters} m, " +
-            $"lot props follow ground {LotPropsFollowGround}";
+            $"lot props follow ground {LotPropsFollowGround}, align linear props {AlignLinearProps}";
     }
 }

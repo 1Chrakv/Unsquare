@@ -105,6 +105,9 @@ namespace Unsquare.UI.Input
         [SettingsUISection(SettingsTab, AttachmentsGroup)]
         public bool LotPropsFollowGround { get; set; }
 
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
+        public bool AlignLinearProps { get; set; }
+
         [SettingsUISection(SettingsTab, LotSyncGroup)]
         [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
         public float AreaMatchDistance { get; set; }
@@ -191,7 +194,8 @@ namespace Unsquare.UI.Input
                 Clamped(MinLocalVolume, nameof(MinLocalVolume)) / 100f);
             var attachments = new AttachmentOptions(DeformProps, DeformAreas, DeformLanes, DeformNets,
                 Defined(AttachedProps, AttachmentOptions.Default.AttachedPropMode),
-                Clamped(FacadeReach, nameof(FacadeReach)), LotPropsFollowGround);
+                Clamped(FacadeReach, nameof(FacadeReach)), LotPropsFollowGround,
+                AlignLinearProps);
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
                 (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
                 Clamped(AreaMatchDistance, nameof(AreaMatchDistance)),
@@ -237,6 +241,7 @@ namespace Unsquare.UI.Input
             AttachedProps = pipeline.Attachments.AttachedPropMode;
             FacadeReach = pipeline.Attachments.FacadeReachMeters;
             LotPropsFollowGround = pipeline.Attachments.LotPropsFollowGround;
+            AlignLinearProps = pipeline.Attachments.AlignLinearProps;
             AreaMatchDistance = pipeline.AreaMatchMeters;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;
             CoarseLodTwist = pipeline.CoarseLodTwistMeters;
