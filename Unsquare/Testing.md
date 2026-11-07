@@ -39,8 +39,12 @@ mode; Esc is left to the game (its Back: default tool, then the pause menu).
 
 ## Tool window (in Unsquare mode)
 
-While a building is selected, a small window floats above its roof, in four sections with a header each; the top
+While a building is selected, a small window floats above its roof, in five sections with a header each; the top
 row holds only toggles, the bottom row only buttons:
+- **Deform:** top: 3-way toggle Both / Building / Lot (Alt+D cycles), then the blend toggle None / All (Alt+B, None
+  by default); bottom: Link, building follows lot (link, arrow to a lot, Alt+K) and lot follows building (link, arrow
+  to a house, Alt+Shift+K). Link is disabled while the cages are equal; blend can be chosen before splitting. A hint
+  line under the window says when the building is not on its lot's ground.
 - **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
 - **Terrain:** top: 2-way toggle terrain follows the building / flat pad (dimmed while undeformed; Alt+T) and 2-way
   toggle for fitting back only / all corners (Alt+F); bottom: fit the bottom corners to the original ground (Alt+G).
@@ -55,6 +59,9 @@ row holds only toggles, the bottom row only buttons:
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
+| Cycle edit mode both → building → lot | Alt+D |
+| Link: the building follows the lot / the lot follows the building | Alt+K / Alt+Shift+K |
+| Switch blending off / on | Alt+B |
 | Cycle pick mode edges → faces → corners | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
@@ -206,6 +213,23 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 123 | Add another storey to a deformed car park | The new storey is deformed with the car park's cage right away (log `New upgrade on deformed building …`, then `Bake for building …`); hovering doesn't crash |
 | 124 | Add a wing to the deformed school | The wing is placed as usual and stays undeformed with its own cage |
 | 125 | Switch the game language in the options and back | Deformed buildings keep their normal names |
+| 126 | Load a save with buildings deformed before split cages | Same shapes; the log lists the same variant names as before (`Restored … variants`); the manifest is rewritten as version 3 |
+| 127 | Select a deformed building in Both mode; drag and nudge as before | Behaves exactly as before: lot box (raised over storeys), no violet cage, Link disabled |
+| 128 | Switch to Building (Alt+D or the toggle) on a house with a garden | The cage hugs the building; dragging a top corner leans only the building; garden props, paths, grass and the terrain stay; a violet dashed lot cage appears |
+| 129 | After 128, widen the building 3 m over its garden (face drag) | Paths and lanes into the doors stay connected and bend smoothly in a ring around the building; steps and bins at the walls move with them; trees further out stay |
+| 130 | Switch to Lot on a deformed building and drag a lot corner | Ground, paths, ground props and terrain follow; the building stays as it is; a violet building cage appears |
+| 131 | After 130, raise the back of the lot | The hint `The building is not on its ground` appears; in Building mode Fit to ground (Alt+G) sets the building onto the lifted ground and the hint goes away; the terrain toggle and fit mode are greyed in Building mode |
+| 132 | Split a building (130), then Both mode and drag a lot corner | The building is carried along and keeps its own lean; Link (Alt+K) makes it follow the lot exactly and the violet cage disappears |
+| 133 | In each mode press Reset building, then Ctrl+Z | Building mode resets only the building, Lot only the lot, Both everything; undo restores each step |
+| 134 | Nudge the building cage up and back down with the 0.1 m step (Building mode), then Ctrl+Z several times | The building returns exactly; no violet cage remains; undo steps through every nudge |
+| 135 | Row houses: Building mode, align the left side (Alt+Shift+←) to the neighbour house | The wall moves onto the neighbour's wall (its building cage), the gardens stay; a park next door falls back to its lot edge |
+| 136 | Lot only: deform a lot but not the building, save, reload; then run the orphan sweep (restart with pruning on) | The variant has no `UQ_` assets in its manifest entry; nothing is refused or deleted wrongly (`Orphan sweep` log line) |
+| 137 | Car park with a storey and a separate ground-level extension: Building mode, lean the building | The storey leans with the building; the ground-level extension follows the lot (stays unless the lot changes) |
+| 138 | Switch modes, restart the game | The last chosen mode is active again |
+| 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Blend toggle shows None: everything on the ground stays, paths may end at the old wall |
+| 140 | After 139, blend mode All (Alt+B) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot; benches and trees move with the paths and hedges around them |
+| 141 | After 140, Ctrl+Z; save and reload | Undo goes back to None; after reload the mode and shapes are kept |
+| 142 | Split a building (lean it in Building mode), then press "lot follows the building" (Alt+Shift+K) | The lot, paths and gardens take the building's shape, the violet cage disappears, both Link buttons grey out; Ctrl+Z restores the split |
 
 ## Reporting problems
 

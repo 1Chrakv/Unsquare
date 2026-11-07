@@ -15,6 +15,7 @@ Unsquare lets you reshape any building. Taper, skew, twist, raise or lean buildi
 **Features**
 
 - **Reshape the whole lot.** The building, its props, paths, paving and grass all follow.
+- **Building and lot separately.** Reshape just the building, just its grounds, or both together.
 - **Terrain follows.** Raise or lower the bottom and the ground follows, or keep it flat.
 - **Fit to ground.** Sets the building onto the slope with one click.
 - **Align to neighbours.** Turns a side to the next road or building, or levels it with their ground.

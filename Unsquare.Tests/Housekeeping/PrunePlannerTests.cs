@@ -67,6 +67,21 @@ namespace Unsquare.Tests.Housekeeping
         }
 
         [Test]
+        public void PlanOrphanSweep_LotOnlyEntryWithoutAssets_Sweeps()
+        {
+            var manifest = new VariantManifest();
+            var lotOnly = VariantManifestTests.Entry("V");
+            lotOnly.Offsets = System.Linq.Enumerable.Repeat(1, 24).ToArray();
+            lotOnly.BuildingOffsets = new int[24];
+            manifest.Register(lotOnly, "City", Now);
+
+            var plan = PrunePlanner.PlanOrphanSweep(manifest, new[] { Asset(1) });
+
+            Assert.That(plan.IsRefused, Is.False);
+            Assert.That(plan.AssetNames, Is.EqualTo(new[] { Asset(1) }));
+        }
+
+        [Test]
         public void PlanOrphanSweep_MassDeletion_Refuses()
         {
             var manifest = new VariantManifest();

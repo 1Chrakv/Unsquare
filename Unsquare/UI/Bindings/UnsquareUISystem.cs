@@ -44,10 +44,25 @@ namespace Unsquare.UI.Bindings
             AddBinding(new TriggerBinding<string>(Group, "selectPickKind", SelectPickKind));
             AddBinding(new TriggerBinding(Group, "resetHandle", () => _editor.Session.ResetHandle()));
             AddBinding(new TriggerBinding(Group, "resetBuilding", () => _editor.Session.Reset()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "editMode",
+                () => _editor.Session.EditMode.ToString()));
+            AddBinding(new TriggerBinding<string>(Group, "selectEditMode", SelectEditMode));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "isSplit",
+                () => _editor.Session.TryGetCage(out var cage) && cage.IsSplit));
+            AddBinding(new TriggerBinding(Group, "linkBuilding", () => _editor.Session.LinkBuildingToLot()));
+            AddBinding(new TriggerBinding(Group, "linkLot", () => _editor.Session.LinkLotToBuilding()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "blendMode",
+                () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.None)));
+            AddBinding(new TriggerBinding<string>(Group, "selectBlendMode", SelectBlendMode));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "offGround",
+                () => _editor.Session.TryGetCage(out var cage) && cage.IsOffGround));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "terrainLift",
                 () => _editor.Session.TryGetCage(out var cage) && cage.TerrainLift));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "canLiftTerrain",
-                () => _editor.Session.TryGetCage(out var cage) && cage.IsDeformed));
+                () => _editor.Session.EditMode != CageTarget.Building &&
+                      _editor.Session.TryGetCage(out var cage) && cage.LotDeformed));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canSelectGroundFitMode",
+                () => _editor.Session.EditMode != CageTarget.Building));
             AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
             AddBinding(new TriggerBinding(Group, "fitToGround", () => _editor.Session.FitToGround()));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "groundFitMode",
@@ -66,6 +81,22 @@ namespace Unsquare.UI.Bindings
                 if (TryParseSide(side, out var parsed))
                     _editor.Session.AlignGroundToNeighbour(parsed);
             }));
+        }
+
+        private void SelectEditMode(string mode)
+        {
+            if (Enum.TryParse(mode, out CageTarget parsed) && Enum.IsDefined(typeof(CageTarget), parsed))
+                _editor.Session.SetEditMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown edit mode '{mode}'.");
+        }
+
+        private void SelectBlendMode(string mode)
+        {
+            if (Enum.TryParse(mode, out BlendMode parsed) && Enum.IsDefined(typeof(BlendMode), parsed))
+                _editor.Session.SetBlendMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown blend mode '{mode}'.");
         }
 
         private void SelectGroundFitMode(string mode)

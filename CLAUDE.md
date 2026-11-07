@@ -99,10 +99,20 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 
 ## Lot deformation
 
-- The cage is always the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
+- Cages are stored on the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
   (`CageBoxMeasurer.TryMeasureLot`), at least 8 m tall (`LotBox.MinHeight`) so flat lots have pickable vertical
-  edges. Prefabs without a lot are not deformable. A building-only cage was removed
-  (0.6.0): it left garden props, ground and paths misplaced.
+  edges. Prefabs without a lot are not deformable.
+- **Split cages** (`Unsquare/SplitCages.md`): `DeformSpec` holds a lot cage and a building cage, both on the lot box;
+  equal cages are "linked" and name, bake and remap exactly like the single cage before (v1 names, manifest v2 entries
+  migrate as linked). Meshes and attached props follow the building cage; ground items (paths, props, areas) follow
+  the lot cage, or the blend while blending is on: outside the footprint the nearest wall's change fades out across a
+  ring that ends at the lot edge where folding allows, never extrapolated (`BlendedDeformation`, `CageBlend.Ring`; its
+  constants are part of the naming scheme). `BlendMode` per building (None by default, or All) decides whether the
+  ground blends; it is in the split name. Linked variants ignore it (`DeformSpec.ForVariant`); a mode chosen while
+  linked waits in `DeformService` (memory).
+  Edit modes (`CageTarget`): Building edits the building cage on the mesh box raised to storeys and converts only
+  changes to the lot box (`SplitCageEdit`, snap rules); Lot edits the plain lot box; Both keeps the old raised edit
+  box and carries the building along. History stores lot-frame specs.
 - With deformed on-lot upgrades (e.g. a storey), the cage shown and edited (`BuildingDescription.EditBox`,
   `CageState.Box`) is raised to their top. Variants are still named and baked on the lot box; `DeformService`
   converts offsets between the two (`ExtendedCage.Convert`, exact up to the 0.1 m grid) and keeps the last edit

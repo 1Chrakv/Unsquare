@@ -4,25 +4,34 @@ using Unsquare.Core.Cage;
 namespace Unsquare.Core.Deformation
 {
     /// <summary>
-    /// What attachment deformers (props, areas, lanes, …) need: the lot deformation, the lot cage box and the
-    /// building box whose faces (facades) props align to.
+    /// What attachment deformers (props, areas, lanes, …) need: what hangs on the building and what lies on the
+    /// ground follow, the lot cage box and the building box (facades to align to, blend footprint).
     /// </summary>
     public sealed class AttachmentContext
     {
-        public AttachmentContext(IDeformation deformation, CageBox box, CageBox alignmentBox, AttachmentOptions options)
+        public AttachmentContext(IDeformation building, IDeformation ground, CageBox box, CageBox alignmentBox,
+            AttachmentOptions options)
         {
-            Deformation = deformation ?? throw new ArgumentNullException(nameof(deformation));
+            Building = building ?? throw new ArgumentNullException(nameof(building));
+            Ground = ground ?? throw new ArgumentNullException(nameof(ground));
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Box = box;
             AlignmentBox = alignmentBox;
         }
 
-        public IDeformation Deformation { get; }
+        /// <summary>Deforms what hangs on the building's meshes.</summary>
+        public IDeformation Building { get; }
+
+        /// <summary>
+        /// What everything on the ground follows: paths, lanes, props, markers and area nodes (the blend if blending
+        /// is on, else the lot cage).
+        /// </summary>
+        public IDeformation Ground { get; }
 
         /// <summary>The lot cage box.</summary>
         public CageBox Box { get; }
 
-        /// <summary>The building's mesh box: its faces are the facades props align to.</summary>
+        /// <summary>The building's mesh box: its faces are the facades props align to, its xz the footprint.</summary>
         public CageBox AlignmentBox { get; }
 
         public AttachmentOptions Options { get; }

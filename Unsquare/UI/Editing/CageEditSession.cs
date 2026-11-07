@@ -17,6 +17,7 @@ namespace Unsquare.UI.Editing
         private readonly IBuildingDeformService _service;
         private readonly EditHistory<Entity> _history;
         private bool _warnedLeavingLot;
+        private CageState _dragStart;
 
         public CageEditSession(IBuildingDeformService service)
         {
@@ -34,6 +35,9 @@ namespace Unsquare.UI.Editing
         /// </summary>
         public event Action Changed;
 
+        /// <summary>Raised when <see cref="EditMode"/> changed, e.g. to remember it in the settings.</summary>
+        public event Action<CageTarget> EditModeChanged;
+
         /// <summary>Unsquare mode is on; set by the tool. While off, every command does nothing.</summary>
         public bool IsEnabled { get; private set; }
 
@@ -42,6 +46,9 @@ namespace Unsquare.UI.Editing
 
         /// <summary>Building under the mouse that a click would select; its cage is previewed. Never the target.</summary>
         public Entity PreviewBuilding { get; private set; } = Entity.Null;
+
+        /// <summary>Which cage edits move: the building, the lot or both (default, as before the split).</summary>
+        public CageTarget EditMode { get; private set; } = CageTarget.Both;
 
         /// <summary>Pick mode and selected handle; a selected handle shows the gizmo.</summary>
         public HandleSelection Selection { get; private set; } = HandleSelection.Default;
@@ -71,13 +78,74 @@ namespace Unsquare.UI.Editing
         public bool TryGetCage(out CageState state)
         {
             state = default;
-            return HasTarget && _service.TryGetCage(Target, out state);
+            return HasTarget && _service.TryGetCage(Target, EditMode, out state);
         }
 
         public bool TryGetPreviewCage(out CageState state)
         {
             state = default;
-            return PreviewBuilding != Entity.Null && _service.TryGetCage(PreviewBuilding, out state);
+            return PreviewBuilding != Entity.Null && _service.TryGetCage(PreviewBuilding, EditMode, out state);
+        }
+
+        /// <summary>Switches which cage edits move; a drag in progress is cancelled, the selection stays.</summary>
+        public void SetEditMode(CageTarget mode)
+        {
+            if (mode == EditMode)
+                return;
+            CancelDrag();
+            EditMode = mode;
+            Log($"Edit mode {mode}");
+            EditModeChanged?.Invoke(mode);
+            Changed?.Invoke();
+        }
+
+        /// <summary>Both → Building → Lot → Both.</summary>
+        public void CycleEditMode()
+        {
+            if (!IsEnabled)
+                return;
+            SetEditMode(EditMode switch
+            {
+                CageTarget.Both => CageTarget.Building,
+                CageTarget.Building => CageTarget.Lot,
+                _ => CageTarget.Both,
+            });
+        }
+
+        /// <summary>Makes the building follow the lot again, dropping the building's own shape; undoable.</summary>
+        public DeformRequestResult LinkBuildingToLot() => Link(CageTarget.Building, "Link building to lot");
+
+        /// <summary>Makes the lot follow the building again, giving it the building's shape; undoable.</summary>
+        public DeformRequestResult LinkLotToBuilding() => Link(CageTarget.Lot, "Link lot to building");
+
+        private DeformRequestResult Link(CageTarget follower, string command)
+        {
+            if (!IsEnabled || !TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            var result = _service.Link(Target, follower);
+            RememberEdit(state.TargetSpec, result);
+            return Record(command, result);
+        }
+
+        /// <summary>Sets what follows the building's walls on the ground, also ahead of a split; undoable.</summary>
+        public DeformRequestResult SetBlendMode(BlendMode mode)
+        {
+            string command = $"Blend {mode}";
+            if (!IsEnabled || !TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            if (mode == state.BlendMode)
+                return DeformRequestResult.Accepted;
+            var result = _service.SetBlendMode(Target, mode);
+            RememberEdit(state.TargetSpec, result);
+            return Record(command, result);
+        }
+
+        /// <summary>Switches between blending everything and blending nothing.</summary>
+        public DeformRequestResult ToggleBlendMode()
+        {
+            if (!TryGetCage(out var state))
+                return Record("Blend", DeformRequestResult.NotDeformable);
+            return SetBlendMode(state.BlendMode == BlendMode.All ? BlendMode.None : BlendMode.All);
         }
 
         /// <summary>Applies new options; the step keeps its position (small, medium, large).</summary>
@@ -199,6 +267,7 @@ namespace Unsquare.UI.Editing
             if (!Selection.HasHandle || !TryGetCage(out var state))
                 return false;
             ActiveDrag = new CageDrag(Selection.Handle, state.TargetOffsets);
+            _dragStart = state;
             DragAxis = axis;
             Changed?.Invoke();
             return true;
@@ -212,7 +281,7 @@ namespace Unsquare.UI.Editing
                 return DeformRequestResult.NotDeformable;
             if (!ActiveDrag.TryAdvance(totalDelta, out var offsets))
                 return LastResult ?? DeformRequestResult.Accepted;
-            return Record(null, _service.SetOffsets(Target, offsets));
+            return Record(null, _service.SetOffsets(Target, _dragStart, offsets));
         }
 
         public void EndDrag()
@@ -221,14 +290,14 @@ namespace Unsquare.UI.Editing
                 return;
             var handle = ActiveDrag.Handle;
             if (TryGetCage(out var state))
-                _history.Record(Target, state.TargetSpec.WithOffsets(ActiveDrag.StartOffsets), state.TargetSpec);
+                _history.Record(Target, _dragStart.TargetSpec, state.TargetSpec);
             ActiveDrag = null;
             DragAxis = -1;
             Log($"Drag of {handle} ended -> {LastResult?.ToString() ?? "unchanged"}");
             Changed?.Invoke();
         }
 
-        /// <summary>Restores the offsets from drag start.</summary>
+        /// <summary>Restores the cage from drag start (the start view applied as an edit, so it lands exactly).</summary>
         public void CancelDrag()
         {
             if (ActiveDrag == null)
@@ -236,36 +305,40 @@ namespace Unsquare.UI.Editing
             var drag = ActiveDrag;
             ActiveDrag = null;
             DragAxis = -1;
-            Record($"Drag of {drag.Handle} cancelled", _service.SetOffsets(Target, drag.StartOffsets));
+            Record($"Drag of {drag.Handle} cancelled",
+                _service.SetOffsets(Target, _dragStart, _dragStart.TargetOffsets));
         }
 
         public DeformRequestResult Reset()
         {
             if (!TryGetCage(out var state))
                 return Record("Reset", DeformRequestResult.NotDeformable);
-            var result = _service.Reset(Target);
+            var result = _service.Reset(Target, EditMode);
             RememberEdit(state.TargetSpec, result);
-            return Record("Reset", result);
+            return Record($"Reset ({EditMode})", result);
         }
 
         /// <summary>
-        /// Puts the target's bottom corners on the original terrain (<see cref="GroundFitMode"/>); applied a frame or
-        /// two later.
+        /// Puts the target's bottom corners on the original terrain (<see cref="GroundFitMode"/>), applied a frame or
+        /// two later; in Building mode seats the building on its lot's ground instead.
         /// </summary>
         public DeformRequestResult FitToGround()
         {
             var mode = GroundFitMode;
-            string command = mode == GroundFitMode.BackOnly ? "Fit to ground (back)" : "Fit to ground (all corners)";
+            string command = EditMode == CageTarget.Building ? "Seat building on lot ground"
+                : mode == GroundFitMode.BackOnly ? "Fit to ground (back)" : "Fit to ground (all corners)";
             if (!TryGetCage(out _))
                 return Record(command, DeformRequestResult.NotDeformable);
             var building = Target;
-            bool started = _service.TryFitToGround(building, mode, (before, result) =>
+            bool started = _service.TryFitToGround(building, EditMode, mode, (before, result) =>
             {
                 RememberEdit(building, before, result);
                 Record($"{command} on {building}", result);
             });
             if (!started)
                 return Record(command, DeformRequestResult.Rejected);
+            if (EditMode == CageTarget.Building)
+                return LastResult ?? DeformRequestResult.Accepted; // seated at once, already recorded
             Log($"{command}: sampling terrain");
             return DeformRequestResult.Accepted;
         }
@@ -278,6 +351,11 @@ namespace Unsquare.UI.Editing
         {
             if (!IsEnabled || mode == GroundFitMode)
                 return;
+            if (EditMode == CageTarget.Building)
+            {
+                Log("Ground fit mode applies to the lot; seating the building uses all corners");
+                return;
+            }
             GroundFitMode = mode;
             Log($"Ground fit mode {GroundFitMode}");
             Changed?.Invoke();
@@ -288,6 +366,8 @@ namespace Unsquare.UI.Editing
         {
             if (!TryGetCage(out var state))
                 return Record("Terrain lift", DeformRequestResult.NotDeformable);
+            if (EditMode == CageTarget.Building)
+                return Record("Terrain lift (belongs to the lot)", DeformRequestResult.Rejected);
             bool lift = !state.TerrainLift;
             var result = _service.SetTerrainLift(Target, lift);
             RememberEdit(state.TargetSpec, result);
@@ -297,10 +377,10 @@ namespace Unsquare.UI.Editing
         /// <summary>Aligns the target's left, back or right lot face to its nearest neighbour (<see cref="AlignMode"/>).</summary>
         public DeformRequestResult AlignToNeighbour(AlignSide side)
         {
-            string command = $"Align {side} to neighbour ({AlignMode})";
+            string command = $"Align {side} to neighbour ({AlignMode}, {EditMode})";
             if (!TryGetCage(out var state))
                 return Record(command, DeformRequestResult.NotDeformable);
-            var result = _service.AlignToNeighbour(Target, side, AlignMode, Options.Align);
+            var result = _service.AlignToNeighbour(Target, EditMode, side, AlignMode, Options.Align);
             RememberEdit(state.TargetSpec, result);
             return Record(command, result);
         }
@@ -308,10 +388,10 @@ namespace Unsquare.UI.Editing
         /// <summary>Moves the bottom of the target's left, back or right side to its neighbour's ground height.</summary>
         public DeformRequestResult AlignGroundToNeighbour(AlignSide side)
         {
-            string command = $"Level {side} with neighbour";
+            string command = $"Level {side} with neighbour ({EditMode})";
             if (!TryGetCage(out var state))
                 return Record(command, DeformRequestResult.NotDeformable);
-            var result = _service.AlignGroundToNeighbour(Target, side, Options.Align);
+            var result = _service.AlignGroundToNeighbour(Target, EditMode, side, Options.Align);
             RememberEdit(state.TargetSpec, result);
             return Record(command, result);
         }
@@ -370,7 +450,7 @@ namespace Unsquare.UI.Editing
         {
             if (!TryGetCage(out var state))
                 return HasTarget ? $"Building {Target}: not deformable" : "No building selected";
-            return $"Building {Target}: {state.Status}, {Selection}, step {Step}, lot box {state.Box}, " +
+            return $"Building {Target}: {state.Status}, {EditMode} cage on {state.Box}, {Selection}, step {Step}, " +
                    $"applied [{state.AppliedSpec}], target [{state.TargetSpec}]";
         }
 
@@ -398,7 +478,7 @@ namespace Unsquare.UI.Editing
             CageEdit<Entity> edit;
             while (undo ? _history.TryUndo(out edit) : _history.TryRedo(out edit))
             {
-                if (!_service.TryGetCage(edit.Building, out _))
+                if (!_service.TryGetCage(edit.Building, EditMode, out _))
                 {
                     _history.Forget(edit.Building);
                     continue;
@@ -421,7 +501,7 @@ namespace Unsquare.UI.Editing
             }
             if (!TryGetCage(out var state))
                 return Record(command, DeformRequestResult.NotDeformable);
-            var result = _service.SetOffsets(Target, change(state.TargetOffsets));
+            var result = _service.SetOffsets(Target, state, change(state.TargetOffsets));
             RememberEdit(state.TargetSpec, result);
             return Record(command, result);
         }
@@ -433,7 +513,7 @@ namespace Unsquare.UI.Editing
         private void RememberEdit(Entity building, DeformSpec before, DeformRequestResult result)
         {
             if ((result is DeformRequestResult.Accepted or DeformRequestResult.Clamped) &&
-                _service.TryGetCage(building, out var state))
+                _service.TryGetCage(building, EditMode, out var state))
                 _history.Record(building, before, state.TargetSpec);
         }
 

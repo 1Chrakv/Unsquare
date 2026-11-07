@@ -24,6 +24,9 @@ namespace Unsquare.UI.Overlay
 
         public Color RestBox { get; } = new(1f, 1f, 1f, 0.35f);
 
+        /// <summary>The other cage (lot or building) while the two differ; dashed, without handles.</summary>
+        public Color Ghost { get; } = new(0.75f, 0.6f, 1f, 0.45f);
+
         /// <summary>Cage of the building under the mouse that a click would select.</summary>
         public Color Preview { get; } = new(1f, 1f, 1f, 0.45f);
 

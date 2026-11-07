@@ -27,6 +27,32 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void Deform_AttachedEnd_FollowsAttachedDeformationWithItsNeighbour()
+        {
+            var lot = new TrilinearCageDeformation(Box, CageOffsets.Identity);
+            var building = new TrilinearCageDeformation(Box,
+                CageOffsets.Identity.Move(CageHandle.Face(5), new float3(2f, 0f, 0f)));
+
+            var curve = CurveDeformer.Deform(lot, building, Fence, attachedStart: false, attachedEnd: true);
+
+            float3 end = building.Apply(Fence.D, out _);
+            Assert.That(Near(curve.D, end), Is.True);
+            Assert.That(Near(curve.C - Fence.C, end - Fence.D), Is.True);
+            Assert.That(Near(curve.A, Fence.A), Is.True);
+            Assert.That(Near(curve.B, Fence.B), Is.True);
+        }
+
+        [Test]
+        public void Deform_SameAttachedDeformation_EqualsPlainDeform()
+        {
+            var deformation = new TrilinearCageDeformation(Box,
+                CageOffsets.Identity.Move(CageHandle.Corner(7), new float3(1f, 0.5f, -1f)));
+            var plain = CurveDeformer.Deform(deformation, Fence);
+            var attached = CurveDeformer.Deform(deformation, deformation, Fence, true, true);
+            Assert.That(attached, Is.EqualTo(plain));
+        }
+
+        [Test]
         public void Deform_EndpointsFollowDeformation()
         {
             var offsets = CageOffsets.Identity.Move(CageHandle.Face(1), new float3(4, 0, 0));
