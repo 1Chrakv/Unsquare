@@ -25,6 +25,10 @@ namespace Unsquare.Core.Persistence
         /// <summary>Whether the variant keeps the flat lot terrain; missing in older files, meaning lifted.</summary>
         public bool FlatTerrain { get; set; }
 
+        /// <summary>What blends between split cages; left out for <see cref="Cage.BlendMode.All"/> and linked cages.</summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public BlendMode BlendMode { get; set; }
+
         public DateTime LastUsedUtc { get; set; }
 
         /// <summary>Cities (by name) that used the variant when they were last loaded.</summary>
@@ -50,7 +54,7 @@ namespace Unsquare.Core.Persistence
         {
             var lot = CageOffsets.FromArray(Offsets);
             var building = BuildingOffsets == null ? lot : CageOffsets.FromArray(BuildingOffsets);
-            return new DeformSpec(lot, building, FlatTerrain);
+            return new DeformSpec(lot, building, FlatTerrain, BlendMode);
         }
 
         public void SetSpec(DeformSpec spec)
@@ -58,6 +62,7 @@ namespace Unsquare.Core.Persistence
             Offsets = spec.LotOffsets.ToArray();
             BuildingOffsets = spec.IsLinked ? null : spec.BuildingOffsets.ToArray();
             FlatTerrain = spec.FlatTerrain;
+            BlendMode = spec.IsLinked ? BlendMode.All : spec.BlendMode;
         }
 
         private static bool IsZero(int[] values)

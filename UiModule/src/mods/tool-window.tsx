@@ -10,6 +10,9 @@ import alignGroundLeftIcon from "images/align-ground-left.svg";
 import alignGroundRightIcon from "images/align-ground-right.svg";
 import alignLeftIcon from "images/align-left.svg";
 import alignRightIcon from "images/align-right.svg";
+import blendAllIcon from "images/blend-all.svg";
+import blendNoneIcon from "images/blend-none.svg";
+import blendPathsIcon from "images/blend-paths.svg";
 import cornerIcon from "images/pick-corner.svg";
 import linkIcon from "images/link.svg";
 import modeBothIcon from "images/mode-both.svg";
@@ -41,6 +44,7 @@ interface ToolWindowAnchor {
 const toolWindow$ = bindValue<ToolWindowAnchor>(group, "toolWindow", { visible: false, x: 0, y: 0 });
 const editMode$ = bindValue<string>(group, "editMode", "Both");
 const isSplit$ = bindValue<boolean>(group, "isSplit", false);
+const blendMode$ = bindValue<string>(group, "blendMode", "All");
 const offGround$ = bindValue<boolean>(group, "offGround", false);
 const canSelectGroundFitMode$ = bindValue<boolean>(group, "canSelectGroundFitMode", true);
 const pickKind$ = bindValue<string>(group, "pickKind", "Edge");
@@ -55,6 +59,13 @@ const editModes: ToggleEntry[] = [
     { value: "Building", icon: modeBuildingIcon, fallback: "Building: edits move only the building (Alt+D)" },
     { value: "Lot", icon: modeLotIcon, fallback: "Lot: edits move only the ground and paths (Alt+D)" },
     { value: "Both", icon: modeBothIcon, fallback: "Both: edits move building and lot together (Alt+D)" },
+];
+
+// Values are the C# BlendMode names: what follows the walls while the cages differ.
+const blendModes: ToggleEntry[] = [
+    { value: "All", icon: blendAllIcon, fallback: "Blend all (Alt+B)" },
+    { value: "Paths", icon: blendPathsIcon, fallback: "Blend only paths (Alt+B)" },
+    { value: "None", icon: blendNoneIcon, fallback: "Blend nothing; paths may break (Alt+B)" },
 ];
 
 // Values are the C# CageHandleKind names.
@@ -150,6 +161,7 @@ const ToolWindow = () => {
     const groundFitMode = useValue(groundFitMode$);
     const editMode = useValue(editMode$);
     const isSplit = useValue(isSplit$);
+    const blendMode = useValue(blendMode$);
     const offGround = useValue(offGround$);
     const canSelectGroundFitMode = useValue(canSelectGroundFitMode$);
     const { translate } = useLocalization();
@@ -174,12 +186,21 @@ const ToolWindow = () => {
                         value={editMode}
                         onSelect={mode => trigger(group, "selectEditMode", mode)}
                     />}
-                    buttons={<ActionButton
-                        icon={linkIcon}
-                        tooltip={translate("Unsquare.ToolWindow.Link", "Make the building follow the lot again")}
-                        disabled={!isSplit}
-                        onSelect={() => trigger(group, "linkBuilding")}
-                    />}
+                    buttons={<>
+                        <SegmentedToggle
+                            options={toOptions(blendModes, "Unsquare.ToolWindow.BlendMode", translate)}
+                            value={blendMode}
+                            disabled={!isSplit}
+                            onSelect={mode => trigger(group, "selectBlendMode", mode)}
+                        />
+                        <div className={styles.spacer} />
+                        <ActionButton
+                            icon={linkIcon}
+                            tooltip={translate("Unsquare.ToolWindow.Link", "Make the building follow the lot again")}
+                            disabled={!isSplit}
+                            onSelect={() => trigger(group, "linkBuilding")}
+                        />
+                    </>}
                 />
                 <div className={styles.divider} />
                 <Section

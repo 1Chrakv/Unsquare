@@ -45,7 +45,8 @@ namespace Unsquare.Integration.Prefabs
         {
             variant = null;
             var split = SplitDeformations.Create(box, buildingBox, spec);
-            IDeformation building = meshesFollowLot ? split.Lot : split.Building, lot = split.Lot, blend = split.Blend;
+            IDeformation building = meshesFollowLot ? split.Lot : split.Building, lot = split.Lot;
+            IDeformation paths = split.Paths, ground = split.Ground;
             var meshOffsets = meshesFollowLot ? spec.LotOffsets : spec.BuildingOffsets;
             float twist = meshesFollowLot
                 ? CageTwist.MaxResidualMeters(meshOffsets)
@@ -54,11 +55,12 @@ namespace Unsquare.Integration.Prefabs
             {
                 building = new TranslatedDeformation(building, frameOrigin);
                 lot = new TranslatedDeformation(lot, frameOrigin);
-                blend = new TranslatedDeformation(blend, frameOrigin);
+                paths = new TranslatedDeformation(paths, frameOrigin);
+                ground = new TranslatedDeformation(ground, frameOrigin);
                 box = box.RelativeTo(frameOrigin);
                 buildingBox = buildingBox.RelativeTo(frameOrigin);
             }
-            var context = new AttachmentContext(building, lot, blend, box, buildingBox, attachments);
+            var context = new AttachmentContext(building, lot, paths, ground, box, buildingBox, attachments);
 
             ObjectMeshInfo[] meshes;
             if (meshOffsets.IsIdentity)

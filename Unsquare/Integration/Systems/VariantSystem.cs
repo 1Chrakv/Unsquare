@@ -291,9 +291,9 @@ namespace Unsquare.Integration.Systems
             return new LotRemap(from, Deformation(lotBox, buildingBox, target));
         }
 
-        // Nets and areas on the lot follow the blend: the building's cage at its footprint, the lot's beyond.
+        // Nets follow the cages like paths (SubNetDeformer): the building's at its footprint, the lot's beyond.
         private static IDeformation Deformation(CageBox lotBox, CageBox buildingBox, DeformSpec spec) =>
-            spec == null || spec.IsIdentity ? null : SplitDeformations.Create(lotBox, buildingBox, spec).Blend;
+            spec == null || spec.IsIdentity ? null : SplitDeformations.Create(lotBox, buildingBox, spec).Paths;
 
         private bool TryDescribe(Entity building, out BuildingDescription description)
         {

@@ -3,8 +3,9 @@ using System;
 namespace Unsquare.Core.Cage
 {
     /// <summary>
-    /// Everything that makes a building's variant: the lot cage, the building cage (both on the lot box) and whether
-    /// the lot terrain stays flat. Equal cages are "linked" and behave exactly like the single cage before the split.
+    /// Everything that makes a building's variant: the lot cage, the building cage (both on the lot box), whether the
+    /// lot terrain stays flat and what blends between the cages. Equal cages are "linked" and behave exactly like the
+    /// single cage before the split.
     /// </summary>
     public sealed class DeformSpec : IEquatable<DeformSpec>
     {
@@ -16,11 +17,13 @@ namespace Unsquare.Core.Cage
         {
         }
 
-        public DeformSpec(CageOffsets lotOffsets, CageOffsets buildingOffsets, bool flatTerrain)
+        public DeformSpec(CageOffsets lotOffsets, CageOffsets buildingOffsets, bool flatTerrain,
+            BlendMode blendMode = BlendMode.All)
         {
             LotOffsets = lotOffsets ?? throw new ArgumentNullException(nameof(lotOffsets));
             BuildingOffsets = buildingOffsets ?? throw new ArgumentNullException(nameof(buildingOffsets));
             FlatTerrain = flatTerrain;
+            BlendMode = blendMode;
         }
 
         /// <summary>Deforms the ground items (ground props, areas, lanes, nets) and the terrain lift.</summary>
@@ -32,35 +35,48 @@ namespace Unsquare.Core.Cage
         /// <summary>Whether the lot terrain keeps the game's flat pad instead of following the cage.</summary>
         public bool FlatTerrain { get; }
 
+        /// <summary>What follows the building's walls on the ground; only matters while the cages differ.</summary>
+        public BlendMode BlendMode { get; }
+
         public bool IsLinked => LotOffsets.Equals(BuildingOffsets);
         public bool IsIdentity => LotOffsets.IsIdentity && BuildingOffsets.IsIdentity;
 
-        public DeformSpec WithLotOffsets(CageOffsets offsets) => new(offsets, BuildingOffsets, FlatTerrain);
-        public DeformSpec WithBuildingOffsets(CageOffsets offsets) => new(LotOffsets, offsets, FlatTerrain);
-        public DeformSpec WithFlatTerrain(bool flatTerrain) => new(LotOffsets, BuildingOffsets, flatTerrain);
+        public DeformSpec WithLotOffsets(CageOffsets offsets) => new(offsets, BuildingOffsets, FlatTerrain, BlendMode);
+        public DeformSpec WithBuildingOffsets(CageOffsets offsets) => new(LotOffsets, offsets, FlatTerrain, BlendMode);
+        public DeformSpec WithFlatTerrain(bool flatTerrain) => new(LotOffsets, BuildingOffsets, flatTerrain, BlendMode);
+        public DeformSpec WithBlendMode(BlendMode mode) => new(LotOffsets, BuildingOffsets, FlatTerrain, mode);
 
         /// <summary>
-        /// One spec per shape: undeformed is <see cref="Identity"/>, and an undeformed lot has no terrain to keep flat.
+        /// One spec per shape: undeformed is <see cref="Identity"/>, an undeformed lot has no terrain to keep flat,
+        /// and linked cages have nothing to blend.
         /// </summary>
         public DeformSpec Normalized()
         {
             if (IsIdentity)
                 return Identity;
-            return FlatTerrain && LotOffsets.IsIdentity ? WithFlatTerrain(false) : this;
+            bool flat = FlatTerrain && !LotOffsets.IsIdentity;
+            var blend = IsLinked ? BlendMode.All : BlendMode;
+            return flat == FlatTerrain && blend == BlendMode ? this : new(LotOffsets, BuildingOffsets, flat, blend);
         }
 
         public bool Equals(DeformSpec other) =>
-            other != null && FlatTerrain == other.FlatTerrain && LotOffsets.Equals(other.LotOffsets) &&
-            BuildingOffsets.Equals(other.BuildingOffsets);
+            other != null && FlatTerrain == other.FlatTerrain && BlendMode == other.BlendMode &&
+            LotOffsets.Equals(other.LotOffsets) && BuildingOffsets.Equals(other.BuildingOffsets);
 
         public override bool Equals(object obj) => obj is DeformSpec other && Equals(other);
 
-        public override int GetHashCode() =>
-            (((LotOffsets.GetHashCode() * 397) ^ BuildingOffsets.GetHashCode()) * 397) ^ FlatTerrain.GetHashCode();
+        public override int GetHashCode()
+        {
+            int hash = (LotOffsets.GetHashCode() * 397) ^ BuildingOffsets.GetHashCode();
+            hash = (hash * 397) ^ FlatTerrain.GetHashCode();
+            return (hash * 397) ^ (int)BlendMode;
+        }
 
         public override string ToString()
         {
-            string cages = IsLinked ? LotOffsets.ToString() : $"lot {LotOffsets}, building {BuildingOffsets}";
+            string cages = IsLinked
+                ? LotOffsets.ToString()
+                : $"lot {LotOffsets}, building {BuildingOffsets}, blend {BlendMode}";
             return FlatTerrain ? $"{cages} (flat terrain)" : cages;
         }
     }

@@ -72,6 +72,23 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void Equality_IncludesBlendMode()
+        {
+            var split = new DeformSpec(Raised, Widened, false);
+            Assert.That(split.WithBlendMode(BlendMode.Paths), Is.Not.EqualTo(split));
+            Assert.That(split.WithBlendMode(BlendMode.None).WithLotOffsets(Widened).BlendMode, Is.EqualTo(BlendMode.None));
+        }
+
+        [Test]
+        public void Normalized_Linked_BlendsAll()
+        {
+            var spec = new DeformSpec(Raised, Raised, false, BlendMode.None).Normalized();
+            Assert.That(spec.BlendMode, Is.EqualTo(BlendMode.All));
+            Assert.That(new DeformSpec(Raised, Widened, false, BlendMode.None).Normalized().BlendMode,
+                Is.EqualTo(BlendMode.None));
+        }
+
+        [Test]
         public void Normalized_DeformedLot_KeepsFlag()
         {
             var spec = new DeformSpec(Raised, Widened, true);

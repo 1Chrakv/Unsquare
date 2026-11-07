@@ -15,6 +15,14 @@ namespace Unsquare.Core.Naming
         private const string SeedPrefix = "Unsquare:lot-offsets:v1:";
         private const string SplitSeedPrefix = "Unsquare:split:v1:";
         private const string FlatTerrainSuffix = "|flat-terrain";
+
+        private static string BlendSuffix(BlendMode mode) => mode switch
+        {
+            BlendMode.All => "",
+            BlendMode.Paths => "|blend-paths",
+            BlendMode.None => "|blend-none",
+            _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+        };
         private const string ExtensionSeedPrefix = "Unsquare:extension:v1:";
 
         /// <summary>
@@ -30,7 +38,8 @@ namespace Unsquare.Core.Naming
             if (string.IsNullOrEmpty(baseName))
                 throw new ArgumentException("Base name required.", nameof(baseName));
             string seed = SplitSeedPrefix + spec.LotOffsets.ToCanonicalString() + "|" +
-                          spec.BuildingOffsets.ToCanonicalString() + (spec.FlatTerrain ? FlatTerrainSuffix : "");
+                          spec.BuildingOffsets.ToCanonicalString() + BlendSuffix(spec.BlendMode) +
+                          (spec.FlatTerrain ? FlatTerrainSuffix : "");
             return baseName + Separator + StableHash.Compute(seed).ToHex(HashBytes);
         }
 

@@ -105,7 +105,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - **Split cages** (`Unsquare/SplitCages.md`): `DeformSpec` holds a lot cage and a building cage, both on the lot box;
   equal cages are "linked" and name, bake and remap exactly like the single cage before (v1 names, manifest v2 entries
   migrate as linked). Meshes and attached props follow the building cage, ground items the lot cage, and anything
-  connecting the two the blend (`BlendedDeformation`, margin constants in `CageBlend` are part of the naming scheme).
+  connecting the two the blend: outside the footprint the nearest wall's change fades out across a ring that ends at
+  the lot edge where folding allows, never extrapolated (`BlendedDeformation`, `CageBlend.Ring`; its constants are part
+  of the naming scheme). `BlendMode` per building (All, Paths, None) decides what blends; it is in the split name.
   Edit modes (`CageTarget`): Building edits the building cage on the mesh box raised to storeys and converts only
   changes to the lot box (`SplitCageEdit`, snap rules); Lot edits the plain lot box; Both keeps the old raised edit
   box and carries the building along. History stores lot-frame specs.

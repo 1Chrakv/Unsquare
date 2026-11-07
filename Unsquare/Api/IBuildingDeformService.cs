@@ -27,6 +27,9 @@ namespace Unsquare.Api
         /// </summary>
         DeformRequestResult SetOffsets(Entity building, in CageState start, CageOffsets view);
 
+        /// <summary>Sets what follows the building's walls on the ground (<see cref="BlendMode"/>); rejected while linked.</summary>
+        DeformRequestResult SetBlendMode(Entity building, BlendMode mode);
+
         /// <summary>Switches whether the lot terrain follows the lot cage; rejected while the lot is undeformed.</summary>
         DeformRequestResult SetTerrainLift(Entity building, bool lift);
 

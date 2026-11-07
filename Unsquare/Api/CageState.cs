@@ -65,6 +65,9 @@ namespace Unsquare.Api
         public bool IsOffGround { get; }
 
         public bool IsSplit => !TargetSpec.IsLinked;
+
+        /// <summary>What follows the building's walls on the ground; only matters while split.</summary>
+        public BlendMode BlendMode => TargetSpec.BlendMode;
         public bool HasGhost => IsSplit && GhostOffsets != null;
 
         /// <summary>Whether the target is deformed at all.</summary>

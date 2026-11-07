@@ -122,6 +122,32 @@ namespace Unsquare.UI.Editing
             return Record("Link building to lot", result);
         }
 
+        /// <summary>Sets what follows the building's walls on the ground; only while split, undoable.</summary>
+        public DeformRequestResult SetBlendMode(BlendMode mode)
+        {
+            string command = $"Blend {mode}";
+            if (!IsEnabled || !TryGetCage(out var state))
+                return Record(command, DeformRequestResult.NotDeformable);
+            if (mode == state.BlendMode)
+                return DeformRequestResult.Accepted;
+            var result = _service.SetBlendMode(Target, mode);
+            RememberEdit(state.TargetSpec, result);
+            return Record(command, result);
+        }
+
+        /// <summary>All → Paths → None → All.</summary>
+        public DeformRequestResult CycleBlendMode()
+        {
+            if (!TryGetCage(out var state))
+                return Record("Blend", DeformRequestResult.NotDeformable);
+            return SetBlendMode(state.BlendMode switch
+            {
+                BlendMode.All => BlendMode.Paths,
+                BlendMode.Paths => BlendMode.None,
+                _ => BlendMode.All,
+            });
+        }
+
         /// <summary>Applies new options; the step keeps its position (small, medium, large).</summary>
         public void Configure(CageEditOptions options)
         {

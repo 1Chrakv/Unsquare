@@ -21,8 +21,9 @@ angled streets and slopes.
   8 corners, 12 edges and 6 faces as handles. All LODs of the building are deformed.
 - **Building, lot or both.** Each building has two cages: one for the building and what hangs on it, one for its lot
   (ground, paths, ground props, terrain). Edit the building alone (its cage hugs the building), the lot alone, or both
-  together, which is the default and works as before. Paths and lanes into the building blend between the two cages,
-  so they stay connected; props standing inside the building's footprint (steps, bins) move with it.
+  together, which is the default and works as before. Next to the building, the ground follows the wall beside it
+  and fades out towards the lot edge, so paths stay connected; props standing inside the building's footprint
+  (steps, bins) move with it. Per building you can blend everything, only paths, or nothing.
 - **The lot follows.** Props, sub-buildings, ground areas (paving, grass), lanes and paths on the lot move with the
   cage. Props stay rigid but follow position and rotation, and turn with the nearest facade; ground props stay upright.
   Path ends at the road slide along it and stay connected.
@@ -104,6 +105,7 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 | Unsquare mode on / off | Alt+U |
 | Cycle edit mode (both → building → lot) | Alt+D |
 | Make the building follow the lot again (Link) | Alt+K |
+| Cycle what blends (all → paths → nothing) | Alt+B |
 | Cycle pick mode (edges → faces → corners) | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle | Alt+Q / Alt+E |

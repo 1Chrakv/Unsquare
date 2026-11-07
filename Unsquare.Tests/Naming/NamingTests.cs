@@ -90,6 +90,29 @@ namespace Unsquare.Tests.Naming
                 Is.Not.EqualTo(expected));
         }
 
+        [Test]
+        public void VariantName_SplitBlendModes_AddSuffixes()
+        {
+            var building = Offsets.Move(CageHandle.Corner(7), new float3(0.5f, 0, 0));
+            string Seed(string blend) => "Base__uq" + StableHash.Compute("Unsquare:split:v1:" +
+                Offsets.ToCanonicalString() + "|" + building.ToCanonicalString() + blend + "|flat-terrain").ToHex(6);
+
+            // Saves reference names from these exact suffixes.
+            var flat = new DeformSpec(Offsets, building, true);
+            Assert.That(VariantNaming.VariantName("Base", flat), Is.EqualTo(Seed("")));
+            Assert.That(VariantNaming.VariantName("Base", flat.WithBlendMode(BlendMode.Paths)),
+                Is.EqualTo(Seed("|blend-paths")));
+            Assert.That(VariantNaming.VariantName("Base", flat.WithBlendMode(BlendMode.None)),
+                Is.EqualTo(Seed("|blend-none")));
+        }
+
+        [Test]
+        public void VariantName_LinkedSpec_IgnoresBlendMode()
+        {
+            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(Offsets, Offsets, false, BlendMode.None)),
+                Is.EqualTo(VariantNaming.VariantName("Base", Offsets)));
+        }
+
         [TestCase("Plain_Building")]
         [TestCase("Base__uq123")]
         [TestCase("Base__uqZZZZZZZZZZZZ")]

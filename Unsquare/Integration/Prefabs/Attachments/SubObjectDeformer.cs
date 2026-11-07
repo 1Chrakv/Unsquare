@@ -52,9 +52,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
         {
             if (!onGround)
                 return context.Building;
-            if (info.m_Object is MarkerObjectPrefab || context.IsInFootprint(info.m_Position))
-                return context.Blend;
-            return context.Lot;
+            if (info.m_Object is MarkerObjectPrefab)
+                return context.Paths;
+            return context.IsInFootprint(info.m_Position) ? context.Ground : context.Lot;
         }
     }
 }

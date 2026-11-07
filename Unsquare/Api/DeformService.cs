@@ -145,6 +145,15 @@ namespace Unsquare.Api
             }
         }
 
+        public DeformRequestResult SetBlendMode(Entity building, BlendMode mode)
+        {
+            if (!TryDescribeTarget(building, out var description, out var spec))
+                return DeformRequestResult.NotDeformable;
+            if (spec.IsLinked)
+                return DeformRequestResult.Rejected;
+            return Request(building, description, spec.WithBlendMode(mode));
+        }
+
         public DeformRequestResult SetTerrainLift(Entity building, bool lift)
         {
             if (!TryDescribeTarget(building, out var description, out var spec))

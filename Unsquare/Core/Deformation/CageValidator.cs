@@ -40,7 +40,7 @@ namespace Unsquare.Core.Deformation
                 return lot;
             var building = Validate(buildingBox, ExtendedCage.Convert(lotBox, spec.BuildingOffsets, buildingBox),
                 limits);
-            if (building != CageValidity.Valid)
+            if (building != CageValidity.Valid || spec.BlendMode == BlendMode.None)
                 return building;
             return IsBlendOrientationPreserving(lotBox, buildingBox, spec, limits)
                 ? CageValidity.Valid

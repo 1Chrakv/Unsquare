@@ -51,6 +51,16 @@ namespace Unsquare.Tests.Deformation
             Assert.That(deformations.Blend, Is.SameAs(deformations.Lot));
         }
 
+        [TestCase(BlendMode.All, true, true)]
+        [TestCase(BlendMode.Paths, true, false)]
+        [TestCase(BlendMode.None, false, false)]
+        public void Create_BlendMode_PicksWhatPathsAndGroundFollow(BlendMode mode, bool pathsBlend, bool groundBlends)
+        {
+            var d = SplitDeformations.Create(Lot, House, Grown().WithBlendMode(mode));
+            Assert.That(d.Paths, Is.SameAs(pathsBlend ? d.Blend : d.Lot));
+            Assert.That(d.Ground, Is.SameAs(groundBlends ? d.Blend : d.Lot));
+        }
+
         [Test]
         public void Apply_InsideFootprint_EqualsBuilding()
         {

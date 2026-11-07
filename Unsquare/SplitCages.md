@@ -89,33 +89,42 @@ and twist extrapolated 20–30 m away would shear them badly.
 ### 3.1 Blend between building and lot
 
 Anything that connects the building to its grounds would tear when the cages differ: lanes into the entrance, path
-nets to the door, markers, steps at the wall. They use a **composite deformation**
+nets to the door, markers, steps at the wall. They use a **composite deformation** that follows the wall and fades
+out:
 
-`D(x) = w(x) · B(x) + (1 − w(x)) · L(x)`
+`D(p) = L(p) + w(p) · Δ(c(p))`, with `Δ = B − L`
 
-where `B` and `L` are the building and lot deformations.
+where `B` and `L` are the building and lot deformations and `c(p)` is p clamped to the footprint in xz.
 
-- `w` depends only on the horizontal (xz) position: 1 inside the building's original footprint (mesh box,
-  `BuildingBox`), falling smoothly to 0 over a margin `m` around it.
-- Linked cages give `B = L`, so `D = L`: exactly today's result.
-- Points attached to a mesh (lane ends with `m_ParentMesh >= 0`, area nodes with `m_ParentMeshes[node] >= 0`) use
-  `w = 1`, i.e. the building cage.
+- Inside the footprint (mesh box, `BuildingBox`) `D = B`. Just outside, a point takes exactly the change of the wall
+  beside it and never more: the building cage is not extrapolated (in-game test: a pulled corner sheared a hospital's
+  garden and pushed hedges off the lot when it was).
+- `w` depends only on the horizontal position: the normalised distance outside the footprint (per side, relative to
+  that side's ring width), faded by smoothstep.
+- Ring width per side (`CageBlend.Ring`, `BlendRing`): `min(m, max(gap to the lot edge, fold))` with
+  `fold = MarginPerMeter · max |Δ|` at the footprint corners and `m = max(MarginMeters, fold)`. The ring ends at the
+  lot edge where folding allows; where the wall comes closer to the lot edge, it is as narrow as it can be without
+  folding (`1 − 1.5 · |Δ| / width ≥ 0.25`).
+- Linked cages give `Δ = 0`, so `D = L`: exactly the single-cage result.
+- Points attached to a mesh (lane ends with `m_ParentMesh >= 0`, area nodes with `m_ParentMeshes[node] >= 0`) follow
+  the building cage (attachment, not blending).
 - Nets stay purely positional: `NetInstanceSync` remaps instance points without knowing the prefab curves.
-- The Jacobian is `J_D = w · J_B + (1 − w) · J_L + (B − L) ⊗ ∇w`. Rigid poses of markers and props, and the
-  Newton inversion in net sync, need the full form including the `∇w` term.
+- The Jacobian is `J_L(p) + w · J_Δ(c) · ∂c/∂p + Δ(c) ⊗ ∇w`; rigid poses and the Newton inversion in net sync need
+  the full form. `D` keeps a fold check in validation as a backup.
 
-**Folding.** smoothstep has a maximum slope of 1.5 / m. A building widened by 3 m with a 4 m margin gives
-`1 − 1.5 · 3 / 4 < 0`: paths fold and the net inversion fails. Growing the building over its garden is a main use
-case, so:
+**Blend mode per building** (`BlendMode`, part of the variant name and manifest):
 
-- `m` grows with the cage difference: `m = max(BlendMarginMeters, k · max |B − L|)` on the building box boundary,
-  with `k` around 2.
-- `D` gets its own fold check (determinant of `J_D` sampled over the blend ring) in validation.
+| Mode | Blend (D) | Lot cage |
+|---|---|---|
+| All (default) | paths, lanes, markers, ground props over the footprint, ground area nodes | everything else on the ground |
+| Paths | paths, lanes, markers | gardens, ground props, areas |
+| None | nothing (paths into the building may break) | everything on the ground |
 
-**The margin is a format constant, never a setting.** Saved nets are remapped by inverting the *old* deformation,
-which is rebuilt from the variant name (`VariantSystem.BuildNetRemap`). A changed margin would make the old
-deformation wrong and paths would drift on the next edit. `BlendMarginMeters` and `k` are fixed like
-`CageOffsets.StepMeters`; `m` is then determined by the spec, i.e. by the name.
+`SplitDeformations.Paths` and `.Ground` resolve this; net remaps use `Paths`. Linked specs ignore the mode.
+
+**The ring is a format rule, never a setting.** Saved nets are remapped by inverting the *old* deformation, which is
+rebuilt from the variant name (`VariantSystem.BuildNetRemap`). `MarginMeters`, `MarginPerMeter` and the ring rule
+are fixed like `CageOffsets.StepMeters`, so the ring is determined by the spec, i.e. by the name.
 
 ### 3.2 Facade alignment
 
@@ -241,6 +250,7 @@ Decided step by step with the user.
   it but does not rotate the building's own lean.
 - **Link** is only for discarding the building's own shape: it snaps the building cage onto the lot cage (building
   offsets := lot offsets); greyed while linked.
+- **Blend mode** (3-way toggle next to Link, Alt+B; greyed while linked): All, Paths or None (3.1); undoable.
 
 ### 7.6 Terrain, fit to ground and align per mode
 

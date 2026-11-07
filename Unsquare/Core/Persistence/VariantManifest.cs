@@ -43,6 +43,7 @@ namespace Unsquare.Core.Persistence
                 existing.Offsets = entry.Offsets;
                 existing.BuildingOffsets = entry.BuildingOffsets;
                 existing.FlatTerrain = entry.FlatTerrain;
+                existing.BlendMode = entry.BlendMode;
                 entry = existing;
             }
             else

@@ -52,7 +52,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
             for (int n = 0; n < nodes.Length; n++)
             {
                 bool ground = IsGround(original, n);
-                float3 p = (ground ? context.Blend : context.Building).Apply(nodes[n], out _);
+                float3 p = (ground ? context.Ground : context.Building).Apply(nodes[n], out _);
                 if (ground)
                     p.y = nodes[n].y; // projected onto the terrain anyway
                 positions[n] = p;

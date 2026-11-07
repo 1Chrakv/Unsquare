@@ -155,6 +155,29 @@ namespace Unsquare.Tests.Persistence
         }
 
         [Test]
+        public void SaveAndLoad_BlendMode_RoundTripsAndDefaultsToAll()
+        {
+            using var temp = new TempDirectory();
+            string path = temp.File("m.json");
+            var lot = CageOffsets.Identity.Move(CageHandle.Face(3), new Unity.Mathematics.float3(0, 1, 0));
+            var paths = Entry("P");
+            paths.SetSpec(new DeformSpec(lot, CageOffsets.Identity, false, BlendMode.Paths));
+            var all = Entry("A");
+            all.SetSpec(new DeformSpec(lot, CageOffsets.Identity, false));
+            var manifest = new VariantManifest();
+            manifest.Register(paths, "City", Now);
+            manifest.Register(all, "City", Now);
+            manifest.Save(path);
+
+            Assert.That(System.IO.File.ReadAllText(path), Does.Match("\"BlendMode\":\\s*1"));
+            VariantManifest.Load(path, out var loaded);
+            loaded.TryGet("BuildingPrefab/P", out var readPaths);
+            loaded.TryGet("BuildingPrefab/A", out var readAll);
+            Assert.That(readPaths.ToSpec().BlendMode, Is.EqualTo(BlendMode.Paths));
+            Assert.That(readAll.ToSpec().BlendMode, Is.EqualTo(BlendMode.All));
+        }
+
+        [Test]
         public void SetSpec_Linked_LeavesBuildingOffsetsOut()
         {
             var entry = Entry("V");

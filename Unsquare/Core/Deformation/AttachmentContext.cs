@@ -5,17 +5,18 @@ using Unsquare.Core.Cage;
 namespace Unsquare.Core.Deformation
 {
     /// <summary>
-    /// What attachment deformers (props, areas, lanes, …) need: the building, lot and blended deformations, the lot
-    /// cage box and the building box, whose faces (facades) props align to and whose footprint the blend centres on.
+    /// What attachment deformers (props, areas, lanes, …) need: the building and lot deformations, what paths and
+    /// ground items follow, the lot cage box and the building box (facades to align to, footprint of the blend).
     /// </summary>
     public sealed class AttachmentContext
     {
-        public AttachmentContext(IDeformation building, IDeformation lot, IDeformation blend, CageBox box,
-            CageBox alignmentBox, AttachmentOptions options)
+        public AttachmentContext(IDeformation building, IDeformation lot, IDeformation paths, IDeformation ground,
+            CageBox box, CageBox alignmentBox, AttachmentOptions options)
         {
             Building = building ?? throw new ArgumentNullException(nameof(building));
             Lot = lot ?? throw new ArgumentNullException(nameof(lot));
-            Blend = blend ?? throw new ArgumentNullException(nameof(blend));
+            Paths = paths ?? throw new ArgumentNullException(nameof(paths));
+            Ground = ground ?? throw new ArgumentNullException(nameof(ground));
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Box = box;
             AlignmentBox = alignmentBox;
@@ -27,8 +28,11 @@ namespace Unsquare.Core.Deformation
         /// <summary>Deforms ground items away from the building.</summary>
         public IDeformation Lot { get; }
 
-        /// <summary>Building inside the footprint, lot beyond the blend ring: for anything connecting the two.</summary>
-        public IDeformation Blend { get; }
+        /// <summary>What paths, lanes and markers follow (the blend unless blending is off).</summary>
+        public IDeformation Paths { get; }
+
+        /// <summary>What ground props over the footprint and ground area nodes follow (the blend only for All).</summary>
+        public IDeformation Ground { get; }
 
         /// <summary>The lot cage box.</summary>
         public CageBox Box { get; }

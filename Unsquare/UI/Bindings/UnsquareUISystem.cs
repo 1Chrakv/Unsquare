@@ -50,6 +50,9 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "isSplit",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsSplit));
             AddBinding(new TriggerBinding(Group, "linkBuilding", () => _editor.Session.LinkBuildingToLot()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "blendMode",
+                () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.All)));
+            AddBinding(new TriggerBinding<string>(Group, "selectBlendMode", SelectBlendMode));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "offGround",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsOffGround));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "terrainLift",
@@ -85,6 +88,14 @@ namespace Unsquare.UI.Bindings
                 _editor.Session.SetEditMode(parsed);
             else
                 Mod.Log.Warn($"[UI] Unknown edit mode '{mode}'.");
+        }
+
+        private void SelectBlendMode(string mode)
+        {
+            if (Enum.TryParse(mode, out BlendMode parsed) && Enum.IsDefined(typeof(BlendMode), parsed))
+                _editor.Session.SetBlendMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown blend mode '{mode}'.");
         }
 
         private void SelectGroundFitMode(string mode)

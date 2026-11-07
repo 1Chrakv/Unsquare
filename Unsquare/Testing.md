@@ -41,8 +41,8 @@ mode; Esc is left to the game (its Back: default tool, then the pause menu).
 
 While a building is selected, a small window floats above its roof, in five sections with a header each; the top
 row holds only toggles, the bottom row only buttons:
-- **Deform:** top: 3-way toggle Building / Lot / Both (Alt+D cycles); bottom: Link (disabled while the cages are
-  equal; Alt+K). A hint line under the window says when the building is not on its lot's ground.
+- **Deform:** top: 3-way toggle Building / Lot / Both (Alt+D cycles); bottom: 3-way blend toggle All / Paths /
+  None (Alt+B) and Link (Alt+K), both disabled while the cages are equal. A hint line under the window says when the building is not on its lot's ground.
 - **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
 - **Terrain:** top: 2-way toggle terrain follows the building / flat pad (dimmed while undeformed; Alt+T) and 2-way
   toggle for fitting back only / all corners (Alt+F); bottom: fit the bottom corners to the original ground (Alt+G).
@@ -59,6 +59,7 @@ row holds only toggles, the bottom row only buttons:
 | Unsquare mode on / off | Alt+U |
 | Cycle edit mode both → building → lot | Alt+D |
 | Link: the building follows the lot again | Alt+K |
+| Cycle blend mode all → paths → nothing | Alt+B |
 | Cycle pick mode edges → faces → corners | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
@@ -223,6 +224,9 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 136 | Lot only: deform a lot but not the building, save, reload; then run the orphan sweep (restart with pruning on) | The variant has no `UQ_` assets in its manifest entry; nothing is refused or deleted wrongly (`Orphan sweep` log line) |
 | 137 | Car park with a storey and a separate ground-level extension: Building mode, lean the building | The storey leans with the building; the ground-level extension follows the lot (stays unless the lot changes) |
 | 138 | Switch modes, restart the game | The last chosen mode is active again |
+| 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot |
+| 140 | After 139, blend mode Paths (Alt+B), then None | Paths: gardens and props back at their places, paths still bend to the doors. None: everything on the ground stays, paths may end at the old wall |
+| 141 | After 140, Ctrl+Z twice; save and reload | Undo steps back through the blend modes; after reload the mode and shapes are kept |
 
 ## Reporting problems
 
