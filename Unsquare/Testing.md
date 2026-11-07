@@ -41,9 +41,10 @@ mode; Esc is left to the game (its Back: default tool, then the pause menu).
 
 While a building is selected, a small window floats above its roof, in five sections with a header each; the top
 row holds only toggles, the bottom row only buttons:
-- **Deform:** top: 3-way toggle Building / Lot / Both (Alt+D cycles); bottom: 3-way blend toggle All / Paths /
-  None (Alt+B), then Link: building follows lot (Alt+K) and lot follows building (Alt+Shift+K); all disabled while
-  the cages are equal. A hint line under the window says when the building is not on its lot's ground.
+- **Deform:** top: 3-way toggle Both / Building / Lot (Alt+D cycles), then the blend toggle None / All (Alt+B, None
+  by default); bottom: Link, building follows lot (link, arrow to a lot, Alt+K) and lot follows building (link, arrow
+  to a house, Alt+Shift+K). Link is disabled while the cages are equal; blend can be chosen before splitting. A hint
+  line under the window says when the building is not on its lot's ground.
 - **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
 - **Terrain:** top: 2-way toggle terrain follows the building / flat pad (dimmed while undeformed; Alt+T) and 2-way
   toggle for fitting back only / all corners (Alt+F); bottom: fit the bottom corners to the original ground (Alt+G).

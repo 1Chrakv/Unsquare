@@ -59,7 +59,7 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-// Rows sit flush on each other; an empty row collapses, and the button row stays at the bottom of the section.
+// An empty row collapses; the button row sits at the bottom of the section, a toggle's extra height below the top.
 .row {
     display: flex;
     flex-direction: row;
@@ -69,4 +69,5 @@
 
 .row + .row {
     margin-top: auto;
+    padding-top: 6rem;
 }
