@@ -9,29 +9,38 @@ namespace Unsquare.Core.Deformation
     /// </summary>
     public static class CageBlend
     {
-        /// <summary>Smallest ring width in metres. Never change it.</summary>
+        /// <summary>Ring width in metres where the lot leaves room. Never change it.</summary>
         public const float MarginMeters = 4f;
 
-        /// <summary>Ring width per metre of difference between the cages. Never change it.</summary>
+        /// <summary>Smallest ring width per metre of wall change, so the fade cannot fold. Never change it.</summary>
         public const float MarginPerMeter = 2f;
 
+        // A wall on the lot edge leaves no room; the ring then only needs to avoid a division by zero.
+        private const float MinWidthMeters = 0.1f;
+
         /// <summary>
-        /// Ring width for split cages: grows with their difference, so the blend cannot fold paths when the building
-        /// grows over its garden. The difference is measured at the corners of the ring's outer box.
+        /// Ring widths for split cages: ending at the lot edge where there is room, otherwise as narrow as the wall's
+        /// change allows without folding. The change is measured at the footprint corners, where the walls are.
         /// </summary>
-        public static float Margin(CageBox lotBox, CageBox footprint, DeformSpec spec)
+        public static BlendRing Ring(CageBox lotBox, CageBox footprint, DeformSpec spec)
         {
             if (spec.IsLinked)
-                return MarginMeters;
+                return BlendRing.Uniform(MarginMeters);
             var difference = new TrilinearCageDeformation(lotBox, spec.BuildingOffsets.Minus(spec.LotOffsets));
-            float inner = Width(MaxDifference(difference, footprint));
-            return Width(MaxDifference(difference, Grow(footprint, inner)));
+            float fold = MarginPerMeter * MaxChange(difference, footprint);
+            float width = math.max(MarginMeters, fold);
+            return new BlendRing(
+                Side(width, fold, footprint.Min.x - lotBox.Min.x),
+                Side(width, fold, lotBox.Max.x - footprint.Max.x),
+                Side(width, fold, footprint.Min.z - lotBox.Min.z),
+                Side(width, fold, lotBox.Max.z - footprint.Max.z));
         }
 
-        private static float Width(float difference) => math.max(MarginMeters, MarginPerMeter * difference);
+        private static float Side(float width, float fold, float gap) =>
+            math.max(MinWidthMeters, math.min(width, math.max(gap, fold)));
 
         // The displacement of a trilinear map is multilinear, so its largest length on a box is at a corner.
-        private static float MaxDifference(IDeformation difference, CageBox box)
+        private static float MaxChange(IDeformation difference, CageBox box)
         {
             float max = 0f;
             for (int i = 0; i < CageTopology.CornerCount; i++)
@@ -40,12 +49,6 @@ namespace Unsquare.Core.Deformation
                 max = math.max(max, math.length(difference.Apply(corner, out _) - corner));
             }
             return max;
-        }
-
-        private static CageBox Grow(CageBox box, float meters)
-        {
-            var grow = new float3(meters, 0f, meters);
-            return new CageBox(box.Min - grow, box.Max + grow);
         }
     }
 }

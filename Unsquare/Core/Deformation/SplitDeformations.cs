@@ -19,7 +19,7 @@ namespace Unsquare.Core.Deformation
         public IDeformation Building { get; }
         public IDeformation Lot { get; }
 
-        /// <summary>The building's deformation inside the footprint, the lot's beyond the blend margin.</summary>
+        /// <summary>The building's deformation inside the footprint, the lot's beyond the blend ring.</summary>
         public IDeformation Blend { get; }
 
         /// <summary>The building's mesh box (its footprint in xz).</summary>
@@ -31,7 +31,7 @@ namespace Unsquare.Core.Deformation
             if (spec.IsLinked)
                 return new SplitDeformations(lot, lot, lot, buildingBox);
             var building = new TrilinearCageDeformation(lotBox, spec.BuildingOffsets);
-            var blend = new BlendedDeformation(building, lot, buildingBox, CageBlend.Margin(lotBox, buildingBox, spec));
+            var blend = new BlendedDeformation(building, lot, buildingBox, CageBlend.Ring(lotBox, buildingBox, spec));
             return new SplitDeformations(building, lot, blend, buildingBox);
         }
 

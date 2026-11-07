@@ -88,10 +88,10 @@ namespace Unsquare.Core.Deformation
         private static bool IsBlendOrientationPreserving(CageBox lotBox, CageBox buildingBox, DeformSpec spec,
             CageLimits limits)
         {
-            float margin = CageBlend.Margin(lotBox, buildingBox, spec);
+            var ring = CageBlend.Ring(lotBox, buildingBox, spec);
             var blend = SplitDeformations.Create(lotBox, buildingBox, spec).Blend;
-            float3 grow = new(margin, 0f, margin);
-            float3 min = buildingBox.Min - grow, max = buildingBox.Max + grow;
+            float3 min = buildingBox.Min - new float3(ring.MinX, 0f, ring.MinZ);
+            float3 max = buildingBox.Max + new float3(ring.MaxX, 0f, ring.MaxZ);
             float groundY = math.clamp(0f, lotBox.Min.y, lotBox.Max.y);
             for (int x = 0; x <= BlendSamplesPerAxis; x++)
             for (int z = 0; z <= BlendSamplesPerAxis; z++)

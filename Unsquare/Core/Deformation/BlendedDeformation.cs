@@ -4,8 +4,8 @@ using Unsquare.Core.Cage;
 namespace Unsquare.Core.Deformation
 {
     /// <summary>
-    /// Joins the building and lot deformations: the building's inside the footprint, the lot's beyond the margin,
-    /// blended in between (by ground position only), so paths and lanes into the building never tear.
+    /// Joins the building and lot deformations: the building's inside the footprint; outside, the lot's plus the
+    /// change of the nearest wall, faded out across the ring. Never moves anything more than the wall beside it.
     /// </summary>
     public sealed class BlendedDeformation : IDeformation
     {
@@ -13,18 +13,18 @@ namespace Unsquare.Core.Deformation
         private readonly IDeformation _lot;
         private readonly float2 _min;
         private readonly float2 _max;
-        private readonly float _margin;
+        private readonly BlendRing _ring;
 
-        public BlendedDeformation(IDeformation building, IDeformation lot, CageBox footprint, float margin)
+        public BlendedDeformation(IDeformation building, IDeformation lot, CageBox footprint, BlendRing ring)
         {
             _building = building;
             _lot = lot;
             _min = footprint.Min.xz;
             _max = footprint.Max.xz;
-            _margin = margin;
+            _ring = ring;
         }
 
-        /// <summary>Weight of the building deformation at a point: 1 inside the footprint, 0 beyond the margin.</summary>
+        /// <summary>How much of the wall's change a point takes: 1 inside the footprint, 0 beyond the ring.</summary>
         public float Weight(float3 p) => Weight(p, out _);
 
         public float3 Apply(float3 p, out float3x3 jacobian)
@@ -32,34 +32,48 @@ namespace Unsquare.Core.Deformation
             float w = Weight(p, out float3 gradient);
             if (w >= 1f)
                 return _building.Apply(p, out jacobian);
-            if (w <= 0f)
-                return _lot.Apply(p, out jacobian);
-
-            float3 b = _building.Apply(p, out float3x3 jb);
             float3 l = _lot.Apply(p, out float3x3 jl);
-            float3 difference = b - l;
-            // Product rule: the weight changes across the ring too, which adds (B − L) ⊗ ∇w.
-            jacobian = w * jb + (1f - w) * jl + new float3x3(
-                difference * gradient.x, difference * gradient.y, difference * gradient.z);
-            return l + w * difference;
+            if (w <= 0f)
+            {
+                jacobian = jl;
+                return l;
+            }
+
+            // The nearest wall point: the change is taken there, so it never grows with distance.
+            var wall = new float3(math.clamp(p.x, _min.x, _max.x), p.y, math.clamp(p.z, _min.y, _max.y));
+            float3 change = _building.Apply(wall, out float3x3 jb) - _lot.Apply(wall, out float3x3 jlWall);
+            var jChange = jb - jlWall;
+            // The wall point only follows p along axes where p is within the footprint.
+            if (p.x < _min.x || p.x > _max.x)
+                jChange.c0 = float3.zero;
+            if (p.z < _min.y || p.z > _max.y)
+                jChange.c2 = float3.zero;
+            jacobian = jl + w * jChange + new float3x3(change * gradient.x, change * gradient.y, change * gradient.z);
+            return l + w * change;
         }
 
+        // Normalised distance outside the footprint (per side relative to its ring width), faded by smoothstep.
         private float Weight(float3 p, out float3 gradient)
         {
             gradient = float3.zero;
-            float2 below = _min - p.xz, above = p.xz - _max;
-            float2 outside = math.max(math.max(below, above), 0f);
-            float distance = math.length(outside);
-            if (distance <= 0f)
-                return 1f;
-            if (distance >= _margin)
-                return 0f;
+            float x = 0f, dx = 0f, z = 0f, dz = 0f;
+            if (p.x < _min.x)
+                (x, dx) = ((_min.x - p.x) / _ring.MinX, -1f / _ring.MinX);
+            else if (p.x > _max.x)
+                (x, dx) = ((p.x - _max.x) / _ring.MaxX, 1f / _ring.MaxX);
+            if (p.z < _min.y)
+                (z, dz) = ((_min.y - p.z) / _ring.MinZ, -1f / _ring.MinZ);
+            else if (p.z > _max.y)
+                (z, dz) = ((p.z - _max.y) / _ring.MaxZ, 1f / _ring.MaxZ);
 
-            float t = distance / _margin;
-            float slope = -6f * t * (1f - t) / _margin; // d(1 − smoothstep)/d(distance)
-            float2 direction = outside / distance * math.select(new float2(-1f), new float2(1f), above > 0f);
-            gradient = new float3(direction.x, 0f, direction.y) * slope;
-            return 1f - t * t * (3f - 2f * t);
+            float s = math.sqrt(x * x + z * z);
+            if (s <= 0f)
+                return 1f;
+            if (s >= 1f)
+                return 0f;
+            float slope = -6f * s * (1f - s); // d(1 − smoothstep)/ds
+            gradient = new float3(x * dx, 0f, z * dz) * (slope / s);
+            return 1f - s * s * (3f - 2f * s);
         }
     }
 }
