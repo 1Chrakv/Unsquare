@@ -49,12 +49,18 @@ namespace Unsquare.Core.Deformation
         /// </summary>
         public static bool StandsOnLot(float groundY, CageBox footprint, RigidPose pose, MinMaxBounds bounds)
         {
-            if (!ReachesGround(groundY, pose, bounds))
-                return false;
-            float2 anchor = pose.Position.xz;
-            float2 outside = math.max(footprint.Min.xz - anchor, anchor - footprint.Max.xz);
-            return math.cmax(outside) > FootprintMarginMeters;
+            return ReachesGround(groundY, pose, bounds) && OutsideFootprint(footprint, pose.Position.xz);
         }
+
+        /// <summary>
+        /// The same test for a single point, e.g. a lane end the asset attached to a mesh: at the lot ground and
+        /// further than <see cref="FootprintMarginMeters"/> outside <paramref name="footprint"/>.
+        /// </summary>
+        public static bool StandsOnLot(float groundY, CageBox footprint, float3 point) =>
+            math.abs(point.y - groundY) <= GroundToleranceMeters && OutsideFootprint(footprint, point.xz);
+
+        private static bool OutsideFootprint(CageBox footprint, float2 point) =>
+            math.cmax(math.max(footprint.Min.xz - point, point - footprint.Max.xz)) > FootprintMarginMeters;
 
         /// <summary>
         /// True for a linear prop at the lot ground whose centre lies within <see cref="LotEdgeReachMeters"/> of a

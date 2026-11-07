@@ -91,6 +91,24 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void StandsOnLot_PointOutsideFootprint_True()
+        {
+            Assert.That(PropAnchor.StandsOnLot(0f, Footprint, new float3(3f, 0.2f, -15f)), Is.True);
+        }
+
+        [Test]
+        public void StandsOnLot_PointAtWall_False()
+        {
+            Assert.That(PropAnchor.StandsOnLot(0f, Footprint, new float3(3f, 0f, -5.3f)), Is.False);
+        }
+
+        [Test]
+        public void StandsOnLot_PointRaised_False()
+        {
+            Assert.That(PropAnchor.StandsOnLot(0f, Footprint, new float3(3f, 2f, -15f)), Is.False);
+        }
+
+        [Test]
         public void StandsOnLot_FrenchWall_True()
         {
             var pose = Pose(new float3(-15.8f, 2.5f, -15.6f), -90f);
