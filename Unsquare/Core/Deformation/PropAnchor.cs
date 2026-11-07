@@ -22,14 +22,37 @@ namespace Unsquare.Core.Deformation
         public const float MaxEdgeAngleDegrees = 15f;
 
         /// <summary>
-        /// True when <paramref name="anchor"/> sits at the lot ground (<paramref name="groundY"/>) and further than
+        /// True when the prop's rotated <paramref name="bounds"/> span the lot ground within <paramref name="tolerance"/>.
+        /// Pivots may sit anywhere (French lot walls hang from their top); empty bounds test the pivot itself.
+        /// </summary>
+        public static bool ReachesGround(float groundY, RigidPose pose, MinMaxBounds bounds,
+            float tolerance = GroundToleranceMeters)
+        {
+            float bottom = 0f, top = 0f;
+            if (!bounds.IsEmpty)
+            {
+                (bottom, top) = (float.MaxValue, float.MinValue);
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    var p = new float3((corner & 1) == 0 ? bounds.Min.x : bounds.Max.x,
+                        (corner & 2) == 0 ? bounds.Min.y : bounds.Max.y, (corner & 4) == 0 ? bounds.Min.z : bounds.Max.z);
+                    float y = math.rotate(pose.Rotation, p).y;
+                    (bottom, top) = (math.min(bottom, y), math.max(top, y));
+                }
+            }
+            return pose.Position.y + bottom <= groundY + tolerance && pose.Position.y + top >= groundY - tolerance;
+        }
+
+        /// <summary>
+        /// True when the prop reaches the lot ground (<paramref name="groundY"/>) and its pivot lies further than
         /// <see cref="FootprintMarginMeters"/> outside <paramref name="footprint"/> (the building's mesh box) in xz.
         /// </summary>
-        public static bool StandsOnLot(float groundY, CageBox footprint, float3 anchor)
+        public static bool StandsOnLot(float groundY, CageBox footprint, RigidPose pose, MinMaxBounds bounds)
         {
-            if (math.abs(anchor.y - groundY) > GroundToleranceMeters)
+            if (!ReachesGround(groundY, pose, bounds))
                 return false;
-            float2 outside = math.max(footprint.Min.xz - anchor.xz, anchor.xz - footprint.Max.xz);
+            float2 anchor = pose.Position.xz;
+            float2 outside = math.max(footprint.Min.xz - anchor, anchor - footprint.Max.xz);
             return math.cmax(outside) > FootprintMarginMeters;
         }
 
@@ -37,9 +60,10 @@ namespace Unsquare.Core.Deformation
         /// True for a linear prop at the lot ground whose centre lies within <see cref="LotEdgeReachMeters"/> of a
         /// side of <paramref name="lotBox"/> and whose long axis runs along it: boundary fences, whatever the mesh box.
         /// </summary>
-        public static bool RunsAlongLotEdge(CageBox lotBox, float groundY, RigidPose pose, LinearFootprint footprint)
+        public static bool RunsAlongLotEdge(CageBox lotBox, float groundY, RigidPose pose, MinMaxBounds bounds,
+            LinearFootprint footprint)
         {
-            if (math.abs(pose.Position.y - groundY) > GroundToleranceMeters)
+            if (!ReachesGround(groundY, pose, bounds))
                 return false;
             float2 centre = (pose.Position + math.rotate(pose.Rotation, footprint.Centre)).xz;
             float2 axis = math.rotate(pose.Rotation, footprint.Axis).xz;

@@ -50,12 +50,12 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 bool onGround = info.m_ParentMesh == GroundParentMesh;
                 if (!onGround && context.Options.LotPropsFollowGround)
                 {
-                    if (PropAnchor.StandsOnLot(context.GroundY, context.AlignmentBox, info.m_Position))
+                    if (PropAnchor.StandsOnLot(context.GroundY, context.AlignmentBox, rest, propBounds))
                         (onGround, lotCount) = (true, lotCount + 1);
-                    else if (linear && PropAnchor.RunsAlongLotEdge(context.Box, context.GroundY, rest, footprint))
+                    else if (linear && PropAnchor.RunsAlongLotEdge(context.Box, context.GroundY, rest, propBounds, footprint))
                         (onGround, edgeCount) = (true, edgeCount + 1);
                     else if (report && reported < MaxReportedProps &&
-                             math.abs(info.m_Position.y - context.GroundY) < ReportHeightMeters)
+                             PropAnchor.ReachesGround(context.GroundY, rest, propBounds, ReportHeightMeters))
                     {
                         reported++;
                         Report(source, info, propBounds, context);
