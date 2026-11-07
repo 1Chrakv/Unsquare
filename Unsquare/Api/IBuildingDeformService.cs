@@ -27,7 +27,10 @@ namespace Unsquare.Api
         /// </summary>
         DeformRequestResult SetOffsets(Entity building, in CageState start, CageOffsets view);
 
-        /// <summary>Sets what follows the building's walls on the ground (<see cref="BlendMode"/>); rejected while linked.</summary>
+        /// <summary>
+        /// Sets what follows the building's walls on the ground (<see cref="BlendMode"/>). While the cages are linked it
+        /// is kept for the next split (in memory only, since linked variants don't depend on it).
+        /// </summary>
         DeformRequestResult SetBlendMode(Entity building, BlendMode mode);
 
         /// <summary>Switches whether the lot terrain follows the lot cage; rejected while the lot is undeformed.</summary>

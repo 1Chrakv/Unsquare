@@ -127,7 +127,7 @@ namespace Unsquare.UI.Editing
             return Record(command, result);
         }
 
-        /// <summary>Sets what follows the building's walls on the ground; only while split, undoable.</summary>
+        /// <summary>Sets what follows the building's walls on the ground, also ahead of a split; undoable.</summary>
         public DeformRequestResult SetBlendMode(BlendMode mode)
         {
             string command = $"Blend {mode}";
@@ -140,17 +140,12 @@ namespace Unsquare.UI.Editing
             return Record(command, result);
         }
 
-        /// <summary>All → Paths → None → All.</summary>
-        public DeformRequestResult CycleBlendMode()
+        /// <summary>Switches between blending everything and blending nothing.</summary>
+        public DeformRequestResult ToggleBlendMode()
         {
             if (!TryGetCage(out var state))
                 return Record("Blend", DeformRequestResult.NotDeformable);
-            return SetBlendMode(state.BlendMode switch
-            {
-                BlendMode.All => BlendMode.Paths,
-                BlendMode.Paths => BlendMode.None,
-                _ => BlendMode.All,
-            });
+            return SetBlendMode(state.BlendMode == BlendMode.All ? BlendMode.None : BlendMode.All);
         }
 
         /// <summary>Applies new options; the step keeps its position (small, medium, large).</summary>

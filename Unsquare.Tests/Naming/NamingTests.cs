@@ -79,14 +79,14 @@ namespace Unsquare.Tests.Naming
         public void VariantName_SplitSpec_UsesSplitSeed()
         {
             var building = Offsets.Move(CageHandle.Corner(7), new float3(0.5f, 0, 0));
-            var spec = new DeformSpec(Offsets, building, false);
+            var spec = new DeformSpec(Offsets, building, false, BlendMode.All);
 
             // Saves reference names from this exact seed.
             string expected = "Base__uq" + StableHash.Compute("Unsquare:split:v1:" + Offsets.ToCanonicalString() +
                                                              "|" + building.ToCanonicalString()).ToHex(6);
             Assert.That(VariantNaming.VariantName("Base", spec), Is.EqualTo(expected));
             Assert.That(VariantNaming.VariantName("Base", spec.WithFlatTerrain(true)), Is.Not.EqualTo(expected));
-            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(building, Offsets, false)),
+            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(building, Offsets, false, BlendMode.All)),
                 Is.Not.EqualTo(expected));
         }
 
@@ -99,17 +99,14 @@ namespace Unsquare.Tests.Naming
 
             // Saves reference names from these exact suffixes.
             var flat = new DeformSpec(Offsets, building, true);
-            Assert.That(VariantNaming.VariantName("Base", flat), Is.EqualTo(Seed("")));
-            Assert.That(VariantNaming.VariantName("Base", flat.WithBlendMode(BlendMode.Paths)),
-                Is.EqualTo(Seed("|blend-paths")));
-            Assert.That(VariantNaming.VariantName("Base", flat.WithBlendMode(BlendMode.None)),
-                Is.EqualTo(Seed("|blend-none")));
+            Assert.That(VariantNaming.VariantName("Base", flat), Is.EqualTo(Seed("|blend-none")));
+            Assert.That(VariantNaming.VariantName("Base", flat.WithBlendMode(BlendMode.All)), Is.EqualTo(Seed("")));
         }
 
         [Test]
         public void VariantName_LinkedSpec_IgnoresBlendMode()
         {
-            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(Offsets, Offsets, false, BlendMode.None)),
+            Assert.That(VariantNaming.VariantName("Base", new DeformSpec(Offsets, Offsets, false, BlendMode.All)),
                 Is.EqualTo(VariantNaming.VariantName("Base", Offsets)));
         }
 

@@ -26,6 +26,7 @@ namespace Unsquare.Core.Persistence
         public bool FlatTerrain { get; set; }
 
         /// <summary>What blends between split cages; left out for <see cref="Cage.BlendMode.All"/> and linked cages.</summary>
+        /// <remarks>Missing means All: split entries from before None became the default blended everything.</remarks>
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public BlendMode BlendMode { get; set; }
 
@@ -54,7 +55,7 @@ namespace Unsquare.Core.Persistence
         {
             var lot = CageOffsets.FromArray(Offsets);
             var building = BuildingOffsets == null ? lot : CageOffsets.FromArray(BuildingOffsets);
-            return new DeformSpec(lot, building, FlatTerrain, BlendMode);
+            return new DeformSpec(lot, building, FlatTerrain, BuildingOffsets == null ? BlendMode.None : BlendMode);
         }
 
         public void SetSpec(DeformSpec spec)

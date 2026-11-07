@@ -5,8 +5,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
 {
     /// <summary>
     /// Moves and rotates the building's props (sub-objects) rigidly: attached ones with the building cage, ground
-    /// ones with the lot cage or the blend; props near a facade turn with it. SubObjectSystem places them from these
-    /// poses, so changing the clone's data moves the instances.
+    /// ones like the ground around them (blend or lot cage); props near a facade turn with it. SubObjectSystem places
+    /// them from these poses, so changing the clone's data moves the instances.
     /// </summary>
     internal sealed class SubObjectDeformer : IAttachmentDeformer
     {
@@ -36,7 +36,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 var info = PrefabCloning.ShallowCopy(original);
                 bool onGround = info.m_ParentMesh == GroundParentMesh;
                 var mode = onGround ? PlacementMode.Upright : context.Options.AttachedPropMode;
-                var pose = RigidDeformer.Place(DeformationOf(info, onGround, context), context.AlignmentBox,
+                var pose = RigidDeformer.Place(onGround ? context.Ground : context.Building, context.AlignmentBox,
                     context.Options.FacadeReachMeters, new RigidPose(info.m_Position, info.m_Rotation), mode);
                 info.m_Position = pose.Position;
                 info.m_Rotation = pose.Rotation;
@@ -45,16 +45,6 @@ namespace Unsquare.Integration.Prefabs.Attachments
             }
             subObjects.m_SubObjects = deformed;
             return new AttachmentCount("props", deformed.Length, deformedCount);
-        }
-
-        // Markers (spawn points, entrances) belong to doors; ground props over the footprint (steps) to the walls.
-        private static IDeformation DeformationOf(ObjectSubObjectInfo info, bool onGround, AttachmentContext context)
-        {
-            if (!onGround)
-                return context.Building;
-            if (info.m_Object is MarkerObjectPrefab)
-                return context.Paths;
-            return context.IsInFootprint(info.m_Position) ? context.Ground : context.Lot;
         }
     }
 }

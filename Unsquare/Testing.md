@@ -60,7 +60,7 @@ row holds only toggles, the bottom row only buttons:
 | Unsquare mode on / off | Alt+U |
 | Cycle edit mode both → building → lot | Alt+D |
 | Link: the building follows the lot / the lot follows the building | Alt+K / Alt+Shift+K |
-| Cycle blend mode all → paths → nothing | Alt+B |
+| Switch blending off / on | Alt+B |
 | Cycle pick mode edges → faces → corners | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
@@ -225,9 +225,9 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 136 | Lot only: deform a lot but not the building, save, reload; then run the orphan sweep (restart with pruning on) | The variant has no `UQ_` assets in its manifest entry; nothing is refused or deleted wrongly (`Orphan sweep` log line) |
 | 137 | Car park with a storey and a separate ground-level extension: Building mode, lean the building | The storey leans with the building; the ground-level extension follows the lot (stays unless the lot changes) |
 | 138 | Switch modes, restart the game | The last chosen mode is active again |
-| 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot |
-| 140 | After 139, blend mode Paths (Alt+B), then None | Paths: gardens and props back at their places, paths still bend to the doors. None: everything on the ground stays, paths may end at the old wall |
-| 141 | After 140, Ctrl+Z twice; save and reload | Undo steps back through the blend modes; after reload the mode and shapes are kept |
+| 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Blend toggle shows None: everything on the ground stays, paths may end at the old wall |
+| 140 | After 139, blend mode All (Alt+B) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot; benches and trees move with the paths and hedges around them |
+| 141 | After 140, Ctrl+Z; save and reload | Undo goes back to None; after reload the mode and shapes are kept |
 | 142 | Split a building (lean it in Building mode), then press "lot follows the building" (Alt+Shift+K) | The lot, paths and gardens take the building's shape, the violet cage disappears, both Link buttons grey out; Ctrl+Z restores the split |
 
 ## Reporting problems

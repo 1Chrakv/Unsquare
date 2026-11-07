@@ -19,7 +19,6 @@ namespace Unsquare.Core.Naming
         private static string BlendSuffix(BlendMode mode) => mode switch
         {
             BlendMode.All => "",
-            BlendMode.Paths => "|blend-paths",
             BlendMode.None => "|blend-none",
             _ => throw new ArgumentOutOfRangeException(nameof(mode)),
         };

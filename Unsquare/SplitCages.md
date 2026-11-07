@@ -70,8 +70,7 @@ Rules:
 |---|---|---|
 | Building meshes and LODs | `m_Meshes` | building cage |
 | Attached props, attached sub-buildings | `ObjectSubObjects`, `m_ParentMesh >= 0` | building cage |
-| Ground props inside the building footprint (steps, AC units) | `ObjectSubObjects`, `m_ParentMesh == -1` | blend (3.1) |
-| Ground props elsewhere, trees | `ObjectSubObjects`, `m_ParentMesh == -1` | lot cage |
+| Ground props, trees, steps | `ObjectSubObjects`, `m_ParentMesh == -1` | blend (3.1) |
 | Markers (spawn locations, entrances) | `ObjectSubObjects` | blend, rigid pose from its Jacobian |
 | Areas (surfaces, hedges) | `ObjectSubAreas` | per node: parent mesh → building cage, ground → blend |
 | Lanes (paths, fences, parking) | `ObjectSubLanes` | per end: parent mesh → building cage, ground → blend |
@@ -116,11 +115,11 @@ where `B` and `L` are the building and lot deformations and `c(p)` is p clamped 
 
 | Mode | Blend (D) | Lot cage |
 |---|---|---|
-| All (default) | paths, lanes, markers, ground props over the footprint, ground area nodes | everything else on the ground |
-| Paths | paths, lanes, markers | gardens, ground props, areas |
-| None | nothing (paths into the building may break) | everything on the ground |
+| None (default) | nothing (paths into the building may break) | everything on the ground |
+| All | everything on the ground: paths, lanes, markers, ground props, area nodes | nothing near the building |
 
-`SplitDeformations.Paths` and `.Ground` resolve this; net remaps use `Paths`. Linked specs ignore the mode.
+`SplitDeformations.Ground` resolves this; net remaps use it too. Linked specs carry the mode for the next split,
+but their variants and names ignore it (`DeformSpec.ForVariant`). A paths-only mode (value 1) was tried and removed.
 
 **The ring is a format rule, never a setting.** Saved nets are remapped by inverting the *old* deformation, which is
 rebuilt from the variant name (`VariantSystem.BuildNetRemap`). `MarginMeters`, `MarginPerMeter` and the ring rule
@@ -251,7 +250,8 @@ Decided step by step with the user.
 - **Link** is only for discarding the building's own shape: it snaps the building cage onto the lot cage (building
   offsets := lot offsets); greyed while linked. A second Link (Alt+Shift+K) does the reverse: the lot takes the
   building cage's shape (lot offsets := building offsets).
-- **Blend mode** (3-way toggle next to Link, Alt+B; greyed while linked): All, Paths or None (3.1); undoable.
+- **Blend mode** (toggle next to the mode toggle, Alt+B): None (default) or All (3.1); undoable. While the cages are
+  linked it is kept in memory (`DeformService`) for the next split, since linked variants don't depend on it.
 
 ### 7.6 Terrain, fit to ground and align per mode
 
@@ -322,7 +322,7 @@ Each step is its own commit on `feature/split-cages`; the game must behave exact
 - **Vertical seating:** Lot-mode edits can bury or lift the building; the hint and Building-mode fit cover it, but
   players may not notice it right away.
 - **Ground extensions** are classified by position; extensions straddling the footprint edge need a look in game.
-- Ground props outside the footprint can end up inside walls when the building grows over them. This is accepted
-  (it is what "building only" means), but worth a hint in the README.
+- With blend None, ground props can end up inside walls when the building grows over them. This is accepted
+  (it is what "don't blend" means); blend All pushes them along with the wall.
 - More variants per base prefab (lot and building shapes multiply); mesh sharing by bake key limits the assets.
 - Upgrades and extensions: the combined cage design in `Upgrades.md` must be re-read before touching extensions.

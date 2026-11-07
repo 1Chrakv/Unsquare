@@ -31,6 +31,9 @@ namespace Unsquare.Api
         private readonly List<Entity> _buildings = new();
         private readonly Dictionary<Entity, EditOffsets> _editOffsets = new();
 
+        // Blend modes chosen while the cages are linked; their variants don't hold one, so it waits here for a split.
+        private readonly Dictionary<Entity, BlendMode> _linkedBlend = new();
+
         public DeformService(IVariantPipeline pipeline, BaseTerrainSystem terrain, NeighbourQuery neighbours,
             EntityManager entityManager)
         {
@@ -55,8 +58,10 @@ namespace Unsquare.Api
                 return false;
 
             target = EffectiveTarget(description, target);
-            var applied = description.Applied;
-            var requested = _pipeline.TryGetRequested(building, out var pending) ? pending : applied;
+            var applied = WithLinkedBlend(building, description.Applied);
+            var requested = _pipeline.TryGetRequested(building, out var pending)
+                ? WithLinkedBlend(building, pending)
+                : applied;
             var status = MapStatus(_pipeline.GetStatus(building), applied);
             if (_editOffsets.TryGetValue(building, out var cached) && !cached.Matches(description.EditBox, requested) &&
                 !cached.Matches(description.EditBox, applied))
@@ -81,8 +86,25 @@ namespace Unsquare.Api
             spec = null;
             if (!_pipeline.TryDescribe(building, out description))
                 return false;
-            spec = _pipeline.TryGetRequested(building, out var pending) ? pending : description.Applied;
+            spec = WithLinkedBlend(building,
+                _pipeline.TryGetRequested(building, out var pending) ? pending : description.Applied);
             return true;
+        }
+
+        private DeformSpec WithLinkedBlend(Entity building, DeformSpec spec) =>
+            spec.IsLinked && _linkedBlend.TryGetValue(building, out var mode) ? spec.WithBlendMode(mode) : spec;
+
+        // Linked specs keep their mode here (the variant drops it); a split spec carries its own.
+        private void RememberLinkedBlend(Entity building, DeformSpec spec)
+        {
+            bool had = _linkedBlend.TryGetValue(building, out var before);
+            if (spec.IsLinked && spec.BlendMode != BlendMode.None)
+                _linkedBlend[building] = spec.BlendMode;
+            else
+                _linkedBlend.Remove(building);
+            bool has = _linkedBlend.TryGetValue(building, out var after);
+            if (had != has || before != after)
+                CageChanged?.Invoke(building);
         }
 
         private static CageTarget OtherOf(CageTarget target) =>
@@ -149,8 +171,6 @@ namespace Unsquare.Api
         {
             if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
-            if (spec.IsLinked)
-                return DeformRequestResult.Rejected;
             return Request(building, description, spec.WithBlendMode(mode));
         }
 
@@ -291,12 +311,13 @@ namespace Unsquare.Api
             var limits = Options.Limits;
             var lot = CageValidator.Clamp(lotBox, spec.LotOffsets, limits);
             requested = spec.IsLinked
-                ? new DeformSpec(lot, spec.FlatTerrain)
+                ? new DeformSpec(lot, lot, spec.FlatTerrain, spec.BlendMode)
                 : SplitCageEdit.ClampBuilding(lotBox, description.BuildingBox, spec.WithLotOffsets(lot), limits);
             if (CageValidator.ValidateSplit(lotBox, description.BuildingBox, requested, limits) != CageValidity.Valid)
                 return DeformRequestResult.Rejected;
             requested = requested.Normalized();
-            _pipeline.Request(building, requested);
+            _pipeline.Request(building, requested.ForVariant());
+            RememberLinkedBlend(building, requested);
             return requested.Equals(spec.Normalized()) ? DeformRequestResult.Accepted : DeformRequestResult.Clamped;
         }
 

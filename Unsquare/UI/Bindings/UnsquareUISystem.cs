@@ -52,7 +52,7 @@ namespace Unsquare.UI.Bindings
             AddBinding(new TriggerBinding(Group, "linkBuilding", () => _editor.Session.LinkBuildingToLot()));
             AddBinding(new TriggerBinding(Group, "linkLot", () => _editor.Session.LinkLotToBuilding()));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "blendMode",
-                () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.All)));
+                () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.None)));
             AddBinding(new TriggerBinding<string>(Group, "selectBlendMode", SelectBlendMode));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "offGround",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsOffGround));

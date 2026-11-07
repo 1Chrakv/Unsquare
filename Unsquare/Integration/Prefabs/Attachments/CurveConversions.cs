@@ -21,8 +21,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
             bool onGround = parentMesh.x < 0 && parentMesh.y < 0;
             var core = ToCore(curve);
             var deformed = ToGame(attachedEndsFollowBuilding
-                ? CurveDeformer.Deform(context.Paths, context.Building, core, parentMesh.x >= 0, parentMesh.y >= 0)
-                : CurveDeformer.Deform(context.Paths, core));
+                ? CurveDeformer.Deform(context.Ground, context.Building, core, parentMesh.x >= 0, parentMesh.y >= 0)
+                : CurveDeformer.Deform(context.Ground, core));
             if (onGround)
             {
                 deformed.a.y = curve.a.y;

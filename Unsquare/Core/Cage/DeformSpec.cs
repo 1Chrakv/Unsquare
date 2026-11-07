@@ -18,7 +18,7 @@ namespace Unsquare.Core.Cage
         }
 
         public DeformSpec(CageOffsets lotOffsets, CageOffsets buildingOffsets, bool flatTerrain,
-            BlendMode blendMode = BlendMode.All)
+            BlendMode blendMode = BlendMode.None)
         {
             LotOffsets = lotOffsets ?? throw new ArgumentNullException(nameof(lotOffsets));
             BuildingOffsets = buildingOffsets ?? throw new ArgumentNullException(nameof(buildingOffsets));
@@ -36,6 +36,7 @@ namespace Unsquare.Core.Cage
         public bool FlatTerrain { get; }
 
         /// <summary>What follows the building's walls on the ground; only matters while the cages differ.</summary>
+        /// <remarks>Linked specs keep it for the next split; their variants ignore it (<see cref="ForVariant"/>).</remarks>
         public BlendMode BlendMode { get; }
 
         public bool IsLinked => LotOffsets.Equals(BuildingOffsets);
@@ -47,16 +48,24 @@ namespace Unsquare.Core.Cage
         public DeformSpec WithBlendMode(BlendMode mode) => new(LotOffsets, BuildingOffsets, FlatTerrain, mode);
 
         /// <summary>
-        /// One spec per shape: undeformed is <see cref="Identity"/>, an undeformed lot has no terrain to keep flat,
-        /// and linked cages have nothing to blend.
+        /// One spec per shape: undeformed is <see cref="Identity"/> (keeping the blend mode) and an undeformed lot has
+        /// no terrain to keep flat.
         /// </summary>
         public DeformSpec Normalized()
         {
             if (IsIdentity)
-                return Identity;
+                return BlendMode == Identity.BlendMode ? Identity : Identity.WithBlendMode(BlendMode);
             bool flat = FlatTerrain && !LotOffsets.IsIdentity;
-            var blend = IsLinked ? BlendMode.All : BlendMode;
-            return flat == FlatTerrain && blend == BlendMode ? this : new(LotOffsets, BuildingOffsets, flat, blend);
+            return flat == FlatTerrain ? this : new(LotOffsets, BuildingOffsets, flat, BlendMode);
+        }
+
+        /// <summary>The spec as its variant holds it: normalized, and linked cages blend nothing (None).</summary>
+        public DeformSpec ForVariant()
+        {
+            var normalized = Normalized();
+            return normalized.IsLinked && normalized.BlendMode != BlendMode.None
+                ? normalized.WithBlendMode(BlendMode.None).Normalized()
+                : normalized;
         }
 
         public bool Equals(DeformSpec other) =>

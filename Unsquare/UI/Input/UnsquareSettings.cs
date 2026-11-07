@@ -21,7 +21,7 @@ namespace Unsquare.UI.Input
         Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.LinkLotToBuilding, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
-    [SettingsUIKeyboardAction(CageHotkeys.CycleBlendMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.ToggleBlendMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CyclePickKind, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -84,8 +84,8 @@ namespace Unsquare.UI.Input
         public ProxyBinding LinkLotToBuildingBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.B, CageHotkeys.CycleBlendMode, alt: true)]
-        public ProxyBinding CycleBlendModeBinding { get; set; }
+        [SettingsUIKeyboardBinding(BindingKeyboard.B, CageHotkeys.ToggleBlendMode, alt: true)]
+        public ProxyBinding ToggleBlendModeBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.W, CageHotkeys.CyclePickKind, alt: true)]

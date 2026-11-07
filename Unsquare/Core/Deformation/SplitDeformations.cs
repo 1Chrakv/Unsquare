@@ -4,17 +4,16 @@ namespace Unsquare.Core.Deformation
 {
     /// <summary>
     /// The deformations of a spec: building cage, lot cage, their blend around the building's footprint, and which of
-    /// them paths and ground items follow (<see cref="BlendMode"/>). Linked specs share one lot-cage deformation.
+    /// them ground items next to the building follow (<see cref="BlendMode"/>). Linked specs share one deformation.
     /// </summary>
     public sealed class SplitDeformations
     {
-        private SplitDeformations(IDeformation building, IDeformation lot, IDeformation blend, IDeformation paths,
-            IDeformation ground, CageBox footprint)
+        private SplitDeformations(IDeformation building, IDeformation lot, IDeformation blend, IDeformation ground,
+            CageBox footprint)
         {
             Building = building;
             Lot = lot;
             Blend = blend;
-            Paths = paths;
             Ground = ground;
             Footprint = footprint;
         }
@@ -25,10 +24,10 @@ namespace Unsquare.Core.Deformation
         /// <summary>The building's deformation inside the footprint, the lot's beyond the blend ring.</summary>
         public IDeformation Blend { get; }
 
-        /// <summary>What paths, lanes and markers follow: the blend unless the mode is <see cref="BlendMode.None"/>.</summary>
-        public IDeformation Paths { get; }
-
-        /// <summary>What ground props over the footprint and ground areas follow: the blend only for All.</summary>
+        /// <summary>
+        /// What everything on the ground (paths, lanes, props, markers, areas) follows: the blend for
+        /// <see cref="BlendMode.All"/>, the lot cage for <see cref="BlendMode.None"/>.
+        /// </summary>
         public IDeformation Ground { get; }
 
         /// <summary>The building's mesh box (its footprint in xz).</summary>
@@ -38,12 +37,10 @@ namespace Unsquare.Core.Deformation
         {
             var lot = new TrilinearCageDeformation(lotBox, spec.LotOffsets);
             if (spec.IsLinked)
-                return new SplitDeformations(lot, lot, lot, lot, lot, buildingBox);
+                return new SplitDeformations(lot, lot, lot, lot, buildingBox);
             var building = new TrilinearCageDeformation(lotBox, spec.BuildingOffsets);
             var blend = new BlendedDeformation(building, lot, buildingBox, CageBlend.Ring(lotBox, buildingBox, spec));
-            return new SplitDeformations(building, lot, blend,
-                spec.BlendMode == BlendMode.None ? lot : blend,
-                spec.BlendMode == BlendMode.All ? blend : lot,
+            return new SplitDeformations(building, lot, blend, spec.BlendMode == BlendMode.All ? blend : lot,
                 buildingBox);
         }
 

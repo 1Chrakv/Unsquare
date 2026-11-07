@@ -24,10 +24,12 @@ namespace Unsquare.Tests.Deformation
         }
 
         // The house grown by 3 m over its garden (+x side), the lot unchanged.
-        private static DeformSpec Grown() => Edit(House, CageHandle.Face(1), new float3(3f, 0f, 0f));
+        private static DeformSpec Grown() =>
+            Edit(House, CageHandle.Face(1), new float3(3f, 0f, 0f)).WithBlendMode(BlendMode.All);
 
         // The front-right column pulled 3 m inwards (the in-game hospital case): extrapolated, this shears the garden.
-        private static DeformSpec Tapered() => Edit(House, CageHandle.Edge(EdgeOf(5, 7)), new float3(-3f, 0f, 0f));
+        private static DeformSpec Tapered() =>
+            Edit(House, CageHandle.Edge(EdgeOf(5, 7)), new float3(-3f, 0f, 0f)).WithBlendMode(BlendMode.All);
 
         private static int EdgeOf(int a, int b)
         {
@@ -51,14 +53,12 @@ namespace Unsquare.Tests.Deformation
             Assert.That(deformations.Blend, Is.SameAs(deformations.Lot));
         }
 
-        [TestCase(BlendMode.All, true, true)]
-        [TestCase(BlendMode.Paths, true, false)]
-        [TestCase(BlendMode.None, false, false)]
-        public void Create_BlendMode_PicksWhatPathsAndGroundFollow(BlendMode mode, bool pathsBlend, bool groundBlends)
+        [TestCase(BlendMode.All, true)]
+        [TestCase(BlendMode.None, false)]
+        public void Create_BlendMode_PicksWhatGroundFollows(BlendMode mode, bool blends)
         {
             var d = SplitDeformations.Create(Lot, House, Grown().WithBlendMode(mode));
-            Assert.That(d.Paths, Is.SameAs(pathsBlend ? d.Blend : d.Lot));
-            Assert.That(d.Ground, Is.SameAs(groundBlends ? d.Blend : d.Lot));
+            Assert.That(d.Ground, Is.SameAs(blends ? d.Blend : d.Lot));
         }
 
         [Test]

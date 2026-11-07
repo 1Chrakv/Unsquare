@@ -18,7 +18,7 @@ namespace Unsquare.UI.Input
         public const string CycleEditMode = "UnsquareCycleEditMode";
         public const string LinkBuildingToLot = "UnsquareLinkBuildingToLot";
         public const string LinkLotToBuilding = "UnsquareLinkLotToBuilding";
-        public const string CycleBlendMode = "UnsquareCycleBlendMode";
+        public const string ToggleBlendMode = "UnsquareToggleBlendMode";
         public const string CyclePickKind = "UnsquareCyclePickKind";
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";
@@ -57,8 +57,8 @@ namespace Unsquare.UI.Input
                 "Make the building follow the lot again", s => s.LinkBuildingToLot()),
             new HotkeyDefinition(LinkLotToBuilding, nameof(UnsquareSettings.LinkLotToBuildingBinding),
                 "Make the lot follow the building again", s => s.LinkLotToBuilding()),
-            new HotkeyDefinition(CycleBlendMode, nameof(UnsquareSettings.CycleBlendModeBinding),
-                "Cycle what blends between building and lot (all, paths, nothing)", s => s.CycleBlendMode()),
+            new HotkeyDefinition(ToggleBlendMode, nameof(UnsquareSettings.ToggleBlendModeBinding),
+                "Switch whether the ground blends between building and lot", s => s.ToggleBlendMode()),
             new HotkeyDefinition(CyclePickKind, nameof(UnsquareSettings.CyclePickKindBinding),
                 "Cycle pick mode (edges, faces, corners)", s => s.CyclePickKind()),
             new HotkeyDefinition(KindCorner, nameof(UnsquareSettings.KindCornerBinding), "Pick corners",

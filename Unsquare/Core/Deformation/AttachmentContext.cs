@@ -1,21 +1,18 @@
 using System;
-using Unity.Mathematics;
 using Unsquare.Core.Cage;
 
 namespace Unsquare.Core.Deformation
 {
     /// <summary>
-    /// What attachment deformers (props, areas, lanes, …) need: the building and lot deformations, what paths and
-    /// ground items follow, the lot cage box and the building box (facades to align to, footprint of the blend).
+    /// What attachment deformers (props, areas, lanes, …) need: what hangs on the building and what lies on the
+    /// ground follow, the lot cage box and the building box (facades to align to, blend footprint).
     /// </summary>
     public sealed class AttachmentContext
     {
-        public AttachmentContext(IDeformation building, IDeformation lot, IDeformation paths, IDeformation ground,
-            CageBox box, CageBox alignmentBox, AttachmentOptions options)
+        public AttachmentContext(IDeformation building, IDeformation ground, CageBox box, CageBox alignmentBox,
+            AttachmentOptions options)
         {
             Building = building ?? throw new ArgumentNullException(nameof(building));
-            Lot = lot ?? throw new ArgumentNullException(nameof(lot));
-            Paths = paths ?? throw new ArgumentNullException(nameof(paths));
             Ground = ground ?? throw new ArgumentNullException(nameof(ground));
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Box = box;
@@ -25,13 +22,10 @@ namespace Unsquare.Core.Deformation
         /// <summary>Deforms what hangs on the building's meshes.</summary>
         public IDeformation Building { get; }
 
-        /// <summary>Deforms ground items away from the building.</summary>
-        public IDeformation Lot { get; }
-
-        /// <summary>What paths, lanes and markers follow (the blend unless blending is off).</summary>
-        public IDeformation Paths { get; }
-
-        /// <summary>What ground props over the footprint and ground area nodes follow (the blend only for All).</summary>
+        /// <summary>
+        /// What everything on the ground follows: paths, lanes, props, markers and area nodes (the blend if blending
+        /// is on, else the lot cage).
+        /// </summary>
         public IDeformation Ground { get; }
 
         /// <summary>The lot cage box.</summary>
@@ -41,9 +35,5 @@ namespace Unsquare.Core.Deformation
         public CageBox AlignmentBox { get; }
 
         public AttachmentOptions Options { get; }
-
-        /// <summary>Whether a point lies over the building's footprint (xz of <see cref="AlignmentBox"/>).</summary>
-        public bool IsInFootprint(float3 p) =>
-            math.all(p.xz >= AlignmentBox.Min.xz) && math.all(p.xz <= AlignmentBox.Max.xz);
     }
 }

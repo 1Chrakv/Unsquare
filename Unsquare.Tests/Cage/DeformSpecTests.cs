@@ -75,17 +75,28 @@ namespace Unsquare.Tests.Cage
         public void Equality_IncludesBlendMode()
         {
             var split = new DeformSpec(Raised, Widened, false);
-            Assert.That(split.WithBlendMode(BlendMode.Paths), Is.Not.EqualTo(split));
-            Assert.That(split.WithBlendMode(BlendMode.None).WithLotOffsets(Widened).BlendMode, Is.EqualTo(BlendMode.None));
+            Assert.That(split.WithBlendMode(BlendMode.All), Is.Not.EqualTo(split));
+            Assert.That(split.WithBlendMode(BlendMode.All).WithLotOffsets(Widened).BlendMode, Is.EqualTo(BlendMode.All));
         }
 
         [Test]
-        public void Normalized_Linked_BlendsAll()
+        public void Normalized_Linked_KeepsBlendMode()
         {
-            var spec = new DeformSpec(Raised, Raised, false, BlendMode.None).Normalized();
-            Assert.That(spec.BlendMode, Is.EqualTo(BlendMode.All));
-            Assert.That(new DeformSpec(Raised, Widened, false, BlendMode.None).Normalized().BlendMode,
+            Assert.That(new DeformSpec(Raised, Raised, false, BlendMode.All).Normalized().BlendMode,
+                Is.EqualTo(BlendMode.All));
+            Assert.That(new DeformSpec(CageOffsets.Identity, CageOffsets.Identity, false, BlendMode.All).Normalized()
+                .BlendMode, Is.EqualTo(BlendMode.All));
+        }
+
+        [Test]
+        public void ForVariant_Linked_BlendsNothing()
+        {
+            Assert.That(new DeformSpec(Raised, Raised, false, BlendMode.All).ForVariant().BlendMode,
                 Is.EqualTo(BlendMode.None));
+            Assert.That(new DeformSpec(CageOffsets.Identity, CageOffsets.Identity, true, BlendMode.All).ForVariant(),
+                Is.SameAs(DeformSpec.Identity));
+            Assert.That(new DeformSpec(Raised, Widened, false, BlendMode.All).ForVariant().BlendMode,
+                Is.EqualTo(BlendMode.All));
         }
 
         [Test]

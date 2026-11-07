@@ -33,7 +33,7 @@ namespace Unsquare.Core.Editing
         public static DeformSpec EditBoth(CageBox lotBox, CageBox viewBox, DeformSpec start, CageOffsets newLot)
         {
             var building = start.BuildingOffsets.Plus(newLot.Minus(start.LotOffsets));
-            return Snap(lotBox, viewBox, new DeformSpec(newLot, building, start.FlatTerrain));
+            return Snap(lotBox, viewBox, new DeformSpec(newLot, building, start.FlatTerrain, start.BlendMode));
         }
 
         /// <summary>Resets the target's cage to its original shape; the other cage stays.</summary>
@@ -42,7 +42,7 @@ namespace Unsquare.Core.Editing
             {
                 CageTarget.Building => Snap(lotBox, viewBox, spec.WithBuildingOffsets(CageOffsets.Identity)),
                 CageTarget.Lot => Snap(lotBox, viewBox, spec.WithLotOffsets(CageOffsets.Identity)),
-                CageTarget.Both => DeformSpec.Identity,
+                CageTarget.Both => DeformSpec.Identity.WithBlendMode(spec.BlendMode).Normalized(),
                 _ => throw new ArgumentOutOfRangeException(nameof(target)),
             };
 

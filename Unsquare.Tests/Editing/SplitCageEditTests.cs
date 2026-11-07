@@ -27,6 +27,14 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void EditBuilding_LinkedStart_SplitsWithoutBlend()
+        {
+            var split = Nudge(Linked, CageHandle.Corner(3), new float3(1f, 0f, 0f));
+            Assert.That(split.IsLinked, Is.False);
+            Assert.That(split.BlendMode, Is.EqualTo(BlendMode.None));
+        }
+
+        [Test]
         public void EditBuilding_NudgeAndBack_ReturnsExactly()
         {
             var nudged = Nudge(Linked, CageHandle.Corner(3), new float3(0.1f, 0f, 0f));
@@ -96,12 +104,13 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void EditBoth_SplitStart_KeepsBuildingShape()
         {
-            var split = Nudge(Linked, CageHandle.Corner(3), new float3(1f, 0f, 0f));
+            var split = Nudge(Linked, CageHandle.Corner(3), new float3(1f, 0f, 0f)).WithBlendMode(BlendMode.All);
             var newLot = split.LotOffsets.Move(CageHandle.Face(5), new float3(0f, 0f, 2f));
 
             var spec = SplitCageEdit.EditBoth(Lot, House, split, newLot);
 
             Assert.That(spec.LotOffsets, Is.EqualTo(newLot));
+            Assert.That(spec.BlendMode, Is.EqualTo(BlendMode.All));
             Assert.That(spec.BuildingOffsets.Minus(spec.LotOffsets),
                 Is.EqualTo(split.BuildingOffsets.Minus(split.LotOffsets)));
         }
@@ -150,7 +159,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void LinkLot_CopiesBuildingToLot()
         {
-            var split = Nudge(Linked, CageHandle.Corner(3), new float3(1f, 0f, 0f)).WithBlendMode(BlendMode.None)
+            var split = Nudge(Linked, CageHandle.Corner(3), new float3(1f, 0f, 0f)).WithBlendMode(BlendMode.All)
                 .WithFlatTerrain(true);
 
             var linked = SplitCageEdit.LinkLot(split);

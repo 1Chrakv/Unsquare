@@ -178,7 +178,7 @@ namespace Unsquare.Integration.Systems
         {
             if (!TryDescribe(building, out var description))
                 return;
-            spec = (spec ?? DeformSpec.Identity).Normalized(); // the base prefab has no terrain flag
+            spec = (spec ?? DeformSpec.Identity).ForVariant(); // the base prefab has no terrain flag
             _swaps.Remove(building);
 
             if (spec.Equals(description.Applied))
@@ -293,7 +293,7 @@ namespace Unsquare.Integration.Systems
 
         // Nets follow the cages like paths (SubNetDeformer): the building's at its footprint, the lot's beyond.
         private static IDeformation Deformation(CageBox lotBox, CageBox buildingBox, DeformSpec spec) =>
-            spec == null || spec.IsIdentity ? null : SplitDeformations.Create(lotBox, buildingBox, spec).Paths;
+            spec == null || spec.IsIdentity ? null : SplitDeformations.Create(lotBox, buildingBox, spec).Ground;
 
         private bool TryDescribe(Entity building, out BuildingDescription description)
         {
