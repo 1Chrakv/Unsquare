@@ -4,9 +4,9 @@ using Unsquare.Core.Deformation;
 namespace Unsquare.Integration.Prefabs.Attachments
 {
     /// <summary>
-    /// Moves and rotates the building's props (sub-objects) rigidly: attached ones with the building cage, ground
-    /// ones like the ground around them (blend or lot cage); props near a facade turn with it. SubObjectSystem places
-    /// them from these poses, so changing the clone's data moves the instances.
+    /// Moves props (sub-objects) rigidly: attached ones with the building cage, ground ones (and attached ones standing
+    /// on the lot, like fences) like the ground (blend or lot cage). SubObjectSystem places them from these poses, so
+    /// changing the clone's data moves the instances.
     /// </summary>
     internal sealed class SubObjectDeformer : IAttachmentDeformer
     {
@@ -21,7 +21,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
             if (subObjects == null || subObjects.m_SubObjects == null)
                 return new AttachmentCount("props", 0, 0);
 
-            int deformedCount = 0;
+            int deformedCount = 0, lotCount = 0;
 
             // New array of copies: the infos may still be shared with the base prefab.
             var deformed = new ObjectSubObjectInfo[subObjects.m_SubObjects.Length];
@@ -35,6 +35,12 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 }
                 var info = PrefabCloning.ShallowCopy(original);
                 bool onGround = info.m_ParentMesh == GroundParentMesh;
+                if (!onGround && context.Options.LotPropsFollowGround &&
+                    PropAnchor.StandsOnLot(context.GroundY, context.AlignmentBox, info.m_Position))
+                {
+                    onGround = true;
+                    lotCount++;
+                }
                 var mode = onGround ? PlacementMode.Upright : context.Options.AttachedPropMode;
                 var pose = RigidDeformer.Place(onGround ? context.Ground : context.Building, context.AlignmentBox,
                     context.Options.FacadeReachMeters, new RigidPose(info.m_Position, info.m_Rotation), mode);
@@ -44,7 +50,8 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 deformedCount++;
             }
             subObjects.m_SubObjects = deformed;
-            return new AttachmentCount("props", deformed.Length, deformedCount);
+            return new AttachmentCount(lotCount > 0 ? $"props ({lotCount} attached on the lot)" : "props",
+                deformed.Length, deformedCount);
         }
     }
 }
