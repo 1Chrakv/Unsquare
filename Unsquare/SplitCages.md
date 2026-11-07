@@ -249,7 +249,8 @@ Decided step by step with the user.
 - Both adds deltas rather than chaining the deformations: rotating the lot (e.g. by align) moves the building with
   it but does not rotate the building's own lean.
 - **Link** is only for discarding the building's own shape: it snaps the building cage onto the lot cage (building
-  offsets := lot offsets); greyed while linked.
+  offsets := lot offsets); greyed while linked. A second Link (Alt+Shift+K) does the reverse: the lot takes the
+  building cage's shape (lot offsets := building offsets).
 - **Blend mode** (3-way toggle next to Link, Alt+B; greyed while linked): All, Paths or None (3.1); undoable.
 
 ### 7.6 Terrain, fit to ground and align per mode

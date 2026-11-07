@@ -113,13 +113,18 @@ namespace Unsquare.UI.Editing
         }
 
         /// <summary>Makes the building follow the lot again, dropping the building's own shape; undoable.</summary>
-        public DeformRequestResult LinkBuildingToLot()
+        public DeformRequestResult LinkBuildingToLot() => Link(CageTarget.Building, "Link building to lot");
+
+        /// <summary>Makes the lot follow the building again, giving it the building's shape; undoable.</summary>
+        public DeformRequestResult LinkLotToBuilding() => Link(CageTarget.Lot, "Link lot to building");
+
+        private DeformRequestResult Link(CageTarget follower, string command)
         {
             if (!IsEnabled || !TryGetCage(out var state))
-                return Record("Link building to lot", DeformRequestResult.NotDeformable);
-            var result = _service.Link(Target);
+                return Record(command, DeformRequestResult.NotDeformable);
+            var result = _service.Link(Target, follower);
             RememberEdit(state.TargetSpec, result);
-            return Record("Link building to lot", result);
+            return Record(command, result);
         }
 
         /// <summary>Sets what follows the building's walls on the ground; only while split, undoable.</summary>

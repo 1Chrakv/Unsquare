@@ -316,13 +316,18 @@ namespace Unsquare.Api
                 description.BuildingEditBox, spec, EffectiveTarget(description, target)));
         }
 
-        public DeformRequestResult Link(Entity building)
+        public DeformRequestResult Link(Entity building, CageTarget follower)
         {
             if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
             if (spec.IsLinked)
                 return DeformRequestResult.Rejected;
-            return Request(building, description, SplitCageEdit.Link(spec));
+            return Request(building, description, follower switch
+            {
+                CageTarget.Building => SplitCageEdit.Link(spec),
+                CageTarget.Lot => SplitCageEdit.LinkLot(spec),
+                _ => throw new ArgumentException("Building or lot follows, not both.", nameof(follower)),
+            });
         }
 
         public int ResetAll() => _pipeline.ResetAll();

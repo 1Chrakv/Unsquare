@@ -50,6 +50,7 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "isSplit",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsSplit));
             AddBinding(new TriggerBinding(Group, "linkBuilding", () => _editor.Session.LinkBuildingToLot()));
+            AddBinding(new TriggerBinding(Group, "linkLot", () => _editor.Session.LinkLotToBuilding()));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "blendMode",
                 () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.All)));
             AddBinding(new TriggerBinding<string>(Group, "selectBlendMode", SelectBlendMode));

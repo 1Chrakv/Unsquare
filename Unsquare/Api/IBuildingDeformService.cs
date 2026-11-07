@@ -66,8 +66,11 @@ namespace Unsquare.Api
         /// <summary>Reverts the target cage to its original shape; Both reverts the building to its original prefab.</summary>
         DeformRequestResult Reset(Entity building, CageTarget target);
 
-        /// <summary>Makes the building cage follow the lot cage again, dropping the building's own shape.</summary>
-        DeformRequestResult Link(Entity building);
+        /// <summary>
+        /// Links the cages again: <paramref name="follower"/> Building drops the building's own shape, Lot gives the
+        /// lot the building's shape. Rejected while linked.
+        /// </summary>
+        DeformRequestResult Link(Entity building, CageTarget follower);
 
         /// <summary>Reverts every deformed building in the city (uninstall path); returns how many.</summary>
         int ResetAll();

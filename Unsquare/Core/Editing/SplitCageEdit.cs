@@ -50,6 +50,12 @@ namespace Unsquare.Core.Editing
         public static DeformSpec Link(DeformSpec spec) => spec.WithBuildingOffsets(spec.LotOffsets).Normalized();
 
         /// <summary>
+        /// Makes the lot follow the building again: the lot takes the building cage's shape, continued over the lot
+        /// box, as the building already does inside it.
+        /// </summary>
+        public static DeformSpec LinkLot(DeformSpec spec) => spec.WithLotOffsets(spec.BuildingOffsets).Normalized();
+
+        /// <summary>
         /// Removes differences that only rounding made: a building view equal to the lot's links the cages, an
         /// undeformed building view resets the building cage.
         /// </summary>

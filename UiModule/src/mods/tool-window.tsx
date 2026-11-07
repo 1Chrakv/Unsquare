@@ -15,6 +15,7 @@ import blendNoneIcon from "images/blend-none.svg";
 import blendPathsIcon from "images/blend-paths.svg";
 import cornerIcon from "images/pick-corner.svg";
 import linkIcon from "images/link.svg";
+import linkLotIcon from "images/link-lot.svg";
 import modeBothIcon from "images/mode-both.svg";
 import modeBuildingIcon from "images/mode-building.svg";
 import modeLotIcon from "images/mode-lot.svg";
@@ -196,9 +197,15 @@ const ToolWindow = () => {
                         <div className={styles.spacer} />
                         <ActionButton
                             icon={linkIcon}
-                            tooltip={translate("Unsquare.ToolWindow.Link", "Make the building follow the lot again")}
+                            tooltip={translate("Unsquare.ToolWindow.Link", "Building follows the lot again")}
                             disabled={!isSplit}
                             onSelect={() => trigger(group, "linkBuilding")}
+                        />
+                        <ActionButton
+                            icon={linkLotIcon}
+                            tooltip={translate("Unsquare.ToolWindow.LinkLot", "Lot follows the building again")}
+                            disabled={!isSplit}
+                            onSelect={() => trigger(group, "linkLot")}
                         />
                     </>}
                 />

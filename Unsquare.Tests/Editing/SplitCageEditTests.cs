@@ -148,6 +148,26 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void LinkLot_CopiesBuildingToLot()
+        {
+            var split = Nudge(Linked, CageHandle.Corner(3), new float3(1f, 0f, 0f)).WithBlendMode(BlendMode.None)
+                .WithFlatTerrain(true);
+
+            var linked = SplitCageEdit.LinkLot(split);
+
+            Assert.That(linked.IsLinked, Is.True);
+            Assert.That(linked.BuildingOffsets, Is.EqualTo(split.BuildingOffsets));
+            Assert.That(linked.FlatTerrain, Is.True);
+            Assert.That(linked.BlendMode, Is.EqualTo(BlendMode.All));
+        }
+
+        [Test]
+        public void LinkLot_Linked_IsUnchanged()
+        {
+            Assert.That(SplitCageEdit.LinkLot(Linked), Is.EqualTo(Linked));
+        }
+
+        [Test]
         public void ClampBuilding_BeyondHouseLimit_ClampsOnHouseBox()
         {
             var limits = CageLimits.Default;

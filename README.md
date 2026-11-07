@@ -84,8 +84,9 @@ Highly recommended, but not required; Unsquare works without them:
 While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
 
 The edit mode (Deform section of the tool window, Alt+D) picks what an edit moves: **Building**, **Lot** or **Both**.
-Both carries the building along with the lot and keeps any shape you gave the building on its own; **Link** (Alt+K)
-makes the building follow the lot again. Lot edits never move the building, so after lifting the ground it can end
+Both carries the building along with the lot and keeps any shape you gave the building on its own. The two **Link**
+buttons make the cages equal again: the building follows the lot (Alt+K), or the lot follows the building
+(Alt+Shift+K). Lot edits never move the building, so after lifting the ground it can end
 up buried or floating: the tool window then shows a hint, and Fit to ground in Building mode sets it back onto its
 ground. The mode is remembered.
 
@@ -104,7 +105,7 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 |---|---|
 | Unsquare mode on / off | Alt+U |
 | Cycle edit mode (both → building → lot) | Alt+D |
-| Make the building follow the lot again (Link) | Alt+K |
+| Building follows the lot again / lot follows the building again (Link) | Alt+K / Alt+Shift+K |
 | Cycle what blends (all → paths → nothing) | Alt+B |
 | Cycle pick mode (edges → faces → corners) | Alt+W |
 | Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
