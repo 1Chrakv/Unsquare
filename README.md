@@ -72,6 +72,12 @@ Highly recommended, but not required; Unsquare works without them:
 - **Find It**: find and place buildings quickly.
 - **Anarchy**: place buildings and props where the game would otherwise block them.
 
+## Compatibility
+
+- **Placemaker** may interfere with fence and prop placement, especially for row houses. A test showed that it hides
+  fences between neighbouring lots and hides them again whenever they move, so the fences of a reshaped row house
+  stayed hidden while a building on its own was fine.
+
 ## Usage
 
 1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**.
