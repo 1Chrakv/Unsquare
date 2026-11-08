@@ -42,7 +42,7 @@ namespace Unsquare.Integration.Systems
         private readonly List<Entity> _readyPrefabs = new();
         private readonly List<Entity> _extensions = new();
         private readonly List<Entity> _describedExtensions = new();
-        private readonly Dictionary<BuildingExtensionPrefab, float> _extensionTops = new();
+        private readonly Dictionary<BuildingExtensionPrefab, CageBox?> _extensionBoxes = new();
         private readonly HashSet<Entity> _upgradesLogged = new();
         private readonly HashSet<Entity> _extensionRefreshes = new();
         private readonly List<Entity> _refreshing = new();
@@ -303,36 +303,43 @@ namespace Unsquare.Integration.Systems
                 !_resolver.TryResolveBase(current, out var basePrefab, out var applied) ||
                 !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return false;
-            float extensionsTop = DeformedExtensionsTop(building);
+            DescribeExtensions(building, buildingBox, out float extensionsTop, out var buildingEditBox);
             description = new BuildingDescription(basePrefab, lotBox, ExtendedCage.RaiseTop(lotBox, extensionsTop),
-                buildingBox, ExtendedCage.RaiseTop(buildingBox, extensionsTop), !buildingBox.Equals(lotBox), applied);
+                buildingBox, buildingEditBox, !buildingBox.Equals(lotBox), applied);
             return true;
         }
 
-        // Top of the on-lot extensions the owner's cage deforms (PlanExtensionTargets), in building space.
-        private float DeformedExtensionsTop(Entity building)
+        // Over the on-lot extensions the owner's cage deforms (PlanExtensionTargets), in building space: the top of
+        // all of them, and the building box grown over those baked with the building cage.
+        private void DescribeExtensions(Entity building, CageBox buildingBox, out float top,
+            out CageBox buildingEditBox)
         {
-            float top = float.MinValue;
+            top = float.MinValue;
+            buildingEditBox = buildingBox;
             InstalledExtensions.Collect(EntityManager, building, _describedExtensions);
             foreach (var extension in _describedExtensions)
             {
-                if (TryGetExtensionBase(extension, out var extensionBase) &&
-                    IsDeformedExtension(building, extension, extensionBase, out _))
-                    top = math.max(top, ExtensionTop(extensionBase));
+                if (!TryGetExtensionBase(extension, out var extensionBase) ||
+                    !IsDeformedExtension(building, extension, extensionBase, out _) ||
+                    !(ExtensionBox(extensionBase) is CageBox box))
+                    continue;
+                top = math.max(top, box.Max.y);
+                if (ExtensionCage.FollowsBuilding(box, float3.zero, buildingBox))
+                    buildingEditBox = ExtendedCage.Enclose(buildingEditBox, box);
             }
-            return top;
         }
 
-        private float ExtensionTop(BuildingExtensionPrefab extensionBase)
+        // The extension's mesh box in its owner's building space; null without meshes.
+        private CageBox? ExtensionBox(BuildingExtensionPrefab extensionBase)
         {
-            if (!_extensionTops.TryGetValue(extensionBase, out float top))
+            if (!_extensionBoxes.TryGetValue(extensionBase, out var box))
             {
-                top = CageBoxMeasurer.TryMeasureMeshes(extensionBase, out var meshBox)
-                    ? meshBox.Max.y + extensionBase.m_Position.y
-                    : float.MinValue;
-                _extensionTops[extensionBase] = top;
+                box = CageBoxMeasurer.TryMeasureMeshes(extensionBase, out var meshBox)
+                    ? meshBox.RelativeTo(-extensionBase.m_Position)
+                    : null;
+                _extensionBoxes[extensionBase] = box;
             }
-            return top;
+            return box;
         }
 
         private bool TryGetBoxes(ObjectGeometryPrefab basePrefab, out CageBox lotBox, out CageBox buildingBox)
@@ -510,9 +517,8 @@ namespace Unsquare.Integration.Systems
                 extension, extensionBase.m_Position, out offset);
         }
 
-        private static bool IsOverBuilding(BuildingExtensionPrefab extension, CageBox ownerBuildingBox) =>
-            CageBoxMeasurer.TryMeasureMeshes(extension, out var meshBox) &&
-            ExtensionCage.FollowsBuilding(meshBox, extension.m_Position, ownerBuildingBox);
+        private bool IsOverBuilding(BuildingExtensionPrefab extension, CageBox ownerBuildingBox) =>
+            ExtensionBox(extension) is CageBox box && ExtensionCage.FollowsBuilding(box, float3.zero, ownerBuildingBox);
 
         // External lots lie outside the cage; option-only upgrades have nothing to bend.
         private static bool IsDeformable(BuildingExtensionPrefab extension) =>

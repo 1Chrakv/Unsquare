@@ -30,6 +30,22 @@ namespace Unsquare.Tests.Cage
         }
 
         [Test]
+        public void Enclose_DisjointBoxes_CoversBoth()
+        {
+            var wing = new CageBox(new float3(-20, 0, -4), new float3(-14, 26, 4));
+            var box = ExtendedCage.Enclose(Lot, wing);
+            Assert.That(box.Min, Is.EqualTo(new float3(-20, 0, -16)));
+            Assert.That(box.Max, Is.EqualTo(new float3(12, 26, 16)));
+        }
+
+        [Test]
+        public void Enclose_Contained_IsUnchanged()
+        {
+            var inner = new CageBox(new float3(-3, 0, -4), new float3(3, 9, 4));
+            Assert.That(ExtendedCage.Enclose(Lot, inner), Is.EqualTo(Lot));
+        }
+
+        [Test]
         public void ConvertDelta_Negated_GivesExactNegation()
         {
             var building = new CageBox(new float3(-3, 0, -4), new float3(3, 9, 4));
