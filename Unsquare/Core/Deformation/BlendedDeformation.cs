@@ -5,7 +5,8 @@ namespace Unsquare.Core.Deformation
 {
     /// <summary>
     /// Joins the building and lot deformations: the building's inside the footprint; outside, the lot's plus the
-    /// change of the nearest wall, faded out across the ring. Never moves anything more than the wall beside it.
+    /// change of the nearest wall, faded out along an S-curve across the ring. Never moves anything more than the
+    /// wall beside it.
     /// </summary>
     public sealed class BlendedDeformation : IDeformation
     {
@@ -52,7 +53,8 @@ namespace Unsquare.Core.Deformation
             return l + w * change;
         }
 
-        // Normalised distance outside the footprint (per side relative to its ring width), faded by smoothstep.
+        // Normalised distance outside the footprint (per side relative to its ring width), faded by smootherstep:
+        // flat at both ends, so items at the wall stay with it and items at the lot edge stay with the lot.
         private float Weight(float3 p, out float3 gradient)
         {
             gradient = float3.zero;
@@ -71,9 +73,10 @@ namespace Unsquare.Core.Deformation
                 return 1f;
             if (s >= 1f)
                 return 0f;
-            float slope = -6f * s * (1f - s); // d(1 − smoothstep)/ds
+            float t = s * (1f - s);
+            float slope = -30f * t * t; // d(1 − smootherstep)/ds
             gradient = new float3(x * dx, 0f, z * dz) * (slope / s);
-            return 1f - s * s * (3f - 2f * s);
+            return 1f - s * s * s * (s * (6f * s - 15f) + 10f);
         }
     }
 }
