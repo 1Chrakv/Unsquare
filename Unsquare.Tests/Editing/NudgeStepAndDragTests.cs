@@ -7,6 +7,8 @@ namespace Unsquare.Tests.Editing
 {
     public class NudgeStepAndDragTests
     {
+        private static readonly CageBox Box = new(new float3(-5, 0, -5), new float3(5, 10, 5));
+
         [Test]
         public void NudgeStep_CyclesThroughSizesAndBack()
         {
@@ -55,7 +57,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void Drag_ManySmallFrames_DoNotDrift()
         {
-            var drag = new CageDrag(CageHandle.Face(3), CageOffsets.Identity);
+            var drag = new CageDrag(CageHandle.Face(3), Box, CageOffsets.Identity);
             CageOffsets offsets = drag.StartOffsets;
             float3 total = float3.zero;
             for (int frame = 0; frame < 20; frame++)
@@ -70,7 +72,7 @@ namespace Unsquare.Tests.Editing
         public void Drag_KeepsStartOffsetsOfOtherCorners()
         {
             var start = CageOffsets.Identity.Move(CageHandle.Corner(0), new float3(1, 0, 0));
-            var drag = new CageDrag(CageHandle.Corner(7), start);
+            var drag = new CageDrag(CageHandle.Corner(7), Box, start);
             var offsets = drag.OffsetsFor(new float3(0, 2, 0));
             Assert.That(offsets.Steps(0), Is.EqualTo(new int3(10, 0, 0)));
             Assert.That(offsets.Steps(7), Is.EqualTo(new int3(0, 20, 0)));
@@ -80,7 +82,7 @@ namespace Unsquare.Tests.Editing
         public void Drag_HorizontalDeltaOnVerticalEdge_KeepsCornerHeights()
         {
             // Edge 6 is the vertical edge from corner 4 to corner 6.
-            var drag = new CageDrag(CageHandle.Edge(6), CageOffsets.Identity);
+            var drag = new CageDrag(CageHandle.Edge(6), Box, CageOffsets.Identity);
             var offsets = drag.OffsetsFor(new float3(1.5f, 0, -2));
             Assert.That(offsets.Steps(4), Is.EqualTo(new int3(15, 0, -20)));
             Assert.That(offsets.Steps(6), Is.EqualTo(new int3(15, 0, -20)));
@@ -90,7 +92,7 @@ namespace Unsquare.Tests.Editing
         [Test]
         public void TryAdvance_WithinOneGridStep_ReportsNoChange()
         {
-            var drag = new CageDrag(CageHandle.Face(3), CageOffsets.Identity);
+            var drag = new CageDrag(CageHandle.Face(3), Box, CageOffsets.Identity);
             Assert.That(drag.TryAdvance(new float3(0, 0.03f, 0), out _), Is.False);
             Assert.That(drag.TryAdvance(new float3(0, 0.06f, 0), out var first), Is.True);
             Assert.That(first.Steps(2).y, Is.EqualTo(1));

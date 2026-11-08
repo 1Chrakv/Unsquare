@@ -59,6 +59,34 @@ namespace Unsquare.Core.Editing
             return along > 0f;
         }
 
+        /// <summary>Where the ray crosses the plane through a point; false if parallel or behind.</summary>
+        public static bool IntersectPlane(CageRay ray, float3 point, float3 normal, out float along)
+        {
+            along = 0f;
+            float facing = math.dot(normal, ray.Direction);
+            if (math.abs(facing) < Epsilon)
+                return false;
+            along = math.dot(normal, point - ray.Origin) / facing;
+            return along > 0f;
+        }
+
+        /// <summary>
+        /// Parameter of the point on the line origin + direction·t closest to the ray (direction normalized); false
+        /// if the ray runs within <paramref name="minSine"/> along the line or the point lies behind the camera.
+        /// </summary>
+        public static bool TryClosestOnLine(CageRay ray, float3 origin, float3 direction, float minSine, out float t)
+        {
+            float3 w = origin - ray.Origin;
+            float b = math.dot(direction, ray.Direction);
+            float denom = 1f - b * b;
+            t = 0f;
+            if (denom < minSine * minSine)
+                return false;
+            float dw = math.dot(ray.Direction, w);
+            t = (b * dw - math.dot(direction, w)) / denom;
+            return dw + b * t > 0f;
+        }
+
         /// <summary>Two-sided ray–triangle test (Möller–Trumbore); hits behind the origin do not count.</summary>
         public static bool IntersectTriangle(CageRay ray, float3 a, float3 b, float3 c, out float along)
         {
