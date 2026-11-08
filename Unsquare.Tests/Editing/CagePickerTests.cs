@@ -20,6 +20,28 @@ namespace Unsquare.Tests.Editing
                 : null;
 
         [Test]
+        public void TryPick_CageModeRayThroughBox_PicksCage()
+        {
+            Assert.That(CagePicker.TryPick(Box, CageOffsets.Identity, new CageRay(new float3(5, 100, 10), Down),
+                Tolerance, CageHandleKind.Cage, out var handle, out float along), Is.True);
+            Assert.That(handle, Is.EqualTo(CageHandle.Cage()));
+            Assert.That(along, Is.EqualTo(92f).Within(1e-3f)); // the roof at 8 m
+        }
+
+        [Test]
+        public void TryPick_CageModeRayBesideBox_Misses()
+        {
+            Assert.That(Pick(new CageRay(new float3(30, 100, 10), Down), CageHandleKind.Cage), Is.Null);
+        }
+
+        [Test]
+        public void TryPick_CageModeNearEdgeOutside_PicksCage()
+        {
+            Assert.That(Pick(new CageRay(new float3(10.05f, 100, 10), Down), CageHandleKind.Cage),
+                Is.EqualTo(CageHandle.Cage()));
+        }
+
+        [Test]
         public void TryPick_FaceModeFromAbove_PicksTopFace()
         {
             Assert.That(Pick(new CageRay(new float3(5, 100, 10), Down), CageHandleKind.Face),

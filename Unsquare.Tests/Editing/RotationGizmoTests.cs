@@ -117,6 +117,29 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void Move_CageHandle_ShiftsEveryCorner()
+        {
+            var offsets = HandleMotion.Translate(new float3(3f, 0f, -1.5f)).Apply(Box, CageOffsets.Identity,
+                CageHandle.Cage());
+            for (int corner = 0; corner < CageTopology.CornerCount; corner++)
+                Assert.That(offsets.Steps(corner), Is.EqualTo(new int3(30, 0, -15)));
+        }
+
+        [Test]
+        public void Apply_CageQuarterTurnAroundY_KeepsCentreAndSwapsCorners()
+        {
+            var cage = CageHandle.Cage();
+            var offsets = HandleMotion.Rotate(Y, math.PI / 2f).Apply(Box, CageOffsets.Identity, cage);
+            Assert.That(math.distance(DeformedCage.HandlePosition(Box, offsets, cage), Box.Center), Is.LessThan(1e-4f));
+            AssertAt(offsets, 0, Box.Corner(4)); // bottom (-x, -z) -> (-x, +z)
+            AssertAt(offsets, 2, Box.Corner(6)); // top likewise
+            AssertAt(offsets, 5, Box.Corner(1));
+            Assert.That(GizmoAxes.HasRings(cage), Is.True);
+            for (int axis = 0; axis < GizmoAxes.AxisCount; axis++)
+                Assert.That(GizmoAxes.CanRotate(cage, axis), Is.True);
+        }
+
+        [Test]
         public void TryAdvance_RotationWithinOneGridStep_ReportsNoChange()
         {
             var drag = new CageDrag(Top, Box, CageOffsets.Identity);

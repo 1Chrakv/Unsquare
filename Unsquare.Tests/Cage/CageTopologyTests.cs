@@ -9,6 +9,13 @@ namespace Unsquare.Tests.Cage
     public class CageTopologyTests
     {
         [Test]
+        public void CornersOf_Cage_HasAllEight()
+        {
+            Assert.That(CageTopology.CountOf(CageHandleKind.Cage), Is.EqualTo(1));
+            Assert.That(CageTopology.CornersOf(CageHandle.Cage()), Is.EquivalentTo(Enumerable.Range(0, 8)));
+        }
+
+        [Test]
         public void Edges_EachConnectsTwoCornersDifferingOnlyOnItsAxis()
         {
             var seen = new HashSet<(int, int)>();

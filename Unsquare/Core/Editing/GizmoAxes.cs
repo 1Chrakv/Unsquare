@@ -53,13 +53,14 @@ namespace Unsquare.Core.Editing
 
         /// <summary>
         /// Whether turning the handle around the axis changes it: never for a corner (a point), not around an edge's
-        /// own direction; faces turn around all three.
+        /// own direction; faces and the whole cage turn around all three.
         /// </summary>
         public static bool CanRotate(CageHandle handle, int axis) => handle.Kind switch
         {
             CageHandleKind.Corner => false,
             CageHandleKind.Edge => axis != CageTopology.EdgeAxis(handle.Index),
-            _ => true,
+            CageHandleKind.Face or CageHandleKind.Cage => true,
+            _ => throw new ArgumentOutOfRangeException(nameof(handle)),
         };
 
         public static bool HasRings(CageHandle handle) => handle.Kind != CageHandleKind.Corner;
