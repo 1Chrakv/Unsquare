@@ -179,7 +179,7 @@ namespace Unsquare.Api
             if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
             if (spec.LotOffsets.IsIdentity)
-                return DeformRequestResult.Rejected;
+                return DeformRequestResult.LotUndeformed;
             return Request(building, description, spec.WithFlatTerrain(!lift));
         }
 
@@ -202,9 +202,14 @@ namespace Unsquare.Api
             return _terrain.TryRequest(building, points, heights =>
             {
                 // The cage may have changed while the terrain was read; fit what it is now.
-                if (heights == null || !TryGetCage(building, target, out var now))
+                if (heights == null)
                 {
-                    done(state.TargetSpec, DeformRequestResult.Rejected);
+                    done(state.TargetSpec, DeformRequestResult.TerrainUnavailable);
+                    return;
+                }
+                if (!TryGetCage(building, target, out var now))
+                {
+                    done(state.TargetSpec, DeformRequestResult.NotDeformable);
                     return;
                 }
                 var fitted = GroundFit.Fit(now.Box, now.TargetOffsets, heights, mode);
@@ -271,7 +276,7 @@ namespace Unsquare.Api
             Mod.Log.Info($"Align {side} of building {building} ({target}): no neighbour within " +
                 $"{options.SearchMeters} m ({_roadPieces.Count} road pieces, {_buildings.Count} lots nearby; " +
                 $"nearest parallel edge: {nearestText}).");
-            failure = DeformRequestResult.Rejected;
+            failure = DeformRequestResult.NoNeighbour;
             return false;
         }
 
@@ -313,8 +318,15 @@ namespace Unsquare.Api
             requested = spec.IsLinked
                 ? new DeformSpec(lot, lot, spec.FlatTerrain, spec.BlendMode)
                 : SplitCageEdit.ClampBuilding(lotBox, description.BuildingBox, spec.WithLotOffsets(lot), limits);
-            if (CageValidator.ValidateSplit(lotBox, description.BuildingBox, requested, limits) != CageValidity.Valid)
-                return DeformRequestResult.Rejected;
+            switch (CageValidator.ValidateSplit(lotBox, description.BuildingBox, requested, limits))
+            {
+                case CageValidity.Valid:
+                    break;
+                case CageValidity.BlendInverted:
+                    return DeformRequestResult.BlendFolds;
+                default:
+                    return DeformRequestResult.Rejected;
+            }
             requested = requested.Normalized();
             _pipeline.Request(building, requested.ForVariant());
             RememberLinkedBlend(building, requested);
@@ -342,7 +354,7 @@ namespace Unsquare.Api
             if (!TryDescribeTarget(building, out var description, out var spec))
                 return DeformRequestResult.NotDeformable;
             if (spec.IsLinked)
-                return DeformRequestResult.Rejected;
+                return DeformRequestResult.AlreadyLinked;
             return Request(building, description, follower switch
             {
                 CageTarget.Building => SplitCageEdit.Link(spec),

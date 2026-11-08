@@ -260,6 +260,32 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
+        public void ValidateSplit_LotSkewedFarPastBuilding_IsBlendInverted()
+        {
+            var (lot, tower, spec) = SkewedLot();
+            Assert.That(CageValidator.ValidateSplit(lot, tower, spec.WithBlendMode(BlendMode.All), CageLimits.Default),
+                Is.EqualTo(CageValidity.BlendInverted));
+        }
+
+        [Test]
+        public void ValidateSplit_LotSkewedFarPastBuildingWithoutBlend_IsValid()
+        {
+            var (lot, tower, spec) = SkewedLot();
+            Assert.That(CageValidator.ValidateSplit(lot, tower, spec.WithBlendMode(BlendMode.None), CageLimits.Default),
+                Is.EqualTo(CageValidity.Valid));
+        }
+
+        // An in-game case: the lot's front corners pushed up to 70 m sideways, the building left as it was.
+        private static (CageBox Lot, CageBox Tower, DeformSpec Spec) SkewedLot()
+        {
+            var lot = new CageBox(new float3(-72, 0, -60), new float3(72, 168, 60));
+            var tower = new CageBox(new float3(-49.9f, 0, -30.5f), new float3(50.2f, 168, 30.4f));
+            var lotOffsets = CageOffsets.FromArray(new[]
+                { 0, 0, 0, 835, 0, -4, 0, 0, 0, 835, 0, -4, 703, 0, -59, 150, 0, 503, 703, 0, -59, 150, 0, 503 });
+            return (lot, tower, new DeformSpec(lotOffsets, CageOffsets.Identity, false));
+        }
+
+        [Test]
         public void TryInvert_Blend_RoundTripsRingPoints()
         {
             var blend = SplitDeformations.Create(Lot, House, Tapered()).Blend;

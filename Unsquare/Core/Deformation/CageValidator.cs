@@ -44,7 +44,7 @@ namespace Unsquare.Core.Deformation
                 return building;
             return IsBlendOrientationPreserving(lotBox, buildingBox, spec, limits)
                 ? CageValidity.Valid
-                : CageValidity.Inverted;
+                : CageValidity.BlendInverted;
         }
 
         /// <summary>Clamps every corner offset to <see cref="OffsetLimit"/>.</summary>
