@@ -42,6 +42,11 @@
     white-space: nowrap;
 }
 
+// A failed edit: same box, red text.
+.problem {
+    color: rgb(255, 120, 110);
+}
+
 // A labelled group: small header above two rows of controls.
 .section {
     display: flex;

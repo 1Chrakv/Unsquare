@@ -33,7 +33,7 @@ namespace Unsquare.Api
         /// </summary>
         DeformRequestResult SetBlendMode(Entity building, BlendMode mode);
 
-        /// <summary>Switches whether the lot terrain follows the lot cage; rejected while the lot is undeformed.</summary>
+        /// <summary>Switches whether the lot terrain follows the lot cage; LotUndeformed without a lot deformation.</summary>
         DeformRequestResult SetTerrainLift(Entity building, bool lift);
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Unsquare.Api
 
         /// <summary>
         /// Aligns the target cage's left, back or right face to the nearest road or neighbour edge (see
-        /// <see cref="AlignMode"/>): their building cages in Building mode, their lots otherwise. Rejected when there
+        /// <see cref="AlignMode"/>): their building cages in Building mode, their lots otherwise. NoNeighbour when there
         /// is no neighbour within the options' reach.
         /// </summary>
         DeformRequestResult AlignToNeighbour(Entity building, CageTarget target, AlignSide side, AlignMode mode,
@@ -55,7 +55,7 @@ namespace Unsquare.Api
 
         /// <summary>
         /// Moves the bottom of the target cage's left, back or right side up or down to the ground height of the
-        /// neighbour that <see cref="AlignToNeighbour"/> would use; rejected when there is none.
+        /// neighbour that <see cref="AlignToNeighbour"/> would use; NoNeighbour when there is none.
         /// </summary>
         DeformRequestResult AlignGroundToNeighbour(Entity building, CageTarget target, AlignSide side,
             NeighbourAlignOptions options);
@@ -71,7 +71,7 @@ namespace Unsquare.Api
 
         /// <summary>
         /// Links the cages again: <paramref name="follower"/> Building drops the building's own shape, Lot gives the
-        /// lot the building's shape. Rejected while linked.
+        /// lot the building's shape. AlreadyLinked while linked.
         /// </summary>
         DeformRequestResult Link(Entity building, CageTarget follower);
 

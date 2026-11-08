@@ -75,6 +75,12 @@ namespace Unsquare.UI.Editing
 
         public DeformRequestResult? LastResult { get; private set; }
 
+        /// <summary>Why the latest command failed; cleared by the next one that succeeds and by a new target.</summary>
+        public EditProblem? Problem { get; private set; }
+
+        /// <summary>Counts failures, so views can tell a repeated failure from the one they already showed.</summary>
+        public int ProblemCount { get; private set; }
+
         public bool TryGetCage(out CageState state)
         {
             state = default;
@@ -336,7 +342,7 @@ namespace Unsquare.UI.Editing
                 Record($"{command} on {building}", result);
             });
             if (!started)
-                return Record(command, DeformRequestResult.Rejected);
+                return Record(command, DeformRequestResult.TerrainUnavailable);
             if (EditMode == CageTarget.Building)
                 return LastResult ?? DeformRequestResult.Accepted; // seated at once, already recorded
             Log($"{command}: sampling terrain");
@@ -353,7 +359,8 @@ namespace Unsquare.UI.Editing
                 return;
             if (EditMode == CageTarget.Building)
             {
-                Log("Ground fit mode applies to the lot; seating the building uses all corners");
+                Fail("Ground fit mode applies to the lot; seating the building uses all corners",
+                    EditProblem.GroundFitOfLot);
                 return;
             }
             GroundFitMode = mode;
@@ -367,7 +374,10 @@ namespace Unsquare.UI.Editing
             if (!TryGetCage(out var state))
                 return Record("Terrain lift", DeformRequestResult.NotDeformable);
             if (EditMode == CageTarget.Building)
-                return Record("Terrain lift (belongs to the lot)", DeformRequestResult.Rejected);
+            {
+                Fail("Terrain lift belongs to the lot", EditProblem.TerrainOfLot);
+                return DeformRequestResult.Rejected;
+            }
             bool lift = !state.TerrainLift;
             var result = _service.SetTerrainLift(Target, lift);
             RememberEdit(state.TargetSpec, result);
@@ -466,6 +476,7 @@ namespace Unsquare.UI.Editing
             PreviewBuilding = Entity.Null;
             Target = building;
             LastResult = null;
+            Problem = null;
             Log(building == Entity.Null ? "Target cleared" : $"Target {building}");
             Changed?.Invoke();
         }
@@ -488,7 +499,10 @@ namespace Unsquare.UI.Editing
                     _service.Apply(edit.Building, undo ? edit.Before : edit.After));
                 return;
             }
-            Log(undo ? "Nothing to undo" : "Nothing to redo");
+            if (undo)
+                Fail("Nothing to undo", EditProblem.NothingToUndo);
+            else
+                Fail("Nothing to redo", EditProblem.NothingToRedo);
         }
 
         // Undoable change of the target's offsets that needs a selected handle.
@@ -496,7 +510,7 @@ namespace Unsquare.UI.Editing
         {
             if (HasTarget && !Selection.HasHandle)
             {
-                Log("No handle selected");
+                Fail("No handle selected", EditProblem.NoHandle);
                 return DeformRequestResult.NotDeformable;
             }
             if (!TryGetCage(out var state))
@@ -536,15 +550,43 @@ namespace Unsquare.UI.Editing
             Changed?.Invoke();
         }
 
+        // Drag frames pass no command: they are not logged, but a refused frame still reports its problem.
         private DeformRequestResult Record(string command, DeformRequestResult result)
         {
             LastResult = result;
-            if (command != null)
+            var problem = ProblemOf(result);
+            if (command != null && problem == null)
                 Log($"{command} -> {result}");
+            else if (command != null)
+                Mod.Log.Warn($"[Edit] {command} -> {result}");
+            Problem = problem;
+            if (problem != null)
+                ProblemCount++;
             WarnIfLeavingLot();
             Changed?.Invoke();
             return result;
         }
+
+        // A failure the session finds itself, before asking the service.
+        private void Fail(string message, EditProblem problem)
+        {
+            Mod.Log.Warn($"[Edit] {message}");
+            Problem = problem;
+            ProblemCount++;
+            Changed?.Invoke();
+        }
+
+        private static EditProblem? ProblemOf(DeformRequestResult result) => result switch
+        {
+            DeformRequestResult.Accepted or DeformRequestResult.Clamped => null,
+            DeformRequestResult.Rejected => EditProblem.CageFolds,
+            DeformRequestResult.BlendFolds => EditProblem.BlendFolds,
+            DeformRequestResult.NoNeighbour => EditProblem.NoNeighbour,
+            DeformRequestResult.TerrainUnavailable => EditProblem.TerrainUnavailable,
+            DeformRequestResult.AlreadyLinked => EditProblem.AlreadyLinked,
+            DeformRequestResult.LotUndeformed => EditProblem.LotUndeformed,
+            _ => EditProblem.NotDeformable,
+        };
 
         // Logs once when the lot outline starts to leave its plot, not on every drag frame.
         private void WarnIfLeavingLot()
