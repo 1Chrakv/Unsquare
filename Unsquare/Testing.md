@@ -230,6 +230,8 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 140 | After 139, blend mode All (Alt+B) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot; benches and trees move with the paths and hedges around them |
 | 141 | After 140, Ctrl+Z; save and reload | Undo goes back to None; after reload the mode and shapes are kept |
 | 142 | Split a building (lean it in Building mode), then press "lot follows the building" (Alt+Shift+K) | The lot, paths and gardens take the building's shape, the violet cage disappears, both Link buttons grey out; Ctrl+Z restores the split |
+| 143 | Hospital with a ward wing beside the main block: Building mode, then move the wing's side face and a top corner | The cage encloses the wing; the wing bends with the building; the violet lot cage and paths stay; Lot mode shows the larger building box as ghost; save and reload keep the shape |
+| 144 | Car park with the extra storey and a hospital helipad in Building mode | The storey is enclosed as before; a flat helipad beside the building doesn't enlarge the cage and follows the lot cage |
 
 ## Reporting problems
 

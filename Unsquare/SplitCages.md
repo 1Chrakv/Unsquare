@@ -78,12 +78,13 @@ Rules:
 | Terrain lift, flat-terrain flag | `LotLiftSystem` | lot cage |
 | Fit to ground | `GroundFit` | the active cage (7.6) |
 | On-lot upgrade storeys | extensions | building cage |
-| Upgrade extensions | extensions | by position: mesh box over the building footprint → building cage, otherwise lot cage or blend |
+| Upgrade extensions | extensions | structures (top ≥ `ExtensionCage.StructureMinHeight`, 4 m) and pieces centred over the footprint → building cage; flat pieces beside it → lot cage or blend |
 
 Far from the building the blend equals the lot cage, so "blend" only differs from "lot cage" near the building.
 
-Ground extensions (car parks, helipads) are classified by position because the building cage is small: its taper
-and twist extrapolated 20–30 m away would shear them badly.
+Flat ground extensions (car parks, helipads) beside the building follow the lot cage like other ground items. Wings
+beside it (the hospital's wards) are structures and follow the building cage; the Building-mode box grows over them
+(`ExtendedCage.Enclose`), so its handles sit around the wing instead of extrapolating a small cage onto it.
 
 ### 3.1 Blend between building and lot
 
@@ -180,8 +181,8 @@ Confirmed by the user: no compatibility is needed for players going back to an o
 - `BuildNetRemap`, `BuildExtensionSwaps` and `TryGetVariantCage` (`LotLiftSystem`) use the composite or the lot cage.
 - `IBuildingDeformService`: `SetOffsets` / `MoveHandle` / `Reset` take a target (`CageTarget`: Building, Lot,
   Both); `CageState` exposes both offset sets, both target specs and the building box.
-- `DeformService` edit boxes per mode (same as 7.3): Building mode uses the building box raised to deformed on-lot
-  storeys; Both mode keeps today's raised edit box (`BuildingDescription.EditBox`), so a storey stays inside the
+- `DeformService` edit boxes per mode (same as 7.3): Building mode uses the building box grown over the deformed on-lot
+  extensions that follow the building cage (storeys, wings); Both mode keeps today's raised edit box (`BuildingDescription.EditBox`), so a storey stays inside the
   cage and Both behaves exactly like today; Lot mode uses the plain lot box (lot items sit on the ground, the top
   barely matters). Building-mode edits follow 2.1 (deltas, snap to linked, checks on the
   building box). Neighbour edges come from other buildings' building cages in Building mode and from their lot

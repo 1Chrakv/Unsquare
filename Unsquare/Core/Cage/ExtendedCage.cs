@@ -13,6 +13,10 @@ namespace Unsquare.Core.Cage
         public static CageBox RaiseTop(CageBox box, float top) =>
             top <= box.Max.y ? box : new CageBox(box.Min, new float3(box.Max.x, top, box.Max.z));
 
+        /// <summary>The smallest box containing both boxes.</summary>
+        public static CageBox Enclose(CageBox box, CageBox other) =>
+            new(math.min(box.Min, other.Min), math.max(box.Max, other.Max));
+
         /// <summary>Offsets of <paramref name="toBox"/> that deform space like <paramref name="fromOffsets"/> on
         /// <paramref name="fromBox"/>, rounded to the offset grid.</summary>
         public static CageOffsets Convert(CageBox fromBox, CageOffsets fromOffsets, CageBox toBox)

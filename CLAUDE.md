@@ -110,7 +110,7 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   extrapolated (`BlendedDeformation`, `CageBlend.Ring`; its constants are part of the naming scheme). `BlendMode` per building (None by default, or All) decides whether the
   ground blends; it is in the split name. Linked variants ignore it (`DeformSpec.ForVariant`); a mode chosen while
   linked waits in `DeformService` (memory).
-  Edit modes (`CageTarget`): Building edits the building cage on the mesh box raised to storeys and converts only
+  Edit modes (`CageTarget`): Building edits the building cage on the mesh box grown over storeys and wings and converts only
   changes to the lot box (`SplitCageEdit`, snap rules); Lot edits the plain lot box; Both keeps the old raised edit
   box and carries the building along. History stores lot-frame specs.
 - With deformed on-lot upgrades (e.g. a storey), the cage shown and edited (`BuildingDescription.EditBox`,
@@ -167,6 +167,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     position) and swapped together with the owner. Their nets are synced together with the owner's (`NetOwner` per
     sub-net owner), so shared nodes stay connected. A storey above the roof gets the lot cage extrapolated upwards,
     which equals the raised edit cage the user sees.
+  - Structures (storeys, wings beside the building, top ≥ `ExtensionCage.StructureMinHeight`) follow the building
+    cage and the Building-mode box encloses them; flat pieces beside it (car park, helipad) follow the lot cage.
   - Name: `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
     manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
   - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
