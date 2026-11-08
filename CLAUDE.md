@@ -18,7 +18,8 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
 Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageEditSession` commands; views only
 read the session. Nothing runs outside Unsquare mode (tool active): the session is disabled and hotkeys are ignored.
-Selection is two-step (building, then a handle of the pick mode, `HandleSelection`); a selected handle locks the
+Selection is two-step (building, then a handle of the pick mode: corner, edge, face or the whole cage,
+`CageHandleKind.Cage` = all 8 corners; `HandleSelection`); a selected handle locks the
 building until right-click (`CageEditSession.StepBack`).
 Picking and gizmo math (`CagePicker`, `AxisDrag`, `PlaneDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
 Drags are axis-constrained (gizmo arrows) or horizontal (gizmo square `GizmoAxes.PlaneXZ`, or pressing on a handle,

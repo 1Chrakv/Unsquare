@@ -27,7 +27,7 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 |---|---|
 | Preview | Hovering a building shows its cage dimmed (while no handle is selected) |
 | 1. Select a building | Click it (outside the current cage); no handle is selected yet |
-| 2. Select a handle | Click an edge, face or corner, depending on the pick mode (default edges; Alt+W cycles) |
+| 2. Select a handle | Click an edge, face or corner, or anywhere on the cage in cage mode, depending on the pick mode (default edges; Alt+W cycles) |
 | Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue), or the yellow square to move it horizontally |
 | Rotate the selection | Tap Ctrl alone (or the Move/Rotate toggle in the tool window), then drag a ring (around X red, Y green, Z blue); edges get the two rings they can turn around, faces all three, corners keep the arrows |
 | Move a handle sideways | Press on an edge, face or corner and drag: it is selected and moves horizontally (height kept); a click without moving only selects |
@@ -46,7 +46,7 @@ row holds only toggles, the bottom row only buttons:
   by default); bottom: Link, building follows lot (link, arrow to a lot, Alt+K) and lot follows building (link, arrow
   to a house, Alt+Shift+K). Link is disabled while the cages are equal; blend can be chosen before splitting. A hint
   line under the window says when the building is not on its lot's ground.
-- **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
+- **Pick:** 4-way toggle for corners / edges / faces / the whole cage (a highlight slides to the active one; Alt+1/2/3/4).
 - **Terrain:** top: 2-way toggle terrain follows the building / flat pad (dimmed while undeformed; Alt+T) and 2-way
   toggle for fitting back only / all corners (Alt+F); bottom: fit the bottom corners to the original ground (Alt+G).
 - **Align to neighbour:** top: align mode toggle (angle / flush / full; clicking selects directly, Alt+A cycles);
@@ -63,8 +63,8 @@ row holds only toggles, the bottom row only buttons:
 | Cycle edit mode both → building → lot | Alt+D |
 | Link: the building follows the lot / the lot follows the building | Alt+K / Alt+Shift+K |
 | Switch blending off / on | Alt+B |
-| Cycle pick mode edges → faces → corners | Alt+W |
-| Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
+| Cycle pick mode edges → faces → corners → cage | Alt+W |
+| Pick corners / edges / faces / the whole cage | Alt+1 / Alt+2 / Alt+3 / Alt+4 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
 | Move −X / +X (width) | Alt+← / Alt+→ |
 | Move +Z / −Z (+Z = street side) | Alt+↑ / Alt+↓ |
@@ -242,6 +242,12 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 150 | Select a corner in Rotate mode | The move arrows and square are shown; dragging them moves the corner |
 | 151 | Right-click during a ring drag; turn a face until the cage folds | Right-click snaps back; a folding turn shows the fold problem and is not applied |
 | 152 | Switch Move/Rotate with the tool-window toggle, then tap Ctrl | Toggle and Ctrl stay in sync; switching during a drag does nothing |
+| 153 | Alt+4 (or the cage button), hover the building, click it | Hovering anywhere on or inside the cage turns all edges cyan; the click selects them all (orange) with the gizmo at the cage centre; log `Selected Cage0` |
+| 154 | Cage selected: drag the red arrow, the yellow square, then press on the cage and drag | The whole building, its lot, paths and props shift together; one Ctrl+Z per drag |
+| 155 | Cage selected, tap Ctrl, drag the green ring | The building turns in place around its centre; the red/blue rings tilt it |
+| 156 | Cage selected: Alt+arrows, then Alt+R | Each nudge moves the whole cage one step; Alt+R puts every corner back |
+| 157 | Repeat 154 in Building, Lot and Both edit mode | Building: only the building moves (lot stays); Lot: only ground items; Both: everything |
+| 158 | Drag the whole cage far away | Stops at the max corner offset (clamped, cage yellow), never relocates beyond it |
 
 ## Reporting problems
 
