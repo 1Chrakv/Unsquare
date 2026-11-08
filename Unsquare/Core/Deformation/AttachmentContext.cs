@@ -9,11 +9,12 @@ namespace Unsquare.Core.Deformation
     /// </summary>
     public sealed class AttachmentContext
     {
-        public AttachmentContext(IDeformation building, IDeformation ground, CageBox box, CageBox alignmentBox,
-            float groundY, AttachmentOptions options)
+        public AttachmentContext(IDeformation building, IDeformation ground, IDeformation lot, CageBox box,
+            CageBox alignmentBox, float groundY, AttachmentOptions options)
         {
             Building = building ?? throw new ArgumentNullException(nameof(building));
             Ground = ground ?? throw new ArgumentNullException(nameof(ground));
+            Lot = lot ?? throw new ArgumentNullException(nameof(lot));
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Box = box;
             AlignmentBox = alignmentBox;
@@ -28,6 +29,12 @@ namespace Unsquare.Core.Deformation
         /// is on, else the lot cage).
         /// </summary>
         public IDeformation Ground { get; }
+
+        /// <summary>
+        /// The plain lot cage (equal to <see cref="Ground"/> without blending). Area outlines fall back to it where
+        /// the blend's curve would make their straight edges cross.
+        /// </summary>
+        public IDeformation Lot { get; }
 
         /// <summary>The lot cage box.</summary>
         public CageBox Box { get; }
