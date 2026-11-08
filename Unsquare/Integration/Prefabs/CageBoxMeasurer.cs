@@ -31,7 +31,8 @@ namespace Unsquare.Integration.Prefabs
             return true;
         }
 
-        private static MinMaxBounds MeasureMeshes(ObjectGeometryPrefab prefab)
+        /// <summary>Bounds of all render meshes in the prefab's space; may be flat or empty.</summary>
+        internal static MinMaxBounds MeasureMeshes(ObjectGeometryPrefab prefab)
         {
             var bounds = MinMaxBounds.Empty;
             if (prefab == null || prefab.m_Meshes == null)

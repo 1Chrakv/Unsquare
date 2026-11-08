@@ -99,11 +99,16 @@ where `B` and `L` are the building and lot deformations and `c(p)` is p clamped 
   beside it and never more: the building cage is not extrapolated (in-game test: a pulled corner sheared a hospital's
   garden and pushed hedges off the lot when it was).
 - `w` depends only on the horizontal position: the normalised distance outside the footprint (per side, relative to
-  that side's ring width), faded by smoothstep.
-- Ring width per side (`CageBlend.Ring`, `BlendRing`): `min(m, max(gap to the lot edge, fold))` with
-  `fold = MarginPerMeter · max |Δ|` at the footprint corners and `m = max(MarginMeters, fold)`. The ring ends at the
-  lot edge where folding allows; where the wall comes closer to the lot edge, it is as narrow as it can be without
-  folding (`1 − 1.5 · |Δ| / width ≥ 0.25`).
+  that side's ring width), faded by smootherstep (`6s⁵ − 15s⁴ + 10s³`, max slope 1.875). The S-curve is flat at
+  both ends: items at the wall stay with the building, items at the lot edge stay with the lot.
+- Ring width per side (`CageBlend.Ring`, `BlendRing`): `max(gap to the lot edge, fold)`. The ring spans the whole
+  room up to the lot edge; it only reaches past it where an outward change needs more room to not fold.
+- Only the **outward** part of `Δ` can fold (`det ≈ 1 + ∇w · Δ`, `∇w` points at the building); inward changes stretch
+  and sideways ones shear. Per footprint corner, with outward parts `ox, oz ≥ 0` of its two sides, the corner asks
+  `MarginPerMeter · √(ox (ox + oz))` of its x side (z alike); `fold` is the largest ask of the side's corners. This
+  keeps `(ox/rx)² + (oz/rz)² ≤ 1/2.5²` where the fade is diagonal, so `det ≥ 1 − 1.875 / 2.5 = 0.25`.
+- In-game history: a ring of `2 · |Δ|` on every side reached past the lot edge after a wall was pulled far inwards and
+  dragged a lot-edge hedge to the building; a ring capped at 4 m barely blended. Hence ring = gap and the S-curve.
 - Linked cages give `Δ = 0`, so `D = L`: exactly the single-cage result.
 - Points attached to a mesh (lane ends with `m_ParentMesh >= 0`, area nodes with `m_ParentMeshes[node] >= 0`) follow
   the building cage (attachment, not blending).

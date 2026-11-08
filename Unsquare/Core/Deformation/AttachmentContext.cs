@@ -10,13 +10,14 @@ namespace Unsquare.Core.Deformation
     public sealed class AttachmentContext
     {
         public AttachmentContext(IDeformation building, IDeformation ground, CageBox box, CageBox alignmentBox,
-            AttachmentOptions options)
+            float groundY, AttachmentOptions options)
         {
             Building = building ?? throw new ArgumentNullException(nameof(building));
             Ground = ground ?? throw new ArgumentNullException(nameof(ground));
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Box = box;
             AlignmentBox = alignmentBox;
+            GroundY = groundY;
         }
 
         /// <summary>Deforms what hangs on the building's meshes.</summary>
@@ -33,6 +34,9 @@ namespace Unsquare.Core.Deformation
 
         /// <summary>The building's mesh box: its faces are the facades props align to, its xz the footprint.</summary>
         public CageBox AlignmentBox { get; }
+
+        /// <summary>Height of the lot ground in this frame (0 for the building, lower for a raised extension).</summary>
+        public float GroundY { get; }
 
         public AttachmentOptions Options { get; }
     }

@@ -19,11 +19,23 @@ namespace Unsquare.Integration.Prefabs.Attachments
             bool attachedEndsFollowBuilding)
         {
             bool onGround = parentMesh.x < 0 && parentMesh.y < 0;
+            return attachedEndsFollowBuilding
+                ? Deform(context, curve, parentMesh.x >= 0, parentMesh.y >= 0, onGround)
+                : Deform(context, curve, false, false, onGround);
+        }
+
+        /// <summary>
+        /// Deforms a lot curve with explicitly attached ends (following the building); the rest follows the ground.
+        /// <paramref name="keepHeights"/> restores the original heights of curves the game fits to the terrain.
+        /// </summary>
+        public static Bezier4x3 Deform(AttachmentContext context, Bezier4x3 curve, bool startAttached,
+            bool endAttached, bool keepHeights)
+        {
             var core = ToCore(curve);
-            var deformed = ToGame(attachedEndsFollowBuilding
-                ? CurveDeformer.Deform(context.Ground, context.Building, core, parentMesh.x >= 0, parentMesh.y >= 0)
+            var deformed = ToGame(startAttached || endAttached
+                ? CurveDeformer.Deform(context.Ground, context.Building, core, startAttached, endAttached)
                 : CurveDeformer.Deform(context.Ground, core));
-            if (onGround)
+            if (keepHeights)
             {
                 deformed.a.y = curve.a.y;
                 deformed.b.y = curve.b.y;

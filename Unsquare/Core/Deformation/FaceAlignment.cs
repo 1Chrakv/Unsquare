@@ -86,7 +86,7 @@ namespace Unsquare.Core.Deformation
             return math.atan2(right.x, right.z) - math.PI * 0.5f;
         }
 
-        private static float YawBetween(float3 before, float3 after) =>
+        internal static float YawBetween(float3 before, float3 after) =>
             math.lengthsq(after.xz) < MinLength
                 ? 0f
                 : math.atan2(after.x, after.z) - math.atan2(before.x, before.z);

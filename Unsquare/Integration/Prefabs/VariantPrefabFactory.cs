@@ -57,7 +57,7 @@ namespace Unsquare.Integration.Prefabs
                 box = box.RelativeTo(frameOrigin);
                 buildingBox = buildingBox.RelativeTo(frameOrigin);
             }
-            var context = new AttachmentContext(building, ground, box, buildingBox, attachments);
+            var context = new AttachmentContext(building, ground, box, buildingBox, -frameOrigin.y, attachments);
 
             ObjectMeshInfo[] meshes;
             if (meshOffsets.IsIdentity)

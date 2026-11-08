@@ -140,16 +140,16 @@ namespace Unsquare.Tests.Deformation
         }
 
         [Test]
-        public void Ring_Linked_IsMinimum()
+        public void Ring_Linked_IsUniformMargin()
         {
             var ring = CageBlend.Ring(Lot, House, Linked);
             Assert.That(ring.MaxX, Is.EqualTo(CageBlend.MarginMeters));
         }
 
         [Test]
-        public void Ring_GrownBuilding_WidensWithTheWallsChange()
+        public void Ring_GrownWithRoom_EndsAtTheLotEdge()
         {
-            Assert.That(CageBlend.Ring(Lot, House, Grown()).MaxX, Is.GreaterThanOrEqualTo(6f - 0.2f));
+            Assert.That(CageBlend.Ring(Lot, House, Grown()).MaxX, Is.EqualTo(Lot.Max.x - House.Max.x).Within(1e-4f));
         }
 
         [Test]
@@ -158,7 +158,75 @@ namespace Unsquare.Tests.Deformation
             var spec = Edit(NearEdge, CageHandle.Corner(7), new float3(0f, 0f, 0.5f));
             var ring = CageBlend.Ring(Lot, NearEdge, spec);
             Assert.That(ring.MaxX, Is.EqualTo(Lot.Max.x - NearEdge.Max.x).Within(1e-4f));
-            Assert.That(ring.MinX, Is.EqualTo(CageBlend.MarginMeters));
+            Assert.That(ring.MinX, Is.EqualTo(NearEdge.Min.x - Lot.Min.x).Within(1e-4f));
+        }
+
+        [Test]
+        public void Ring_GrownNearLotEdge_WidensPastTheEdgeToNotFold()
+        {
+            var spec = Edit(NearEdge, CageHandle.Face(1), new float3(3f, 0f, 0f)).WithBlendMode(BlendMode.All);
+            Assert.That(CageBlend.Ring(Lot, NearEdge, spec).MaxX,
+                Is.EqualTo(CageBlend.MarginPerMeter * 3f).Within(0.3f));
+        }
+
+        [Test]
+        public void Ring_WallMovedInwards_EndsAtTheLotEdge()
+        {
+            var spec = Edit(NearEdge, CageHandle.Face(1), new float3(-10f, 0f, 0f)).WithBlendMode(BlendMode.All);
+            Assert.That(CageBlend.Ring(Lot, NearEdge, spec).MaxX, Is.EqualTo(Lot.Max.x - NearEdge.Max.x).Within(1e-4f));
+            var d = SplitDeformations.Create(Lot, NearEdge, spec);
+            var edge = new float3(Lot.Max.x, 0f, 0f);
+            Assert.That(d.Blend.Apply(edge, out _), Is.EqualTo(d.Lot.Apply(edge, out _)));
+        }
+
+        [Test]
+        public void Ring_BuildingShiftedAlongZ_SpansToTheLotEdge()
+        {
+            var view = SplitCageEdit.View(Lot, CageOffsets.Identity, House);
+            var shifted = view.Move(CageHandle.Face(4), new float3(0f, 0f, 5f))
+                .Move(CageHandle.Face(5), new float3(0f, 0f, 5f));
+            var spec = SplitCageEdit.EditBuilding(Lot, House, DeformSpec.Identity, view, shifted);
+            var ring = CageBlend.Ring(Lot, House, spec);
+            Assert.That(ring.MinX, Is.EqualTo(House.Min.x - Lot.Min.x).Within(1e-4f));
+            Assert.That(ring.MaxX, Is.EqualTo(Lot.Max.x - House.Max.x).Within(1e-4f));
+            Assert.That(ring.MinZ, Is.EqualTo(House.Min.z - Lot.Min.z).Within(1e-4f));
+            Assert.That(ring.MaxZ, Is.EqualTo(Lot.Max.z - House.Max.z).Within(1e-4f));
+        }
+
+        [Test]
+        public void Apply_NearLotEdge_StaysWithLot()
+        {
+            var spec = Edit(House, CageHandle.Face(1), new float3(-4f, 0f, 0f)).WithBlendMode(BlendMode.All);
+            var d = SplitDeformations.Create(Lot, House, spec);
+            var p = new float3(Lot.Max.x - 0.2f, 0f, 0f);
+            float wall = math.length(Change(d.Building, d.Lot, new float3(House.Max.x, 0f, 0f)));
+            Assert.That(math.length(Change(d.Blend, d.Lot, p)), Is.LessThan(0.01f * wall));
+        }
+
+        [TestCase(false, 3f, 3f)]
+        [TestCase(false, -8f, 0f)]
+        [TestCase(false, -4f, -4f)]
+        [TestCase(false, 5f, -2f)]
+        [TestCase(true, 3f, 3f)]
+        [TestCase(true, 4f, 0f)]
+        [TestCase(true, -8f, 2f)]
+        public void Apply_ColumnMoved_RingNeverFolds(bool nearEdge, float dx, float dz)
+        {
+            var house = nearEdge ? NearEdge : House;
+            var spec = Edit(house, CageHandle.Edge(EdgeOf(5, 7)), new float3(dx, 0f, dz)).WithBlendMode(BlendMode.All);
+            var ring = CageBlend.Ring(Lot, house, spec);
+            var blend = SplitDeformations.Create(Lot, house, spec).Blend;
+            float2 min = house.Min.xz - new float2(ring.MinX, ring.MinZ);
+            float2 max = house.Max.xz + new float2(ring.MaxX, ring.MaxZ);
+            for (float x = min.x; x <= max.x; x += 0.25f)
+            for (float z = min.y; z <= max.y; z += 0.25f)
+            {
+                var p = new float3(x, 0f, z);
+                if (math.all(p.xz > house.Min.xz) && math.all(p.xz < house.Max.xz))
+                    continue;
+                blend.Apply(p, out float3x3 jacobian);
+                Assert.That(math.determinant(jacobian), Is.GreaterThan(0.1f), $"at {p}");
+            }
         }
 
         [Test]

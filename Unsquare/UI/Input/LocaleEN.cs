@@ -155,6 +155,13 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.FacadeReach), "Facade alignment reach (m)",
                 "Props this close to a facade turn exactly with it instead of with the average deformation. " +
                 "0 turns facade alignment off." + NewDeformations);
+            Option(entries, nameof(UnsquareSettings.LotPropsFollowGround), "Lot props follow the ground",
+                "Fences, hedges and other props that an asset attaches to the building but that stand on the lot " +
+                "outside it, or run along the lot edge, follow the lot like ground props. The same goes for the " +
+                "ends of fences drawn as lanes." + NewDeformations);
+            Option(entries, nameof(UnsquareSettings.AlignLinearProps), "Align fences and hedges",
+                "Long, thin props on the ground turn with the line they stand on, so rows of fence or hedge " +
+                "segments stay in line on a skewed lot." + NewDeformations);
 
             Option(entries, nameof(UnsquareSettings.AreaMatchDistance), "Area match distance (m)",
                 "Saved lot areas further from their expected outline count as edited by you and are not moved.");
