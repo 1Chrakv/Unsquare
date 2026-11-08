@@ -22,10 +22,15 @@ namespace Unsquare.UI.Bindings
         // Keeps the window's anchor this far from the screen border (share of the screen size).
         private const float ScreenMargin = 0.04f;
 
+        // How long the hint under the tool window names a failure.
+        private const float ProblemSeconds = 4f;
+
         private readonly float3[] _cornerViewports = new float3[CageTopology.CornerCount];
         private UnsquareToolSystem _tool;
         private CageEditorSystem _editor;
         private bool _loggedAnchorFailure;
+        private int _shownProblemCount;
+        private float _problemShownAt = float.NegativeInfinity;
 
         protected override void OnCreate()
         {
@@ -54,6 +59,7 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<string>(Group, "blendMode",
                 () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.None)));
             AddBinding(new TriggerBinding<string>(Group, "selectBlendMode", SelectBlendMode));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "problem", GetProblem));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "offGround",
                 () => _editor.Session.TryGetCage(out var cage) && cage.IsOffGround));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "terrainLift",
@@ -81,6 +87,21 @@ namespace Unsquare.UI.Bindings
                 if (TryParseSide(side, out var parsed))
                     _editor.Session.AlignGroundToNeighbour(parsed);
             }));
+        }
+
+        // The latest failure for a few seconds (as long as a drag keeps pushing into it), else a failed bake.
+        private string GetProblem()
+        {
+            var session = _editor.Session;
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            if (session.ProblemCount != _shownProblemCount || (session.ActiveDrag != null && session.Problem != null))
+            {
+                _shownProblemCount = session.ProblemCount;
+                _problemShownAt = now;
+            }
+            if (session.Problem is { } problem && now - _problemShownAt < ProblemSeconds)
+                return problem.ToString();
+            return session.TryGetCage(out var cage) && cage.Status == DeformStatus.Failed ? "BakeFailed" : string.Empty;
         }
 
         private void SelectEditMode(string mode)

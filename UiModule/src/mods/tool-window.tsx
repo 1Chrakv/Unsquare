@@ -47,6 +47,8 @@ const editMode$ = bindValue<string>(group, "editMode", "Both");
 const isSplit$ = bindValue<boolean>(group, "isSplit", false);
 const blendMode$ = bindValue<string>(group, "blendMode", "None");
 const offGround$ = bindValue<boolean>(group, "offGround", false);
+// Why the latest edit failed: an EditProblem name (or BakeFailed), empty when nothing failed.
+const problem$ = bindValue<string>(group, "problem", "");
 const canSelectGroundFitMode$ = bindValue<boolean>(group, "canSelectGroundFitMode", true);
 const pickKind$ = bindValue<string>(group, "pickKind", "Edge");
 const hasHandle$ = bindValue<boolean>(group, "hasHandle", false);
@@ -163,6 +165,7 @@ const ToolWindow = () => {
     const isSplit = useValue(isSplit$);
     const blendMode = useValue(blendMode$);
     const offGround = useValue(offGround$);
+    const problem = useValue(problem$);
     const canSelectGroundFitMode = useValue(canSelectGroundFitMode$);
     const { translate } = useLocalization();
     if (!ToolButton || !anchor.visible)
@@ -296,6 +299,11 @@ const ToolWindow = () => {
                 <div className={styles.hint}>
                     {translate("Unsquare.ToolWindow.OffGround",
                         "The building is not on its ground: use Fit to ground in Building mode")}
+                </div>
+            )}
+            {problem && (
+                <div className={`${styles.hint} ${styles.problem}`}>
+                    {translate(`Unsquare.Problem.${problem}`, "That did not work: see Unsquare.Mod.log")}
                 </div>
             )}
         </div>
