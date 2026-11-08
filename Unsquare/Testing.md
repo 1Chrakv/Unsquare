@@ -29,6 +29,7 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 | 1. Select a building | Click it (outside the current cage); no handle is selected yet |
 | 2. Select a handle | Click an edge, face or corner, depending on the pick mode (default edges; Alt+W cycles) |
 | Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue), or the yellow square to move it horizontally |
+| Rotate the selection | Tap Ctrl alone (or the Move/Rotate toggle in the tool window), then drag a ring (around X red, Y green, Z blue); edges get the two rings they can turn around, faces all three, corners keep the arrows |
 | Move a handle sideways | Press on an edge, face or corner and drag: it is selected and moves horizontally (height kept); a click without moving only selects |
 | Step back | Right-click: cancels a drag, else clears the handle, else the building; never leaves the mode |
 
@@ -82,7 +83,8 @@ row holds only toggles, the bottom row only buttons:
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
 applied, red failed, magenta = lot outline leaves its plot); orange = selected handle (thick edge, face outline and
 dot, or corner dot), cyan = hovered handle of the pick mode; gizmo (only with a selected handle) on it with arrows along the building axes X (red),
-Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; the hovered or dragged part is brighter and thicker.
+Y (green), Z (blue) and a yellow square between X and Z for horizontal moves, or in Rotate mode rings around those axes
+through the handle's centre; the hovered or dragged part is brighter and thicker.
 
 ## Checklist
 
@@ -232,6 +234,14 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 142 | Split a building (lean it in Building mode), then press "lot follows the building" (Alt+Shift+K) | The lot, paths and gardens take the building's shape, the violet cage disappears, both Link buttons grey out; Ctrl+Z restores the split |
 | 143 | Hospital with a ward wing beside the main block: Building mode, then move the wing's side face and a top corner | The cage encloses the wing; the wing bends with the building; the violet lot cage and paths stay; Lot mode shows the larger building box as ghost; save and reload keep the shape |
 | 144 | Car park with the extra storey and a hospital helipad in Building mode | The storey is enclosed as before; a flat helipad beside the building doesn't enlarge the cage and follows the lot cage |
+| 145 | Select the top face, tap Ctrl | Arrows and square give way to three rings; tool window shows Rotate; log `[Edit] Gizmo mode Rotate`; another tap brings the arrows back |
+| 146 | In Rotate mode press Ctrl+Z, Ctrl+Y and Ctrl+Alt+arrows | Undo/redo/level work as before; the gizmo mode does not change |
+| 147 | Top face, drag the green ring | The top twists around its centre and follows the mouse; one `Drag of Face3 ended` line; one Ctrl+Z undoes the whole turn |
+| 148 | Top face, look steeply down, drag the red and blue rings | The roof slopes around its centre without jumps (edge-on rings slide along the mouse) |
+| 149 | Select a horizontal edge, then a vertical edge in Rotate mode | Each shows only the two rings it can turn around (no ring around its own direction) |
+| 150 | Select a corner in Rotate mode | The move arrows and square are shown; dragging them moves the corner |
+| 151 | Right-click during a ring drag; turn a face until the cage folds | Right-click snaps back; a folding turn shows the fold problem and is not applied |
+| 152 | Switch Move/Rotate with the tool-window toggle, then tap Ctrl | Toggle and Ctrl stay in sync; switching during a drag does nothing |
 
 ## Reporting problems
 

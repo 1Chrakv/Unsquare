@@ -22,7 +22,10 @@ Selection is two-step (building, then a handle of the pick mode, `HandleSelectio
 building until right-click (`CageEditSession.StepBack`).
 Picking and gizmo math (`CagePicker`, `AxisDrag`, `PlaneDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
 Drags are axis-constrained (gizmo arrows) or horizontal (gizmo square `GizmoAxes.PlaneXZ`, or pressing on a handle,
-which selects it and drags once past `DragThreshold`); horizontal drags keep heights.
+which selects it and drags once past `DragThreshold`); horizontal drags keep heights. `GizmoMode` Rotate (Ctrl tap,
+`ModifierTap` in `CageHotkeySystem`, or the tool window) swaps arrows for rings (`GizmoAxes.Ring`, `RingDrag`) around
+every axis that turns the handle (none for corners, which keep the arrows). Drags yield a `HandleMotion` (translation
+or turn around the handle centre), applied to the drag-start offsets and quantized once.
 Undo/redo (`EditHistory`, Core) is one global history of cage edits; the session records nudges, whole drags and
 resets, and undo makes the edited building the target. Selection changes are not undoable.
 

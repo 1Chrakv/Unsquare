@@ -84,7 +84,10 @@ Highly recommended, but not required; Unsquare works without them:
 2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
 3. Click a corner, edge or face (depending on the pick mode) to select it. A gizmo appears on the selection:
    - drag an arrow (X red, Y green, Z blue) to move along that axis,
-   - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
+   - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept),
+   - tap **Ctrl** (on its own) or use the Move/Rotate toggle in the tool window to swap the arrows for rotation rings:
+     drag a ring (X red, Y green, Z blue) to turn the edge or face around its centre, e.g. twist the top face or
+     slope the roof. Corners have no rings and keep their arrows.
 4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Alt+U or the button leave
    the mode; Esc does what it does in the game's own tools.
 
