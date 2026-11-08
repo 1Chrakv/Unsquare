@@ -65,9 +65,17 @@ namespace Unsquare.UI.Editing
 
         /// <summary>Which corner columns <see cref="FitToGround"/> moves; kept while the game runs.</summary>
         public GroundFitMode GroundFitMode { get; private set; } = GroundFitMode.BackOnly;
+
+        /// <summary>Whether the gizmo moves or rotates the selected handle; kept while the game runs.</summary>
+        public GizmoMode GizmoMode { get; private set; } = GizmoMode.Move;
+
+        /// <summary>The gizmo shows rotation rings: Rotate mode and a handle that can turn (corners keep arrows).</summary>
+        public bool ShowsRings =>
+            GizmoMode == GizmoMode.Rotate && Selection.HasHandle && GizmoAxes.HasRings(Selection.Handle);
+
         public CageDrag ActiveDrag { get; private set; }
 
-        /// <summary>Gizmo axis (0..2) of the active drag, or -1.</summary>
+        /// <summary>Gizmo part (<see cref="GizmoAxes"/>: axis, square or ring) of the active drag, or -1.</summary>
         public int DragAxis { get; private set; } = -1;
 
         /// <summary>What the mouse is over; set by the mouse tool, read by views.</summary>
@@ -267,25 +275,25 @@ namespace Unsquare.UI.Editing
             return EditHandle($"Reset {handle}", offsets => offsets.Reset(handle));
         }
 
-        /// <summary>Starts dragging the selected handle along a gizmo axis (0..2).</summary>
-        public bool BeginDrag(int axis)
+        /// <summary>Starts dragging the selected handle by a gizmo part (axis, square or ring).</summary>
+        public bool BeginDrag(int part)
         {
             if (!Selection.HasHandle || !TryGetCage(out var state))
                 return false;
-            ActiveDrag = new CageDrag(Selection.Handle, state.TargetOffsets);
+            ActiveDrag = new CageDrag(Selection.Handle, state.Box, state.TargetOffsets);
             _dragStart = state;
-            DragAxis = axis;
+            DragAxis = part;
             Changed?.Invoke();
             return true;
         }
 
-        /// <param name="totalDelta">Building-space delta since <see cref="BeginDrag"/>.</param>
+        /// <param name="motion">Move or turn since <see cref="BeginDrag"/>, in building space.</param>
         /// <returns>The service's answer, or the last one while the offsets stay on the same grid step.</returns>
-        public DeformRequestResult UpdateDrag(float3 totalDelta)
+        public DeformRequestResult UpdateDrag(HandleMotion motion)
         {
             if (ActiveDrag == null)
                 return DeformRequestResult.NotDeformable;
-            if (!ActiveDrag.TryAdvance(totalDelta, out var offsets))
+            if (!ActiveDrag.TryAdvance(motion, out var offsets))
                 return LastResult ?? DeformRequestResult.Accepted;
             return Record(null, _service.SetOffsets(Target, _dragStart, offsets));
         }
@@ -404,6 +412,21 @@ namespace Unsquare.UI.Editing
             var result = _service.AlignGroundToNeighbour(Target, EditMode, side, Options.Align);
             RememberEdit(state.TargetSpec, result);
             return Record(command, result);
+        }
+
+        /// <summary>Move ↔ Rotate.</summary>
+        public void ToggleGizmoMode() =>
+            SetGizmoMode(GizmoMode == GizmoMode.Move ? GizmoMode.Rotate : GizmoMode.Move);
+
+        /// <summary>Switches the gizmo; refused mid-drag, so a drag always keeps the part it grabbed.</summary>
+        public void SetGizmoMode(GizmoMode mode)
+        {
+            if (!IsEnabled || ActiveDrag != null || mode == GizmoMode)
+                return;
+            GizmoMode = mode;
+            Hover = CageHover.None;
+            Log($"Gizmo mode {GizmoMode}");
+            Changed?.Invoke();
         }
 
         /// <summary>Angle → Flush → Full → Angle.</summary>

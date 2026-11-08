@@ -47,6 +47,9 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "hasHandle",
                 () => _editor.Session.Selection.HasHandle));
             AddBinding(new TriggerBinding<string>(Group, "selectPickKind", SelectPickKind));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "gizmoMode",
+                () => _editor.Session.GizmoMode.ToString()));
+            AddBinding(new TriggerBinding<string>(Group, "selectGizmoMode", SelectGizmoMode));
             AddBinding(new TriggerBinding(Group, "resetHandle", () => _editor.Session.ResetHandle()));
             AddBinding(new TriggerBinding(Group, "resetBuilding", () => _editor.Session.Reset()));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "editMode",
@@ -126,6 +129,14 @@ namespace Unsquare.UI.Bindings
                 _editor.Session.SetGroundFitMode(parsed);
             else
                 Mod.Log.Warn($"[UI] Unknown ground fit mode '{mode}'.");
+        }
+
+        private void SelectGizmoMode(string mode)
+        {
+            if (Enum.TryParse(mode, out GizmoMode parsed) && Enum.IsDefined(typeof(GizmoMode), parsed))
+                _editor.Session.SetGizmoMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown gizmo mode '{mode}'.");
         }
 
         private void SelectAlignMode(string mode)

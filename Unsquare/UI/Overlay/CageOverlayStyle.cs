@@ -69,6 +69,9 @@ namespace Unsquare.UI.Overlay
         public float GizmoRadiusRatio { get; } = 0.03f;
         public float ActiveAxisRadiusFactor { get; } = 1.8f;
 
+        /// <summary>Rotation rings are drawn thinner than arrows: they are longer and cross each other.</summary>
+        public float RingRadiusFactor { get; } = 0.7f;
+
         public float GizmoLength(float cameraDistance, ViewScale scale) =>
             GizmoAxes.AxisLength(cameraDistance, scale.AngularSizeOfViewFraction(GizmoScreenSize), AxisLength);
 

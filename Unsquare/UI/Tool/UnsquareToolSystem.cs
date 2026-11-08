@@ -21,8 +21,8 @@ namespace Unsquare.UI.Tool
 {
     /// <summary>
     /// Unsquare mode: a game tool that owns the mouse. A first click picks the building, a second one a handle of
-    /// the pick mode; dragging a gizmo arrow moves it along that axis, dragging the gizmo square or the handle
-    /// itself moves it horizontally; right-click steps back. Only talks to the session.
+    /// the pick mode; dragging a gizmo arrow moves it along that axis, a ring (Rotate mode) turns it, the gizmo
+    /// square or the handle itself moves it horizontally; right-click steps back. Only talks to the session.
     /// </summary>
     public partial class UnsquareToolSystem : ToolBaseSystem
     {
@@ -193,12 +193,18 @@ namespace Unsquare.UI.Tool
             CageProximity.IsNear(context.Cage.Box, context.Cage.TargetOffsets, context.Ray,
                 session.Options.FarClickMarginFraction);
 
-        // The gizmo only exists with a selected handle (arrows win over the square); cage parts only of the
-        // current pick mode. along: ray distance to the grabbed spot on a handle.
+        // The gizmo only exists with a selected handle (rings in Rotate mode; else arrows win over the square);
+        // cage parts only of the current pick mode. along: ray distance to the grabbed spot on a handle.
         private static CageHover FindHover(CageEditSession session, in PickContext context, out float along)
         {
             along = 0f;
-            if (context.HasGizmo)
+            if (context.HasGizmo && session.ShowsRings)
+            {
+                if (GizmoAxes.TryPickRing(context.GizmoOrigin, context.GizmoLength, session.Selection.Handle,
+                        context.Ray, context.Tolerance, out int ring))
+                    return CageHover.OnAxis(ring);
+            }
+            else if (context.HasGizmo)
             {
                 if (GizmoAxes.TryPickAxis(context.GizmoOrigin, context.GizmoLength, context.Ray, context.Tolerance,
                         out int axis))
@@ -213,19 +219,25 @@ namespace Unsquare.UI.Tool
                 : CageHover.None;
         }
 
-        private void StartDrag(CageEditSession session, in PickContext context, int axis)
+        private void StartDrag(CageEditSession session, in PickContext context, int part)
         {
             if (!context.HasGizmo)
                 return;
             IHandleDrag drag = null;
-            if (axis == GizmoAxes.PlaneXZ)
+            if (GizmoAxes.IsRing(part))
+            {
+                if (RingDrag.TryStart(context.GizmoOrigin, GizmoAxes.RingAxis(part), context.GizmoLength, context.Ray,
+                        out var ringDrag))
+                    drag = ringDrag;
+            }
+            else if (part == GizmoAxes.PlaneXZ)
             {
                 if (PlaneDrag.TryStart(context.GizmoOrigin.y, context.Ray, out var planeDrag))
                     drag = planeDrag;
             }
-            else if (AxisDrag.TryStart(context.GizmoOrigin, axis, context.Ray, out var axisDrag))
+            else if (AxisDrag.TryStart(context.GizmoOrigin, part, context.Ray, out var axisDrag))
                 drag = axisDrag;
-            if (drag != null && session.BeginDrag(axis))
+            if (drag != null && session.BeginDrag(part))
                 _drag = drag;
         }
 
@@ -257,8 +269,8 @@ namespace Unsquare.UI.Tool
             if (!session.BeginDrag(GizmoAxes.PlaneXZ))
                 return;
             _drag = drag;
-            if (drag.TryDelta(context.Ray, out var delta))
-                session.UpdateDrag(delta);
+            if (drag.TryMotion(context.Ray, out var motion))
+                session.UpdateDrag(motion);
         }
 
         private void UpdateDrag(CageEditSession session)
@@ -280,8 +292,8 @@ namespace Unsquare.UI.Tool
                 session.EndDrag();
                 return;
             }
-            if (TryGetPickContext(session, out var context) && _drag.TryDelta(context.Ray, out var delta))
-                session.UpdateDrag(delta);
+            if (TryGetPickContext(session, out var context) && _drag.TryMotion(context.Ray, out var motion))
+                session.UpdateDrag(motion);
         }
 
         private void ResetDrags()

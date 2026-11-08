@@ -20,6 +20,8 @@ import modeBothIcon from "images/mode-both.svg";
 import modeBuildingIcon from "images/mode-building.svg";
 import modeLotIcon from "images/mode-lot.svg";
 import fitGroundIcon from "images/fit-ground.svg";
+import gizmoMoveIcon from "images/gizmo-move.svg";
+import gizmoRotateIcon from "images/gizmo-rotate.svg";
 import edgeIcon from "images/pick-edge.svg";
 import faceIcon from "images/pick-face.svg";
 import groundFitAllIcon from "images/ground-fit-all.svg";
@@ -52,6 +54,7 @@ const problem$ = bindValue<string>(group, "problem", "");
 const canSelectGroundFitMode$ = bindValue<boolean>(group, "canSelectGroundFitMode", true);
 const pickKind$ = bindValue<string>(group, "pickKind", "Edge");
 const hasHandle$ = bindValue<boolean>(group, "hasHandle", false);
+const gizmoMode$ = bindValue<string>(group, "gizmoMode", "Move");
 const terrainLift$ = bindValue<boolean>(group, "terrainLift", false);
 const canLiftTerrain$ = bindValue<boolean>(group, "canLiftTerrain", false);
 const alignMode$ = bindValue<string>(group, "alignMode", "Angle");
@@ -75,6 +78,12 @@ const pickKinds: ToggleEntry[] = [
     { value: "Corner", icon: cornerIcon, fallback: "Pick corners" },
     { value: "Edge", icon: edgeIcon, fallback: "Pick edges" },
     { value: "Face", icon: faceIcon, fallback: "Pick faces" },
+];
+
+// Values are the C# GizmoMode names: what the gizmo on the selected handle does.
+const gizmoModes: ToggleEntry[] = [
+    { value: "Move", icon: gizmoMoveIcon, fallback: "Gizmo: move arrows (tap Ctrl)" },
+    { value: "Rotate", icon: gizmoRotateIcon, fallback: "Gizmo: rotation rings (tap Ctrl)" },
 ];
 
 // Values are the C# AlignSide and AlignMode names; sides as seen from the street.
@@ -157,6 +166,7 @@ const ToolWindow = () => {
     const anchor = useValue(toolWindow$);
     const pickKind = useValue(pickKind$);
     const hasHandle = useValue(hasHandle$);
+    const gizmoMode = useValue(gizmoMode$);
     const terrainLift = useValue(terrainLift$);
     const canLiftTerrain = useValue(canLiftTerrain$);
     const alignMode = useValue(alignMode$);
@@ -215,11 +225,19 @@ const ToolWindow = () => {
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Pick", "Pick")}
-                    toggles={<SegmentedToggle
-                        options={toOptions(pickKinds, "Unsquare.ToolWindow.", translate)}
-                        value={pickKind}
-                        onSelect={kind => trigger(group, "selectPickKind", kind)}
-                    />}
+                    toggles={<>
+                        <SegmentedToggle
+                            options={toOptions(pickKinds, "Unsquare.ToolWindow.", translate)}
+                            value={pickKind}
+                            onSelect={kind => trigger(group, "selectPickKind", kind)}
+                        />
+                        <div className={styles.spacer} />
+                        <SegmentedToggle
+                            options={toOptions(gizmoModes, "Unsquare.ToolWindow.GizmoMode", translate)}
+                            value={gizmoMode}
+                            onSelect={mode => trigger(group, "selectGizmoMode", mode)}
+                        />
+                    </>}
                 />
                 <div className={styles.divider} />
                 <Section

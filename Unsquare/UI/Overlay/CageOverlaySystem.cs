@@ -16,7 +16,8 @@ namespace Unsquare.UI.Overlay
 {
     /// <summary>
     /// Read-only view of the edit session: draws rest box, deformed cage (coloured by status), hovered and
-    /// selected handle and move gizmo of the target building, and a dim cage of the building under the mouse.
+    /// selected handle and gizmo (arrows or rotation rings) of the target building, and a dim cage of the
+    /// building under the mouse.
     /// </summary>
     public partial class CageOverlaySystem : GameSystemBase
     {
@@ -107,7 +108,12 @@ namespace Unsquare.UI.Overlay
                 DrawHandle(buffer, transform, cage, selection.Handle, _style.SelectedHandle,
                     _style.SelectedHandleDiameter);
                 int activeAxis = session.DragAxis >= 0 ? session.DragAxis : hover.Axis;
-                if (CameraView.TryCapture(out var view))
+                if (!CameraView.TryCapture(out var view))
+                    return;
+                if (session.ShowsRings)
+                    DrawRings(buffer, transform, cage.HandlePosition(selection.Handle), selection.Handle, view,
+                        activeAxis);
+                else
                     DrawGizmo(buffer, transform, cage.HandlePosition(selection.Handle), view, activeAxis);
             }
         }
@@ -184,6 +190,30 @@ namespace Unsquare.UI.Overlay
                 var segment = new CageSegment(GizmoAxes.PlaneCorner(origin, length, corner),
                     GizmoAxes.PlaneCorner(origin, length, (corner + 1) % 4));
                 DrawSegment(buffer, transform, segment, planeColor, planeRadius);
+            }
+        }
+
+        // One ring per axis the handle can turn around, as wide as the arrows are long; Rotate mode shows no arrows.
+        private void DrawRings(OverlayRenderSystem.Buffer buffer, in Transform transform, float3 origin,
+            CageHandle handle, in CameraView view, int activePart)
+        {
+            float distance = math.distance(view.Position, BuildingSpace.PointToWorld(transform, origin));
+            float radius = _style.GizmoLength(distance, view.Scale);
+            float lineRadius = radius * _style.GizmoRadiusRatio * _style.RingRadiusFactor;
+            for (int axis = 0; axis < GizmoAxes.AxisCount; axis++)
+            {
+                if (!GizmoAxes.CanRotate(handle, axis))
+                    continue;
+                bool active = GizmoAxes.Ring(axis) == activePart;
+                var color = active ? _style.ActiveAxis(axis) : _style.Axis(axis);
+                float ringRadius = active ? lineRadius * _style.ActiveAxisRadiusFactor : lineRadius;
+                float3 previous = GizmoAxes.RingPoint(origin, radius, axis, 0);
+                for (int i = 1; i <= GizmoAxes.RingSegments; i++)
+                {
+                    float3 next = GizmoAxes.RingPoint(origin, radius, axis, i);
+                    DrawSegment(buffer, transform, new CageSegment(previous, next), color, ringRadius);
+                    previous = next;
+                }
             }
         }
 
