@@ -2,6 +2,7 @@ using NUnit.Framework;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
+using Unsquare.Core.Editing;
 using Unsquare.Core.Terrain;
 
 namespace Unsquare.Tests.Terrain
@@ -49,6 +50,59 @@ namespace Unsquare.Tests.Terrain
         }
 
         [Test]
+        public void FromCage_WholeCageMovedSideways_StaysZero()
+        {
+            var offsets = CageOffsets.Identity.Move(CageHandle.Cage(), new float3(3f, 0f, -2f));
+            Assert.That(GroundLift.FromCage(Lot, offsets).IsZero, Is.True);
+        }
+
+        [Test]
+        public void FromCage_WholeCageRaisedAndShifted_LiftsUniformly()
+        {
+            // The -x lot edge now lies outside the cage outline and takes the outline's height, not an extrapolation.
+            var offsets = CageOffsets.Identity.Move(CageHandle.Cage(), new float3(5f, 2f, 0f));
+            var lift = GroundLift.FromCage(Lot, offsets);
+            foreach (var edge in new[] { lift.Front, lift.Right, lift.Back, lift.Left })
+                Assert.That(Near(edge, new float3(2f)), Is.True, edge.ToString());
+        }
+
+        [Test]
+        public void FromCage_YawQuarterTurnThenTilt_SlopesAlongTurnedCage()
+        {
+            var lot = new CageBox(new float3(-10, 0, -10), new float3(10, 15, 10));
+            var cage = CageHandle.Cage();
+            const float tilt = 0.2f;
+            var turned = HandleMotion.Rotate(1, math.PI / 2f).Apply(lot, CageOffsets.Identity, cage);
+            var offsets = HandleMotion.Rotate(0, tilt).Apply(lot, turned, cage);
+            var lift = GroundLift.FromCage(lot, offsets);
+
+            // A rigid turn: the ground is the plane y = 0 tilted around X through the cage centre.
+            var rotation = quaternion.AxisAngle(new float3(1, 0, 0), tilt);
+            float3 pivot = lot.Center;
+            float3 normal = math.mul(rotation, new float3(0, 1, 0));
+            float3 onPlane = pivot + math.mul(rotation, new float3(0, -pivot.y, 0));
+            // Tilting around the raised centre shifts the outline in z; lot points beyond it take its edge height.
+            float nearZ = (pivot + math.mul(rotation, new float3(0, -pivot.y, -10))).z;
+            float farZ = (pivot + math.mul(rotation, new float3(0, -pivot.y, 10))).z;
+            float PlaneHeight(float x, float z)
+            {
+                z = math.clamp(z, nearZ, farZ);
+                return onPlane.y - (normal.x * (x - onPlane.x) + normal.z * (z - onPlane.z)) / normal.y;
+            }
+
+            Assert.That(lift.Front.x, Is.EqualTo(PlaneHeight(10, -10)).Within(0.1f));
+            Assert.That(lift.Right.x, Is.EqualTo(PlaneHeight(-10, -10)).Within(0.1f));
+            Assert.That(lift.Back.x, Is.EqualTo(PlaneHeight(-10, 10)).Within(0.1f));
+            Assert.That(lift.Left.x, Is.EqualTo(PlaneHeight(10, 10)).Within(0.1f));
+            Assert.That(TerrainSlopePlanner.Plan(lot, offsets).PadOffset, Is.EqualTo(PlaneHeight(0, 0)).Within(0.1f));
+
+            // The ground point that started at (-x, -z) was turned to the far side: its own rise is the wrong slope.
+            var deformation = new TrilinearCageDeformation(lot, offsets);
+            float materialLift = deformation.Apply(new float3(-10, 0, -10), out _).y;
+            Assert.That(math.abs(materialLift - lift.Right.x), Is.GreaterThan(1f));
+        }
+
+        [Test]
         public void FromCage_SkewedCage_EdgeCurvesMatchDeformedGround()
         {
             var offsets = CageOffsets.Identity
@@ -72,14 +126,24 @@ namespace Unsquare.Tests.Terrain
             Assert.That(new LotEdgeLift(float3.zero, float3.zero, new float3(0f, -0.02f, 0f), float3.zero).IsZero, Is.False);
         }
 
+        // Exact at the ends and thirds, where the curve is fitted; close in between.
         private static void AssertEdge(TrilinearCageDeformation deformation, float3 edge, float end, float3 from, float3 to)
         {
-            for (float t = 0f; t <= 1f; t += 0.125f)
+            for (int i = 0; i <= 12; i++)
             {
-                float3 p = math.lerp(from, to, t);
-                float expected = deformation.Apply(p, out _).y - p.y;
-                Assert.That(Bezier(edge.x, edge.y, edge.z, end, t), Is.EqualTo(expected).Within(1e-4f), $"t = {t}");
+                float t = i / 12f;
+                float expected = GroundAbove(deformation, math.lerp(from, to, t));
+                float tolerance = i % 4 == 0 ? 2e-3f : 0.05f;
+                Assert.That(Bezier(edge.x, edge.y, edge.z, end, t), Is.EqualTo(expected).Within(tolerance), $"t = {t}");
             }
+        }
+
+        // Height of the deformed ground plane above a lot point, solved independently of GroundSurface.
+        private static float GroundAbove(TrilinearCageDeformation deformation, float3 point)
+        {
+            Assert.That(DeformationInverse.TryInvertAtHeight(deformation, point.xz, 0f, out var rest), Is.True);
+            rest = math.clamp(rest, Lot.Min.xz, Lot.Max.xz);
+            return deformation.Apply(new float3(rest.x, 0f, rest.y), out _).y;
         }
 
         private static float Bezier(float p0, float p1, float p2, float p3, float t)

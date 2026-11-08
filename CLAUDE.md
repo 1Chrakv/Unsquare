@@ -143,6 +143,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - It collapses the flat area to the lot centre at the centre lift (`TerrainSlopePlanner`, `TerrainSlopeApplier`).
   - It adds the edge lift, relative to that, to every instance's `Lot`. The game interpolates in between; diagonal
     creases come from its blend.
+  - Lifts are the deformed ground above each lot point (`GroundSurface`: cage inverted in plan, clamped to the
+    outline), not the rise of the point that started there; otherwise turned cages slope the terrain wrongly.
   - Runtime only: `Lot` is not saved and variant prefabs are rebuilt on load. `LotHeightSystem` rewrites lots near
     changed objects/nets: compare with the written value, never add twice.
   - Stepped `AdditionalBuildingTerraformElement` cells had no visible effect in game; don't retry them.
