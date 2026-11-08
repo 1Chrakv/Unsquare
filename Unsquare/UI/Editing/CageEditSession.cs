@@ -221,10 +221,10 @@ namespace Unsquare.UI.Editing
             return StepBackResult.None;
         }
 
-        /// <summary>Sets the pick mode (corner, edge, face); a selected handle stays selected.</summary>
+        /// <summary>Sets the pick mode (corner, edge, face, whole cage); a selected handle stays selected.</summary>
         public void SelectKind(CageHandleKind kind) => SetPickKind(Selection.WithPickKind(kind));
 
-        /// <summary>Edge → Face → Corner → Edge.</summary>
+        /// <summary>Edge → Face → Corner → Cage → Edge.</summary>
         public void CyclePickKind() => SetPickKind(Selection.CyclePickKind());
 
         public void NextHandle() => SetSelection(Selection.Next());

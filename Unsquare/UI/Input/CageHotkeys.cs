@@ -23,6 +23,7 @@ namespace Unsquare.UI.Input
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";
         public const string KindFace = "UnsquareKindFace";
+        public const string KindCage = "UnsquareKindCage";
         public const string PreviousHandle = "UnsquarePreviousHandle";
         public const string NextHandle = "UnsquareNextHandle";
         public const string MoveNegX = "UnsquareMoveNegX";
@@ -60,13 +61,15 @@ namespace Unsquare.UI.Input
             new HotkeyDefinition(ToggleBlendMode, nameof(UnsquareSettings.ToggleBlendModeBinding),
                 "Switch whether the ground blends between building and lot", s => s.ToggleBlendMode()),
             new HotkeyDefinition(CyclePickKind, nameof(UnsquareSettings.CyclePickKindBinding),
-                "Cycle pick mode (edges, faces, corners)", s => s.CyclePickKind()),
+                "Cycle pick mode (edges, faces, corners, cage)", s => s.CyclePickKind()),
             new HotkeyDefinition(KindCorner, nameof(UnsquareSettings.KindCornerBinding), "Pick corners",
                 s => s.SelectKind(CageHandleKind.Corner)),
             new HotkeyDefinition(KindEdge, nameof(UnsquareSettings.KindEdgeBinding), "Pick edges",
                 s => s.SelectKind(CageHandleKind.Edge)),
             new HotkeyDefinition(KindFace, nameof(UnsquareSettings.KindFaceBinding), "Pick faces",
                 s => s.SelectKind(CageHandleKind.Face)),
+            new HotkeyDefinition(KindCage, nameof(UnsquareSettings.KindCageBinding), "Pick the whole cage",
+                s => s.SelectKind(CageHandleKind.Cage)),
             new HotkeyDefinition(PreviousHandle, nameof(UnsquareSettings.PreviousHandleBinding),
                 "Select previous handle", s => s.PreviousHandle()),
             new HotkeyDefinition(NextHandle, nameof(UnsquareSettings.NextHandleBinding), "Select next handle",

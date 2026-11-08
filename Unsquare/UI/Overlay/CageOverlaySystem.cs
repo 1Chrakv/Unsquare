@@ -136,7 +136,7 @@ namespace Unsquare.UI.Overlay
             }
         }
 
-        // Corners get a dot, edges a thick line, faces a thick outline and a dot in the centre.
+        // Corners get a dot, edges a thick line, faces a thick outline, the whole cage all edges thick; plus a dot.
         private void DrawHandle(OverlayRenderSystem.Buffer buffer, in Transform transform, in CageState cage,
             CageHandle handle, Color color, float dotDiameter)
         {
@@ -154,6 +154,11 @@ namespace Unsquare.UI.Overlay
                     DrawSegment(buffer, transform, FaceSide(cage, corners[1], corners[3]), color, radius);
                     DrawSegment(buffer, transform, FaceSide(cage, corners[3], corners[2]), color, radius);
                     DrawSegment(buffer, transform, FaceSide(cage, corners[2], corners[0]), color, radius);
+                    break;
+                case CageHandleKind.Cage:
+                    CageWireframe.Fill(cage.Box, cage.TargetOffsets, _edges);
+                    foreach (var edge in _edges)
+                        DrawSegment(buffer, transform, edge, color, radius);
                     break;
             }
             buffer.DrawCircle(color, BuildingSpace.HandleWorldPosition(transform, cage, handle), dotDiameter);

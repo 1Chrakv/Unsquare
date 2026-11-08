@@ -75,6 +75,7 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ToolWindow.Corner", "Pick corners (Alt+1)" },
                 { "Unsquare.ToolWindow.Edge", "Pick edges (Alt+2)" },
                 { "Unsquare.ToolWindow.Face", "Pick faces (Alt+3)" },
+                { "Unsquare.ToolWindow.Cage", "Pick the whole cage: move or turn the building at once (Alt+4)" },
                 { "Unsquare.ToolWindow.GizmoModeMove", "Gizmo: arrows move the selection (tap Ctrl to switch)" },
                 { "Unsquare.ToolWindow.GizmoModeRotate",
                     "Gizmo: rings turn the selection around its centre (tap Ctrl to switch)" },

@@ -24,6 +24,7 @@ import gizmoMoveIcon from "images/gizmo-move.svg";
 import gizmoRotateIcon from "images/gizmo-rotate.svg";
 import edgeIcon from "images/pick-edge.svg";
 import faceIcon from "images/pick-face.svg";
+import cageIcon from "images/pick-cage.svg";
 import groundFitAllIcon from "images/ground-fit-all.svg";
 import groundFitBackIcon from "images/ground-fit-back.svg";
 import resetBuildingIcon from "images/reset-building.svg";
@@ -78,6 +79,7 @@ const pickKinds: ToggleEntry[] = [
     { value: "Corner", icon: cornerIcon, fallback: "Pick corners" },
     { value: "Edge", icon: edgeIcon, fallback: "Pick edges" },
     { value: "Face", icon: faceIcon, fallback: "Pick faces" },
+    { value: "Cage", icon: cageIcon, fallback: "Pick the whole cage" },
 ];
 
 // Values are the C# GizmoMode names: what the gizmo on the selected handle does.
