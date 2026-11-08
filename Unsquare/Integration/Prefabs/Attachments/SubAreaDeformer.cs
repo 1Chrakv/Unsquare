@@ -26,8 +26,18 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 result[i] = original;
                 if (original?.m_NodePositions == null)
                     continue;
-                if (TryDeform(original, context, out var deformed, out int contactsBefore, out int contactsAfter))
+                if (TryDeform(original, context, context.Ground, out var deformed, out int contactsBefore,
+                        out int contactsAfter))
                 {
+                    result[i] = deformed;
+                    deformedCount++;
+                }
+                // The blend only moves the nodes along its curve; the plain lot cage is linear and keeps them apart.
+                else if (!ReferenceEquals(context.Ground, context.Lot) &&
+                         TryDeform(original, context, context.Lot, out deformed, out _, out _))
+                {
+                    Mod.Log.Info($"Area {i} of {source.name} would fold with blending " +
+                                 $"(contacts {contactsBefore} -> {contactsAfter}); follows the lot cage instead.");
                     result[i] = deformed;
                     deformedCount++;
                 }
@@ -42,7 +52,7 @@ namespace Unsquare.Integration.Prefabs.Attachments
         }
 
         // Outlines may already touch themselves (holes via zero-width bridges); only new contacts are a fold.
-        private static bool TryDeform(ObjectSubAreaInfo original, AttachmentContext context,
+        private static bool TryDeform(ObjectSubAreaInfo original, AttachmentContext context, IDeformation ground,
             out ObjectSubAreaInfo deformed, out int contactsBefore, out int contactsAfter)
         {
             var nodes = original.m_NodePositions;
@@ -51,9 +61,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
             var after = new float2[nodes.Length];
             for (int n = 0; n < nodes.Length; n++)
             {
-                bool ground = IsGround(original, n);
-                float3 p = (ground ? context.Ground : context.Building).Apply(nodes[n], out _);
-                if (ground)
+                bool onGround = IsGround(original, n);
+                float3 p = (onGround ? ground : context.Building).Apply(nodes[n], out _);
+                if (onGround)
                     p.y = nodes[n].y; // projected onto the terrain anyway
                 positions[n] = p;
                 before[n] = nodes[n].xz;
