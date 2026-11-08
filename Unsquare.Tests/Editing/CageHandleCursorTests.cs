@@ -7,6 +7,16 @@ namespace Unsquare.Tests.Editing
     public class CageHandleCursorTests
     {
         [Test]
+        public void Next_Cage_StaysOnCage()
+        {
+            var cursor = CageHandleCursor.From(CageHandle.Cage());
+            Assert.That(cursor.Next().Handle, Is.EqualTo(CageHandle.Cage()));
+            Assert.That(cursor.Previous().Handle, Is.EqualTo(CageHandle.Cage()));
+            Assert.That(CageHandleCursor.From(CageHandle.Face(4)).WithKind(CageHandleKind.Cage).Handle,
+                Is.EqualTo(CageHandle.Cage()));
+        }
+
+        [Test]
         public void Default_IsFirstCorner()
         {
             Assert.That(default(CageHandleCursor).Handle, Is.EqualTo(CageHandle.Corner(0)));

@@ -26,6 +26,7 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindFace, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.KindCage, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.PreviousHandle, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.NextHandle, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.MoveNegX, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -102,6 +103,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Digit3, CageHotkeys.KindFace, alt: true)]
         public ProxyBinding KindFaceBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Digit4, CageHotkeys.KindCage, alt: true)]
+        public ProxyBinding KindCageBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Q, CageHotkeys.PreviousHandle, alt: true)]

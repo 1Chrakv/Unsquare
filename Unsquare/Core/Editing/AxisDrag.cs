@@ -28,8 +28,7 @@ namespace Unsquare.Core.Editing
         /// <param name="origin">Position of the handle at the press, in building space.</param>
         public static bool TryStart(float3 origin, int axis, CageRay ray, out AxisDrag drag)
         {
-            var direction = GizmoAxes.Direction(axis);
-            if (!TryProject(origin, direction, ray, out float start))
+            if (!RayGeometry.TryClosestOnLine(ray, origin, GizmoAxes.Direction(axis), MinSine, out float start))
             {
                 drag = null;
                 return false;
@@ -41,7 +40,7 @@ namespace Unsquare.Core.Editing
         /// <summary>Total building-space delta since the press; false if the ray runs along the axis.</summary>
         public bool TryDelta(CageRay ray, out float3 delta)
         {
-            if (!TryProject(_origin, Direction, ray, out float t))
+            if (!RayGeometry.TryClosestOnLine(ray, _origin, Direction, MinSine, out float t))
             {
                 delta = float3.zero;
                 return false;
@@ -50,19 +49,11 @@ namespace Unsquare.Core.Editing
             return true;
         }
 
-        // Parameter of the point on the axis line closest to the ray; it must lie in front of the camera.
-        private static bool TryProject(float3 origin, float3 axis, CageRay ray, out float t)
+        public bool TryMotion(CageRay ray, out HandleMotion motion)
         {
-            float3 w = origin - ray.Origin;
-            float b = math.dot(axis, ray.Direction);
-            float denom = 1f - b * b;
-            t = 0f;
-            if (denom < MinSine * MinSine)
-                return false;
-            float dw = math.dot(ray.Direction, w);
-            t = (b * dw - math.dot(axis, w)) / denom;
-            float along = dw + b * t;
-            return along > 0f;
+            bool ok = TryDelta(ray, out var delta);
+            motion = HandleMotion.Translate(delta);
+            return ok;
         }
     }
 }

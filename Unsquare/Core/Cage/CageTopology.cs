@@ -6,7 +6,7 @@ namespace Unsquare.Core.Cage
 {
     /// <summary>
     /// Static corner/edge/face tables of the cuboid. Corner index bits: x = 1, y = 2, z = 4 (set = max side).
-    /// Edges are grouped by axis (X, Y, Z; 4 each). Faces: -X, +X, -Y, +Y, -Z, +Z.
+    /// Edges are grouped by axis (X, Y, Z; 4 each). Faces: -X, +X, -Y, +Y, -Z, +Z. The cage handle holds all corners.
     /// </summary>
     public static class CageTopology
     {
@@ -17,12 +17,14 @@ namespace Unsquare.Core.Cage
         private static readonly int[][] CornerSets = BuildCornerSets();
         private static readonly int[][] EdgeSets = BuildEdgeSets();
         private static readonly int[][] FaceSets = BuildFaceSets();
+        private static readonly int[] AllCorners = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
         public static int CountOf(CageHandleKind kind) => kind switch
         {
             CageHandleKind.Corner => CornerCount,
             CageHandleKind.Edge => EdgeCount,
             CageHandleKind.Face => FaceCount,
+            CageHandleKind.Cage => 1,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
         };
 
@@ -35,6 +37,7 @@ namespace Unsquare.Core.Cage
             CageHandleKind.Corner => CornerSets[handle.Index],
             CageHandleKind.Edge => EdgeSets[handle.Index],
             CageHandleKind.Face => FaceSets[handle.Index],
+            CageHandleKind.Cage => AllCorners,
             _ => throw new ArgumentOutOfRangeException(nameof(handle)),
         };
 

@@ -18,11 +18,15 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
 Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageEditSession` commands; views only
 read the session. Nothing runs outside Unsquare mode (tool active): the session is disabled and hotkeys are ignored.
-Selection is two-step (building, then a handle of the pick mode, `HandleSelection`); a selected handle locks the
+Selection is two-step (building, then a handle of the pick mode: corner, edge, face or the whole cage,
+`CageHandleKind.Cage` = all 8 corners; `HandleSelection`); a selected handle locks the
 building until right-click (`CageEditSession.StepBack`).
 Picking and gizmo math (`CagePicker`, `AxisDrag`, `PlaneDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
 Drags are axis-constrained (gizmo arrows) or horizontal (gizmo square `GizmoAxes.PlaneXZ`, or pressing on a handle,
-which selects it and drags once past `DragThreshold`); horizontal drags keep heights.
+which selects it and drags once past `DragThreshold`); horizontal drags keep heights. `GizmoMode` Rotate (Ctrl tap,
+`ModifierTap` in `CageHotkeySystem`, or the tool window) swaps arrows for rings (`GizmoAxes.Ring`, `RingDrag`) around
+every axis that turns the handle (none for corners, which keep the arrows). Drags yield a `HandleMotion` (translation
+or turn around the handle centre), applied to the drag-start offsets and quantized once.
 Undo/redo (`EditHistory`, Core) is one global history of cage edits; the session records nudges, whole drags and
 resets, and undo makes the edited building the target. Selection changes are not undoable.
 
@@ -139,6 +143,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - It collapses the flat area to the lot centre at the centre lift (`TerrainSlopePlanner`, `TerrainSlopeApplier`).
   - It adds the edge lift, relative to that, to every instance's `Lot`. The game interpolates in between; diagonal
     creases come from its blend.
+  - Lifts are the deformed ground above each lot point (`GroundSurface`: cage inverted in plan, clamped to the
+    outline), not the rise of the point that started there; otherwise turned cages slope the terrain wrongly.
   - Runtime only: `Lot` is not saved and variant prefabs are rebuilt on load. `LotHeightSystem` rewrites lots near
     changed objects/nets: compare with the written value, never add twice.
   - Stepped `AdditionalBuildingTerraformElement` cells had no visible effect in game; don't retry them.

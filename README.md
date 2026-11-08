@@ -82,9 +82,13 @@ Highly recommended, but not required; Unsquare works without them:
 
 1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**.
 2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
-3. Click a corner, edge or face (depending on the pick mode) to select it. A gizmo appears on the selection:
+3. Click a corner, edge or face, or anywhere on the cage in the **cage** pick mode (moves or turns the whole building
+   at once), to select it. A gizmo appears on the selection:
    - drag an arrow (X red, Y green, Z blue) to move along that axis,
-   - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
+   - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept),
+   - tap **Ctrl** (on its own) or use the Move/Rotate toggle in the tool window to swap the arrows for rotation rings:
+     drag a ring (X red, Y green, Z blue) to turn the edge or face around its centre, e.g. twist the top face or
+     slope the roof. Corners have no rings and keep their arrows.
 4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Alt+U or the button leave
    the mode; Esc does what it does in the game's own tools.
 
@@ -114,8 +118,8 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 | Cycle edit mode (both → building → lot) | Alt+D |
 | Building follows the lot again / lot follows the building again (Link) | Alt+K / Alt+Shift+K |
 | Switch blending on or off | Alt+B |
-| Cycle pick mode (edges → faces → corners) | Alt+W |
-| Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
+| Cycle pick mode (edges → faces → corners → cage) | Alt+W |
+| Pick corners / edges / faces / the whole cage | Alt+1 / Alt+2 / Alt+3 / Alt+4 |
 | Select previous / next handle | Alt+Q / Alt+E |
 | Move along X (width) | Alt+← / Alt+→ |
 | Move along Z (+Z = street side) | Alt+↑ / Alt+↓ |

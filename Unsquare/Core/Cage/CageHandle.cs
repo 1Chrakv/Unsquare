@@ -3,7 +3,7 @@ using System;
 namespace Unsquare.Core.Cage
 {
     /// <summary>
-    /// A grabbable part of the cage: a corner, an edge or a face.
+    /// A grabbable part of the cage: a corner, an edge, a face or the whole cage.
     /// Indices follow <see cref="CageTopology"/>.
     /// </summary>
     public readonly struct CageHandle : IEquatable<CageHandle>
@@ -22,6 +22,7 @@ namespace Unsquare.Core.Cage
         public static CageHandle Corner(int index) => new(CageHandleKind.Corner, index);
         public static CageHandle Edge(int index) => new(CageHandleKind.Edge, index);
         public static CageHandle Face(int index) => new(CageHandleKind.Face, index);
+        public static CageHandle Cage() => new(CageHandleKind.Cage, 0);
 
         public bool Equals(CageHandle other) => Kind == other.Kind && Index == other.Index;
         public override bool Equals(object obj) => obj is CageHandle other && Equals(other);

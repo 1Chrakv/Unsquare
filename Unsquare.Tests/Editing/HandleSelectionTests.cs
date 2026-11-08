@@ -15,12 +15,14 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
-        public void CyclePickKind_EdgeFaceCorner_WrapsToEdge()
+        public void CyclePickKind_EdgeFaceCornerCage_WrapsToEdge()
         {
             var selection = HandleSelection.Default.CyclePickKind();
             Assert.That(selection.PickKind, Is.EqualTo(CageHandleKind.Face));
             selection = selection.CyclePickKind();
             Assert.That(selection.PickKind, Is.EqualTo(CageHandleKind.Corner));
+            selection = selection.CyclePickKind();
+            Assert.That(selection.PickKind, Is.EqualTo(CageHandleKind.Cage));
             Assert.That(selection.CyclePickKind().PickKind, Is.EqualTo(CageHandleKind.Edge));
         }
 

@@ -18,7 +18,7 @@ namespace Unsquare.Core.Editing
         public bool HasHandle { get; }
         public CageHandle Handle { get; }
 
-        /// <summary>Gizmo part: axis 0..2 or <see cref="GizmoAxes.PlaneXZ"/>, or -1.</summary>
+        /// <summary>Gizmo part: axis 0..2, <see cref="GizmoAxes.PlaneXZ"/> or a ring, or -1.</summary>
         public int Axis { get; }
 
         public bool HasAxis => Axis >= 0;
@@ -27,7 +27,7 @@ namespace Unsquare.Core.Editing
 
         public static CageHover OnAxis(int axis)
         {
-            if (axis < 0 || axis > GizmoAxes.PlaneXZ)
+            if (axis < 0 || axis >= GizmoAxes.PartCount)
                 throw new ArgumentOutOfRangeException(nameof(axis), axis, null);
             return new CageHover(false, default, axis);
         }
@@ -37,7 +37,15 @@ namespace Unsquare.Core.Editing
 
         public override bool Equals(object obj) => obj is CageHover other && Equals(other);
         public override int GetHashCode() => (HasHandle, Handle, Axis).GetHashCode();
-        public override string ToString() =>
-            HasHandle ? Handle.ToString() : Axis == GizmoAxes.PlaneXZ ? "PlaneXZ" : HasAxis ? $"Axis{Axis}" : "None";
+        public override string ToString()
+        {
+            if (HasHandle)
+                return Handle.ToString();
+            if (Axis == GizmoAxes.PlaneXZ)
+                return "PlaneXZ";
+            if (GizmoAxes.IsRing(Axis))
+                return $"Ring{"XYZ"[GizmoAxes.RingAxis(Axis)]}";
+            return HasAxis ? $"Axis{Axis}" : "None";
+        }
     }
 }
