@@ -141,7 +141,10 @@ and lanes don't matter.
 - `BuildingDescription.EditBox` = the lot box with its top raised (`ExtendedCage.RaiseTop`) to the highest deformed
   on-lot extension: its mesh box top (`CageBoxMeasurer.TryMeasureMeshes`) plus `m_Position.y`, cached per extension
   prefab (`VariantSystem.DeformedExtensionsTop`).
-- **Scope: only the top is raised.** x/z stay the lot's, like the rule that the cage is the lot rectangle (overhangs
+- In Building mode (split cages) the building box instead grows over the extensions baked with the building cage
+  (`ExtendedCage.Enclose`): storeys and wings beside the building, such as the hospital's wards
+  (`ExtensionCage.FollowsBuilding`). Flat pieces beside it follow the lot cage and don't enlarge it.
+- **Scope (lot edit box): only the top is raised.** x/z stay the lot's, like the rule that the cage is the lot rectangle (overhangs
   aren't enclosed). The bottom corners equal the lot's, so ground fit, align, the "leaves its plot" warning and
   neighbours' lot outlines are unchanged.
 - `DeformService` works in edit space:
