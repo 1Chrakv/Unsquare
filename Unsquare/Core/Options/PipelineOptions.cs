@@ -5,16 +5,16 @@ using Unsquare.Core.Housekeeping;
 namespace Unsquare.Core.Options
 {
     /// <summary>
-    /// Tunable settings of the variant pipeline: cage limits, attachments, rebake delay, pruning and lot sync
-    /// tolerances. Immutable; the UI builds a new instance from the options page.
+    /// Tunable settings of the variant pipeline: cage limits, attachments, rebake delay, pruning, lot sync
+    /// tolerances and level-ups. Immutable; the UI builds a new instance from the options page.
     /// </summary>
     public sealed class PipelineOptions
     {
         public static readonly PipelineOptions Default = new(CageLimits.Default, AttachmentOptions.Default, 0.4, true,
-            (int)PrunePlanner.DefaultMaxUnusedAge.TotalDays, 1f, 1f);
+            (int)PrunePlanner.DefaultMaxUnusedAge.TotalDays, 1f, 1f, true);
 
         public PipelineOptions(CageLimits limits, AttachmentOptions attachments, double rebakeDelaySeconds,
-            bool pruneUnused, int pruneAfterDays, float areaMatchMeters, float coarseLodTwistMeters)
+            bool pruneUnused, int pruneAfterDays, float areaMatchMeters, float coarseLodTwistMeters, bool keepOnLevelUp)
         {
             if (!(rebakeDelaySeconds >= 0))
                 throw new ArgumentException("Rebake delay must not be negative.", nameof(rebakeDelaySeconds));
@@ -31,6 +31,7 @@ namespace Unsquare.Core.Options
             PruneAfterDays = pruneAfterDays;
             AreaMatchMeters = areaMatchMeters;
             CoarseLodTwistMeters = coarseLodTwistMeters;
+            KeepOnLevelUp = keepOnLevelUp;
         }
 
         public CageLimits Limits { get; }
@@ -53,9 +54,12 @@ namespace Unsquare.Core.Options
         /// </summary>
         public float CoarseLodTwistMeters { get; }
 
+        /// <summary>Whether a deformed growable that levels up gets its cage carried over to the new building.</summary>
+        public bool KeepOnLevelUp { get; }
+
         public override string ToString() =>
             $"limits [{Limits}], attachments [{Attachments}], rebake {RebakeDelaySeconds} s, " +
             $"prune {(PruneUnused ? $"after {PruneAfterDays} d" : "off")}, match areas {AreaMatchMeters} m, " +
-            $"coarse LOD twist {CoarseLodTwistMeters} m";
+            $"coarse LOD twist {CoarseLodTwistMeters} m, keep on level-up {KeepOnLevelUp}";
     }
 }
