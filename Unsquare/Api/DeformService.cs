@@ -9,6 +9,7 @@ using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
 using Unsquare.Core.Terrain;
 using Unsquare.Integration.Entities;
+using Unsquare.Integration.Import;
 using Unsquare.Integration.Systems;
 using Transform = Game.Objects.Transform;
 
@@ -397,6 +398,44 @@ namespace Unsquare.Api
             Mod.Log.Info($"FlexIt import done: {summary}.");
             return summary;
         }
+
+        public bool NeedsConversion(Entity building) => _pipeline.IsForeign(building);
+
+        public PlacemakerConversionResult ConvertPlacemaker(Entity building)
+        {
+            var adoption = _pipeline.PreparePlacemakerAdoption(building);
+            switch (adoption.Status)
+            {
+                case PlacemakerAdoptionStatus.Ready:
+                    break;
+                case PlacemakerAdoptionStatus.PlacemakerBusy:
+                    return PlacemakerConversionResult.PlacemakerBusy;
+                case PlacemakerAdoptionStatus.PlacemakerMissing:
+                    return PlacemakerConversionResult.PlacemakerMissing;
+                default:
+                    return PlacemakerConversionResult.Failed;
+            }
+
+            // Adopted buildings are described on Placemaker's plain base, so this is an ordinary first request.
+            var result = _pipeline.TryDescribe(building, out var description)
+                ? Request(building, description, adoption.Spec)
+                : DeformRequestResult.NotDeformable;
+            Mod.Log.Info($"Placemaker conversion of building {building}: {result}.");
+            switch (result)
+            {
+                case DeformRequestResult.Accepted:
+                    return adoption.Approximated
+                        ? PlacemakerConversionResult.Approximated
+                        : PlacemakerConversionResult.Converted;
+                case DeformRequestResult.Clamped:
+                    return PlacemakerConversionResult.Clamped;
+                default:
+                    _pipeline.ReleaseAdoption(building);
+                    return PlacemakerConversionResult.Failed;
+            }
+        }
+
+        public void DeformOnTopOfPlacemaker(Entity building) => _pipeline.AllowStacking(building);
 
         private readonly struct EditOffsets
         {

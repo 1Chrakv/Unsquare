@@ -83,6 +83,16 @@ namespace Unsquare.UI.Editing
 
         public DeformRequestResult? LastResult { get; private set; }
 
+        /// <summary>
+        /// Placemaker building the player picked and must decide about first (convert, deform on top or cancel);
+        /// nothing else can be picked meanwhile.
+        /// </summary>
+        public Entity PendingConversion { get; private set; } = Entity.Null;
+        public bool HasPendingConversion => PendingConversion != Entity.Null;
+
+        /// <summary>Why the last conversion attempt failed; the decision stays open so the player can retry.</summary>
+        public PlacemakerConversionResult? ConversionProblem { get; private set; }
+
         /// <summary>Why the latest command failed; cleared by the next one that succeeds and by a new target.</summary>
         public EditProblem? Problem { get; private set; }
 
@@ -180,6 +190,7 @@ namespace Unsquare.UI.Editing
             {
                 CancelDrag();
                 ClearTarget();
+                ClearPendingConversion();
                 Selection = HandleSelection.Default;
                 PreviewBuilding = Entity.Null;
             }
@@ -188,13 +199,69 @@ namespace Unsquare.UI.Editing
             Changed?.Invoke();
         }
 
-        /// <summary>Makes a clicked building the target; refused while a handle is selected.</summary>
+        /// <summary>
+        /// Makes a clicked building the target; refused while a handle is selected or a decision is open. A
+        /// Placemaker building becomes <see cref="PendingConversion"/> instead.
+        /// </summary>
         public bool SelectBuilding(Entity building)
         {
-            if (!IsEnabled || IsLocked || building == Entity.Null)
+            if (!IsEnabled || IsLocked || HasPendingConversion || building == Entity.Null)
                 return false;
+            if (_service.NeedsConversion(building))
+            {
+                SetTarget(Entity.Null);
+                PendingConversion = building;
+                ConversionProblem = null;
+                Log($"Building {building} is shaped by Placemaker: asking to convert");
+                Changed?.Invoke();
+                return true;
+            }
             SetTarget(building);
             return true;
+        }
+
+        /// <summary>
+        /// Converts the pending Placemaker building to an Unsquare cage of the same shape and selects it. Not
+        /// undoable; on failure the decision stays open with <see cref="ConversionProblem"/>.
+        /// </summary>
+        public PlacemakerConversionResult? ConfirmConversion()
+        {
+            if (!IsEnabled || !HasPendingConversion)
+                return null;
+            var building = PendingConversion;
+            var result = _service.ConvertPlacemaker(building);
+            Log($"Convert Placemaker building {building} -> {result}");
+            if (result is PlacemakerConversionResult.PlacemakerBusy or PlacemakerConversionResult.PlacemakerMissing
+                or PlacemakerConversionResult.Failed)
+            {
+                ConversionProblem = result;
+                Changed?.Invoke();
+                return result;
+            }
+            ClearPendingConversion();
+            SetTarget(building);
+            return result;
+        }
+
+        /// <summary>Selects the pending building with Placemaker's shape as its base; edits stack on it.</summary>
+        public void DeformOnTopOfPlacemaker()
+        {
+            if (!IsEnabled || !HasPendingConversion)
+                return;
+            var building = PendingConversion;
+            _service.DeformOnTopOfPlacemaker(building);
+            ClearPendingConversion();
+            SetTarget(building);
+        }
+
+        /// <summary>Drops the pending building: it stays unselected and keeps Placemaker's shape.</summary>
+        public void DeclineConversion()
+        {
+            if (!HasPendingConversion)
+                return;
+            Log($"Building {PendingConversion} stays with Placemaker");
+            ClearPendingConversion();
+            Changed?.Invoke();
         }
 
         /// <summary>Drops the target regardless of the lock, e.g. when the building no longer exists.</summary>
@@ -203,6 +270,11 @@ namespace Unsquare.UI.Editing
         /// <summary>Undoes the innermost state: drag, then selection, then target.</summary>
         public StepBackResult StepBack()
         {
+            if (HasPendingConversion)
+            {
+                DeclineConversion();
+                return StepBackResult.TargetCleared;
+            }
             if (ActiveDrag != null)
             {
                 CancelDrag();
@@ -491,6 +563,12 @@ namespace Unsquare.UI.Editing
                    $"applied [{state.AppliedSpec}], target [{state.TargetSpec}]";
         }
 
+        private void ClearPendingConversion()
+        {
+            PendingConversion = Entity.Null;
+            ConversionProblem = null;
+        }
+
         // A new target starts without a selected handle; the pick mode stays.
         private void SetTarget(Entity building)
         {
@@ -513,7 +591,7 @@ namespace Unsquare.UI.Editing
         // Edits of buildings that are gone are dropped and the next one is tried.
         private void Revisit(bool undo)
         {
-            if (!IsEnabled || ActiveDrag != null)
+            if (!IsEnabled || ActiveDrag != null || HasPendingConversion)
                 return;
             CageEdit<Entity> edit;
             while (undo ? _history.TryUndo(out edit) : _history.TryRedo(out edit))
