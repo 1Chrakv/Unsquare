@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Buildings;
@@ -46,6 +47,8 @@ namespace Unsquare.Integration.Systems
         private readonly HashSet<Entity> _upgradesLogged = new();
         private readonly HashSet<Entity> _extensionRefreshes = new();
         private readonly List<Entity> _refreshing = new();
+        private readonly Dictionary<Entity, PendingLevelUp> _levelUps = new();
+        private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
 
         private PrefabSystem _prefabSystem;
@@ -113,12 +116,13 @@ namespace Unsquare.Integration.Systems
             foreach (var request in _due)
                 Bake(request.Key, request.Value);
             ProcessExtensionRefreshes();
+            ProcessLevelUps();
 
             ProcessSimData();
             ProcessSwaps();
             SaveIfDirty();
             Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0 ||
-                      _extensionRefreshes.Count > 0;
+                      _extensionRefreshes.Count > 0 || _levelUps.Count > 0;
         }
 
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -129,6 +133,7 @@ namespace Unsquare.Integration.Systems
             _statuses.Clear();
             _simDataPending.Clear();
             _extensionRefreshes.Clear();
+            _levelUps.Clear();
             _upgradesLogged.Clear();
             _simulationReady = false;
 
@@ -467,6 +472,108 @@ namespace Unsquare.Integration.Systems
                 Mod.Log.Info($"New upgrade on deformed building {building}: deforming its extensions.");
                 QueueSwap(building, currentEntity, description.BasePrefab, description.Applied,
                     PlanExtensionTargets(building, description.BasePrefab, description.Applied, current.name));
+            }
+        }
+
+        /// <summary>
+        /// A deformed growable levels up to the plain <paramref name="targetPrefab"/>: bakes it with the cage rescaled
+        /// to its height (<see cref="LevelUpCarry"/>) and swaps the building to it once the game finished the level-up.
+        /// </summary>
+        internal void PrepareLevelUp(Entity building, Entity fromPrefab, Entity targetPrefab, CageBox fromLot,
+            DeformSpec spec)
+        {
+            if (!_options.KeepOnLevelUp || _levelUps.ContainsKey(building))
+                return;
+            _levelUps[building] = new PendingLevelUp(fromPrefab, targetPrefab, fromLot, spec);
+            Enabled = true;
+        }
+
+        private void ProcessLevelUps()
+        {
+            if (_levelUps.Count == 0)
+                return;
+            _levelUpsDone.Clear();
+            foreach (var pair in _levelUps)
+            {
+                Entity building = pair.Key;
+                PendingLevelUp levelUp = pair.Value;
+                if (!EntityManager.Exists(building) || EntityManager.HasComponent<Deleted>(building) ||
+                    !EntityManager.TryGetComponent(building, out PrefabRef prefabRef))
+                {
+                    _levelUpsDone.Add(building);
+                    continue;
+                }
+                if (!levelUp.Baked)
+                    BakeLevelUp(building, levelUp);
+                if (prefabRef.m_Prefab == levelUp.From)
+                    continue; // the game has not swapped the prefab yet
+                if (prefabRef.m_Prefab == levelUp.Target && !IsLotSettled(building))
+                    continue; // its new areas and nets are generated later this frame; remap them once they exist
+                // Any other prefab means someone else replaced the building meanwhile: leave it alone.
+                if (prefabRef.m_Prefab == levelUp.Target && levelUp.Variant != Entity.Null)
+                {
+                    Mod.Log.Info($"Building {building} levelled up: carrying its cage over as {levelUp.VariantName}.");
+                    QueueSwap(building, levelUp.Variant, levelUp.TargetBase, levelUp.Carried,
+                        PlanExtensionTargets(building, levelUp.TargetBase, levelUp.Carried, levelUp.VariantName));
+                }
+                _levelUpsDone.Add(building);
+            }
+            foreach (var building in _levelUpsDone)
+                _levelUps.Remove(building);
+        }
+
+        // The level-up's Updated lasts until cleanup; by then Modification1 has created the new prefab's lot items.
+        private bool IsLotSettled(Entity building)
+        {
+            if (EntityManager.HasComponent<Updated>(building))
+                return false;
+            if (EntityManager.TryGetBuffer(building, true, out DynamicBuffer<Game.Areas.SubArea> areas))
+            {
+                for (int i = 0; i < areas.Length; i++)
+                {
+                    if (IsInFlux(areas[i].m_Area))
+                        return false;
+                }
+            }
+            if (EntityManager.TryGetBuffer(building, true, out DynamicBuffer<Game.Net.SubNet> nets))
+            {
+                for (int i = 0; i < nets.Length; i++)
+                {
+                    if (IsInFlux(nets[i].m_SubNet))
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        private bool IsInFlux(Entity item) =>
+            EntityManager.HasComponent<Created>(item) || EntityManager.HasComponent<Deleted>(item);
+
+        // Runs once per level-up: a cage that doesn't fit the new building leaves it plain instead of retrying.
+        private void BakeLevelUp(Entity building, PendingLevelUp levelUp)
+        {
+            levelUp.Baked = true;
+            try
+            {
+                if (!_prefabSystem.TryGetPrefab(levelUp.Target, out PrefabBase prefab) ||
+                    !(prefab is ObjectGeometryPrefab target) || !TryGetBoxes(target, out var toLot, out _))
+                {
+                    Mod.Log.Warn($"Building {building} levels up to an unknown prefab; its cage is not carried over.");
+                    return;
+                }
+                var carried = LevelUpCarry.Rescale(levelUp.Spec, levelUp.FromLot, toLot).ForVariant();
+                if (carried.IsIdentity)
+                    return;
+                if (TryGetOrCreateVariant(target, carried, isRestore: false, out var variant) &&
+                    _prefabSystem.TryGetEntity(variant, out var variantEntity))
+                    levelUp.SetVariant(target, carried, variantEntity, variant.name);
+                else
+                    Mod.Log.Warn($"Building {building} levels up to {target.name}, which can't take its cage " +
+                                 $"({carried}); it stays undeformed.");
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, $"Carrying the cage of building {building} over its level-up failed.");
             }
         }
 
@@ -849,6 +956,37 @@ namespace Unsquare.Integration.Systems
             public ObjectGeometryPrefab BasePrefab { get; }
             public DeformSpec Spec { get; }
             public List<(Entity Extension, Entity Target)> Extensions { get; }
+        }
+
+        private sealed class PendingLevelUp
+        {
+            public PendingLevelUp(Entity from, Entity target, CageBox fromLot, DeformSpec spec)
+            {
+                From = from;
+                Target = target;
+                FromLot = fromLot;
+                Spec = spec;
+            }
+
+            /// <summary>The variant the building was on and the plain prefab the game levels it up to.</summary>
+            public Entity From { get; }
+            public Entity Target { get; }
+            public CageBox FromLot { get; }
+            public DeformSpec Spec { get; }
+
+            public bool Baked { get; set; }
+            public ObjectGeometryPrefab TargetBase { get; private set; }
+            public DeformSpec Carried { get; private set; }
+            public Entity Variant { get; private set; }
+            public string VariantName { get; private set; }
+
+            public void SetVariant(ObjectGeometryPrefab targetBase, DeformSpec carried, Entity variant, string name)
+            {
+                TargetBase = targetBase;
+                Carried = carried;
+                Variant = variant;
+                VariantName = name;
+            }
         }
     }
 }

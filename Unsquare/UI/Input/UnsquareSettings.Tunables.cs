@@ -112,6 +112,9 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
         public float AreaMatchDistance { get; set; }
 
+        [SettingsUISection(SettingsTab, LotSyncGroup)]
+        public bool KeepOnLevelUp { get; set; }
+
         [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 0.02f, max = 0.5f, step = 0.02f, unit = Unit.kFloatTwoFractions)]
         public float LineRadius { get; set; }
@@ -199,7 +202,7 @@ namespace Unsquare.UI.Input
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
                 (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
                 Clamped(AreaMatchDistance, nameof(AreaMatchDistance)),
-                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)));
+                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)), KeepOnLevelUp);
         }
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
@@ -243,6 +246,7 @@ namespace Unsquare.UI.Input
             LotPropsFollowGround = pipeline.Attachments.LotPropsFollowGround;
             AlignLinearProps = pipeline.Attachments.AlignLinearProps;
             AreaMatchDistance = pipeline.AreaMatchMeters;
+            KeepOnLevelUp = pipeline.KeepOnLevelUp;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;
             CoarseLodTwist = pipeline.CoarseLodTwistMeters;
             PruneUnused = pipeline.PruneUnused;

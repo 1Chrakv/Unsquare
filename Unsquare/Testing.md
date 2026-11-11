@@ -248,6 +248,8 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 156 | Cage selected: Alt+arrows, then Alt+R | Each nudge moves the whole cage one step; Alt+R puts every corner back |
 | 157 | Repeat 154 in Building, Lot and Both edit mode | Building: only the building moves (lot stays); Lot: only ground items; Both: everything |
 | 158 | Drag the whole cage far away | Stops at the max corner offset (clamped, cage yellow), never relocates beyond it |
+| 159 | Deform a level-1 growable (taper the plan, lean the top), let it level up | Right after the level-up the new building takes the shape: same lot outline, lean scaled to the new height, paths on the deformed lot; log `levelled up: carrying its cage over` |
+| 160 | After 159 save, reload; then turn off Keep shape on level-up and let another deformed building level up | The carried shape is kept after reload; with the option off the next level-up comes back undeformed |
 
 ## Reporting problems
 

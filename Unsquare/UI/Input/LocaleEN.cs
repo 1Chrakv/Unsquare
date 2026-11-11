@@ -184,6 +184,9 @@ namespace Unsquare.UI.Input
 
             Option(entries, nameof(UnsquareSettings.AreaMatchDistance), "Area match distance (m)",
                 "Saved lot areas further from their expected outline count as edited by you and are not moved.");
+            Option(entries, nameof(UnsquareSettings.KeepOnLevelUp), "Keep shape on level-up",
+                "When a deformed building levels up, the new building gets the same shape: the lot outline stays " +
+                "the same, and leans and roof changes scale with the new height. Off: it levels up undeformed.");
 
             Option(entries, nameof(UnsquareSettings.LineRadius), "Line thickness (m)",
                 "Radius of the cage lines.");
