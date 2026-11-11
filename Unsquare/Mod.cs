@@ -44,6 +44,8 @@ namespace Unsquare
             updateSystem.UpdateAfter<CondemnGuardSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             // New extensions still carry Created here; their deformation is baked in the next prefab update.
             updateSystem.UpdateAfter<ExtensionInstallSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
+            // Level-ups are queued and finished at EndFrameBarrier, so every frame in between sees both prefabs.
+            updateSystem.UpdateAfter<LevelUpCarrySystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<BaseTerrainSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
