@@ -29,6 +29,7 @@ const ConversionDialog = () => {
         <div className={styles.anchor}>
             <Panel
                 className={styles.panel}
+                contentClassName={styles.content}
                 header={text("Title", "Building shaped by Placemaker")}
                 onClose={() => trigger(group, "declineConversion")}
             >

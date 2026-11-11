@@ -12,19 +12,24 @@
     pointer-events: auto;
 }
 
+.content {
+    padding: 16rem 24rem 20rem;
+}
+
 .message {
-    margin-bottom: 10rem;
+    margin-bottom: 16rem;
     font-size: 14rem;
 }
 
+// A note under its button, not a line of its own.
 .warning {
-    margin-bottom: 10rem;
+    margin: 6rem 4rem 4rem;
     font-size: 12rem;
     color: rgb(255, 196, 92);
 }
 
 .problem {
-    margin-bottom: 10rem;
+    margin-bottom: 14rem;
     font-size: 13rem;
     color: rgb(255, 120, 100);
 }
@@ -35,6 +40,6 @@
 }
 
 .button {
-    margin-top: 6rem;
+    margin-top: 10rem;
     padding: 6rem 12rem;
 }
