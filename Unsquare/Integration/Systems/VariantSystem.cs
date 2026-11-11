@@ -16,6 +16,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
+using Unsquare.Core.Import;
 using Unsquare.Core.Naming;
 using Unsquare.Core.Options;
 using Unsquare.Core.Persistence;
@@ -52,6 +53,8 @@ namespace Unsquare.Integration.Systems
         private readonly Dictionary<Entity, PendingLevelUp> _levelUps = new();
         private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
+        private readonly Dictionary<Entity, ObjectGeometryPrefab> _adopted = new();
+        private readonly HashSet<Entity> _stacked = new();
 
         private PrefabSystem _prefabSystem;
         private CityConfigurationSystem _citySystem;
@@ -139,6 +142,8 @@ namespace Unsquare.Integration.Systems
             _extensionRefreshes.Clear();
             _levelUps.Clear();
             _upgradesLogged.Clear();
+            _adopted.Clear();
+            _stacked.Clear();
             _simulationReady = false;
 
             // First preload of the session: nothing is registered yet, so pruning cannot strand a live prefab.
@@ -316,13 +321,88 @@ namespace Unsquare.Integration.Systems
             description = default;
             if (!EntityManager.HasComponent<Building>(building) ||
                 !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
-                !_resolver.TryResolveBase(current, out var basePrefab, out var applied) ||
+                !TryResolveBase(building, current, out var basePrefab, out var applied) ||
                 !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return false;
             DescribeExtensions(building, buildingBox, out float extensionsTop, out var buildingEditBox);
             description = new BuildingDescription(basePrefab, lotBox, ExtendedCage.RaiseTop(lotBox, extensionsTop),
                 buildingBox, buildingEditBox, !buildingBox.Equals(lotBox), applied);
             return true;
+        }
+
+        // Placemaker variants: adopted ones sit on Placemaker's plain base, stacked ones are their own base (as
+        // before), undecided ones are not described at all, so nothing can edit them.
+        private bool TryResolveBase(Entity building, PrefabBase current, out ObjectGeometryPrefab basePrefab,
+            out DeformSpec applied)
+        {
+            if (PlacemakerVariantName.IsVariant(current.name) && !_stacked.Contains(building))
+            {
+                applied = DeformSpec.Identity;
+                return _adopted.TryGetValue(building, out basePrefab);
+            }
+            return _resolver.TryResolveBase(current, out basePrefab, out applied);
+        }
+
+        bool IVariantPipeline.IsForeign(Entity building) =>
+            _resolver.TryGetPrefab(EntityManager, building, out var current) &&
+            PlacemakerVariantName.IsVariant(current.name) && !_stacked.Contains(building) &&
+            !_adopted.ContainsKey(building);
+
+        void IVariantPipeline.AllowStacking(Entity building)
+        {
+            _stacked.Add(building);
+            _adopted.Remove(building);
+            Mod.Log.Info($"Building {building}: Unsquare deforms it on top of Placemaker's shape.");
+            _buildingChanged?.Invoke(building);
+        }
+
+        void IVariantPipeline.ReleaseAdoption(Entity building)
+        {
+            if (_adopted.Remove(building))
+                _buildingChanged?.Invoke(building);
+        }
+
+        PlacemakerAdoption IVariantPipeline.PreparePlacemakerAdoption(Entity building)
+        {
+            var failed = new PlacemakerAdoption(PlacemakerAdoptionStatus.Failed);
+            if (!_simulationReady || !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
+                !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
+                !PlacemakerVariantName.IsVariant(current.name))
+                return failed;
+            if (!PlacemakerBridge.TryFind(World, out var bridge))
+                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
+            // A shape Placemaker is still baking or swapping in would replace ours after our swap.
+            if (bridge.IsBusyWith(building))
+                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerBusy);
+            if (!bridge.TryGetCage(prefabRef.m_Prefab, out var cage) ||
+                !bridge.TryGetBase(prefabRef.m_Prefab, out var baseEntity))
+                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
+            if (!_prefabSystem.TryGetPrefab(baseEntity, out PrefabBase found) ||
+                !(found is ObjectGeometryPrefab basePrefab) || !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
+            {
+                Mod.Log.Warn($"Building {building} on {current.name}: no base prefab with a lot.");
+                return failed;
+            }
+
+            var spec = new DeformSpec(PlacemakerCageConverter.ToOffsets(lotBox, cage), false);
+            bool approximated = false;
+            float maxError = 0f;
+            // Extending the body's shape over a deep yard can fold the lot: fit Placemaker's held yard shift instead.
+            if (CageValidator.ValidateSplit(lotBox, buildingBox, spec, _options.Limits) != CageValidity.Valid)
+            {
+                var samples = new List<float2>(PlanCageFit.Outline(buildingBox.Min.xz, buildingBox.Max.xz, 16));
+                samples.AddRange(PlanCageFit.Outline(lotBox.Min.xz, lotBox.Max.xz, 16));
+                if (!PlacemakerCageConverter.TryFitOffsets(lotBox, samples.ToArray(), cage, out var fitted,
+                        out maxError))
+                    return failed;
+                spec = new DeformSpec(fitted, false);
+                approximated = true;
+            }
+            _adopted[building] = basePrefab;
+            _stacked.Remove(building);
+            Mod.Log.Info($"Building {building}: adopting {current.name} ({cage}) on {basePrefab.name}" +
+                         (approximated ? $", fitted (max deviation {maxError:0.00} m)" : ", exact") + ".");
+            return new PlacemakerAdoption(PlacemakerAdoptionStatus.Ready, spec, approximated, maxError);
         }
 
         // Over the on-lot extensions the owner's cage deforms (PlanExtensionTargets), in building space: the top of

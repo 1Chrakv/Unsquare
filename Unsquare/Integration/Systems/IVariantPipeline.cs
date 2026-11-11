@@ -40,5 +40,23 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>Rebases all FlexIt buildings and clears their shear; see <see cref="FlexItImporter"/>.</summary>
         FlexItImportBatch PrepareFlexItImport();
+
+        /// <summary>
+        /// On a Placemaker variant the player has not decided about yet: such buildings cannot be described (so not
+        /// edited) until they are adopted or allowed to stack.
+        /// </summary>
+        bool IsForeign(Entity building);
+
+        /// <summary>Lets Unsquare deform the building on top of Placemaker's variant (its prefab becomes the base).</summary>
+        void AllowStacking(Entity building);
+
+        /// <summary>
+        /// Takes a Placemaker building over: it is described on Placemaker's plain base from now on, and requesting
+        /// the returned spec swaps it straight to an Unsquare variant of the same shape.
+        /// </summary>
+        PlacemakerAdoption PreparePlacemakerAdoption(Entity building);
+
+        /// <summary>Undoes <see cref="PreparePlacemakerAdoption"/> when the request was refused.</summary>
+        void ReleaseAdoption(Entity building);
     }
 }
