@@ -254,7 +254,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 162 | Load a save holding copies placed before this fix, then click them | Log `Repaired N copies of variants missing instance components` with N ≥ 1; no crash |
 | 163 | Copy a deformed service building that has an upgrade; hover and click the copy | No crash |
 | 164 | Let the game run with the copies of 161 | Residents or companies move in; no condemnation; Reset in Unsquare mode gives the plain building |
-| 165 | With Placemaker (row joining on), click a row house it bent | Dialog "Building shaped by Placemaker"; no cage, tool window hidden; clicking other buildings does nothing |
+| 165 | With Placemaker (row joining on), hover a row house it bent, then click it | Hover: preview cage in the bent shape, as for any building. Click: dialog "Building shaped by Placemaker"; no cage, tool window hidden; clicking other buildings does nothing |
 | 166 | In 165 press Cancel (or right-click); then use hotkeys and Ctrl+Z | Nothing selected; the building can't be edited or picked as an undo target; clicking it again asks again |
 | 167 | In 165 press Convert to Unsquare | Cage in the bent shape at once; after the bake the house looks the same; log `adopting … exact` or `fitted (max deviation X m)`; Placemaker's log counts it under "on a model another mod made" |
 | 168 | After 167 edit the house, save, reload | Restored as an Unsquare variant on the plain model, no missing prefab; clicking it opens no dialog |

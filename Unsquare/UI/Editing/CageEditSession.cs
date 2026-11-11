@@ -108,7 +108,7 @@ namespace Unsquare.UI.Editing
         public bool TryGetPreviewCage(out CageState state)
         {
             state = default;
-            return PreviewBuilding != Entity.Null && _service.TryGetCage(PreviewBuilding, EditMode, out state);
+            return PreviewBuilding != Entity.Null && _service.TryGetPreviewCage(PreviewBuilding, EditMode, out state);
         }
 
         /// <summary>Switches which cage edits move; a drag in progress is cancelled, the selection stays.</summary>

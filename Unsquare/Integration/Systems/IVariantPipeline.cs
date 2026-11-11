@@ -47,6 +47,12 @@ namespace Unsquare.Integration.Systems
         /// </summary>
         bool IsForeign(Entity building);
 
+        /// <summary>
+        /// Read-only description of an undecided Placemaker building for the hover preview: on its plain base with
+        /// the cage Convert would give applied. Never used for edits.
+        /// </summary>
+        bool TryDescribeForeign(Entity building, out BuildingDescription description);
+
         /// <summary>Lets Unsquare deform the building on top of Placemaker's variant (its prefab becomes the base).</summary>
         void AllowStacking(Entity building);
 

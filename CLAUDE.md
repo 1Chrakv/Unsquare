@@ -232,7 +232,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   a plan-only bilinear map of 4 corner shifts over a span (depth clamped outside it, `PlacemakerCage`). It skips
   prefabs without an asset, i.e. every Unsquare variant, and rebuilds its own variants only after loading.
 - Picking one asks first (`CageEditSession.PendingConversion`, `conversion-dialog.tsx`). Until decided,
-  `VariantSystem.TryDescribe` refuses the building, so nothing edits it.
+  `VariantSystem.TryDescribe` refuses the building, so nothing edits it; the hover preview reads it through
+  `TryDescribeForeign` (`IBuildingDeformService.TryGetPreviewCage`), on the plain base with the converted cage.
   - Convert: `PlacemakerBridge` (reflection on its public `ShapeSystem`) gives base and shape;
     `PlacemakerCageConverter` maps the lot corners (exact within the span) or fits when that folds. The building is
     described on the plain base and swaps straight from Placemaker's variant to ours. Refused while Placemaker is
