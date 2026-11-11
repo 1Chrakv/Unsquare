@@ -157,6 +157,13 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   side goes to road level (`BackOnly`); `AllCorners` fits all four. Only the GPU `TerrainSystem.heightmap` has
   the terrain before lots/roads (CPU heights are read from the modified cascade), so `BaseTerrainSystem` reads a small
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
+- **Level-ups:** the game adds `UnderConstruction` naming a plain prefab one level up and swaps `PrefabRef` at a
+  later EndFrameBarrier, rebuilding areas and nets from that prefab. `LevelUpCarrySystem` catches the frames in between
+  and hands the old spec to `VariantSystem.PrepareLevelUp`, which bakes the new prefab with `LevelUpCarry.Rescale`
+  (bottom corners kept, each column's rise scaled by the height ratio) and swaps after the level-up. The swap waits
+  until the building's `Updated` is cleaned up: the new areas and nets only appear in Modification1 of the frame after
+  the prefab change, and swapping earlier leaves them plain. A cage the new building can't take leaves it plain.
+  Option `PipelineOptions.KeepOnLevelUp`.
 - Effects (`EffectSource`) are not deformed yet.
 - **Zoning and condemnation:**
   - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot

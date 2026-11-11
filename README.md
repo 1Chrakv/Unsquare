@@ -39,6 +39,8 @@ angled streets and slopes.
   neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
 - **Upgrades.** Deformed buildings keep their upgrades and accept new ones. On-lot upgrades (e.g. an extra car park
   storey) are reshaped with the building under one cage; upgrade buildings such as school wings have their own cage.
+- **Level-ups keep the shape.** When a deformed growable levels up, the new building gets the same lot outline;
+  leans and roof changes scale with its height (option *Keep shape on level-up*).
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
