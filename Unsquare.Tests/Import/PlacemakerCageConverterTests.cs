@@ -94,6 +94,15 @@ namespace Unsquare.Tests.Import
             Assert.That(PlacemakerVariantName.IsVariant(name), Is.EqualTo(expected));
         }
 
+        [Test]
+        public void IsVariant_UnsquareVariantOfPlacemakerShape_IsFalse()
+        {
+            var offsets = CageOffsets.Identity.Move(CageHandle.Corner(7), new float3(1, 0, 0));
+            string stacked = Unsquare.Core.Naming.VariantNaming.VariantName("Placemaker Shape EU_Row01 d88aa31b 0_0",
+                offsets);
+            Assert.That(PlacemakerVariantName.IsVariant(stacked), Is.False);
+        }
+
         private static PlacemakerCage Cage(float2 min, float2 max, float2 backLeft, float2 backRight,
             float2 frontLeft, float2 frontRight) => new(min, max, backLeft, backRight, frontLeft, frontRight);
 
