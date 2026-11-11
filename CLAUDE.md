@@ -226,6 +226,20 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   `max.z`), not to the lot box. Shear is read and removed through FlexIt's public `SkewRegistrySystem` by reflection
   (`FlexItBridge`); if FlexIt changes, the bridge must fail softly and the import reports FlexIt as missing.
 
+## Placemaker compatibility
+
+- Placemaker bends row houses into runtime variants (`Placemaker Shape <base> <hash> <key>`, `PlacemakerVariantName`):
+  a plan-only bilinear map of 4 corner shifts over a span (depth clamped outside it, `PlacemakerCage`). It skips
+  prefabs without an asset, i.e. every Unsquare variant, and rebuilds its own variants only after loading.
+- Picking one asks first (`CageEditSession.PendingConversion`, `conversion-dialog.tsx`). Until decided,
+  `VariantSystem.TryDescribe` refuses the building, so nothing edits it.
+  - Convert: `PlacemakerBridge` (reflection on its public `ShapeSystem`) gives base and shape;
+    `PlacemakerCageConverter` maps the lot corners (exact within the span) or fits when that folds. The building is
+    described on the plain base and swaps straight from Placemaker's variant to ours. Refused while Placemaker is
+    still reshaping it (`IsRequested`). Not undoable; Reset hands the plain building back to Placemaker.
+  - Deform on top: the old behaviour, Placemaker's variant is the base. Such variants may not survive a reload.
+- Adoption and stacking are runtime only (cleared on load); saves only ever hold Unsquare variants and their bases.
+
 ## Props: rigid placement, full deformation later
 
 - **Now:** sub-objects (props, attached sub-buildings) get rigid poses via `SubObjectDeformer` →
