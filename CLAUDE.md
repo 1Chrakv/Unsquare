@@ -231,6 +231,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - Placemaker bends row houses into runtime variants (`Placemaker Shape <base> <hash> <key>`, `PlacemakerVariantName`):
   a plan-only bilinear map of 4 corner shifts over a span (depth clamped outside it, `PlacemakerCage`). It skips
   prefabs without an asset, i.e. every Unsquare variant, and rebuilds its own variants only after loading.
+  Since its build 20 most are bone-skinned light copies: prefab entities with the plain prefab's `PrefabData`, so
+  `PrefabSystem` returns the plain prefab for them. Detect by entity (`PlacemakerBridge.IsVariant`), never by name alone.
 - Picking one asks first (`CageEditSession.PendingConversion`, `conversion-dialog.tsx`). Until decided,
   `VariantSystem.TryDescribe` refuses the building, so nothing edits it; the hover preview reads it through
   `TryDescribeForeign` (`IBuildingDeformService.TryGetPreviewCage`), on the plain base with the converted cage.

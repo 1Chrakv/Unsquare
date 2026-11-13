@@ -19,10 +19,14 @@ namespace Unsquare.Integration.Import
         private readonly MethodInfo _baseOf;
         private readonly MethodInfo _tryGetCage;
         private readonly MethodInfo _isRequested;
+        private readonly Func<Entity, bool> _isVariant;
+        private bool _loggedVariantFailure;
 
-        private PlacemakerBridge(object system, MethodInfo baseOf, MethodInfo tryGetCage, MethodInfo isRequested)
+        private PlacemakerBridge(object system, Func<Entity, bool> isVariant, MethodInfo baseOf,
+            MethodInfo tryGetCage, MethodInfo isRequested)
         {
             _system = system;
+            _isVariant = isVariant;
             _baseOf = baseOf;
             _tryGetCage = tryGetCage;
             _isRequested = isRequested;
@@ -49,6 +53,7 @@ namespace Unsquare.Integration.Import
                              ?? world.GetExistingSystemManaged(type);
                 var baseOf = type.GetMethod("BaseOf", flags, null, new[] { typeof(Entity) }, null);
                 var isRequested = type.GetMethod("IsRequested", flags, null, new[] { typeof(Entity) }, null);
+                var isVariant = type.GetMethod("IsVariant", flags, null, new[] { typeof(Entity) }, null);
                 MethodInfo tryGetCage = null;
                 foreach (var method in type.GetMethods(flags))
                 {
@@ -57,17 +62,39 @@ namespace Unsquare.Integration.Import
                         parameters[0].ParameterType == typeof(Entity) && parameters[1].IsOut)
                         tryGetCage = method;
                 }
-                if (system == null || baseOf == null || isRequested == null || tryGetCage == null)
+                if (system == null || baseOf == null || isRequested == null || tryGetCage == null ||
+                    isVariant == null || isVariant.ReturnType != typeof(bool))
                 {
                     Mod.Log.Warn("Placemaker is loaded, but its shape system looks different than expected.");
                     return false;
                 }
-                bridge = new PlacemakerBridge(system, baseOf, tryGetCage, isRequested);
+                // Asked every frame for the hovered and edited building, so no reflection call per question.
+                var ask = (Func<Entity, bool>)Delegate.CreateDelegate(typeof(Func<Entity, bool>), system, isVariant);
+                bridge = new PlacemakerBridge(system, ask, baseOf, tryGetCage, isRequested);
                 return true;
             }
             catch (Exception e)
             {
                 Mod.Log.Error(e, "Looking up Placemaker's shape system failed.");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// True for a prefab entity Placemaker bent. Its light copies carry the plain prefab's identity, so the
+        /// prefab's name does not tell.
+        /// </summary>
+        public bool IsVariant(Entity prefab)
+        {
+            try
+            {
+                return _isVariant(prefab);
+            }
+            catch (Exception e)
+            {
+                if (!_loggedVariantFailure)
+                    Mod.Log.Error(e, "Asking Placemaker about a prefab failed.");
+                _loggedVariantFailure = true;
                 return false;
             }
         }

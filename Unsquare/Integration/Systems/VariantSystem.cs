@@ -350,7 +350,7 @@ namespace Unsquare.Integration.Systems
         private bool TryResolveBase(Entity building, PrefabBase current, out ObjectGeometryPrefab basePrefab,
             out DeformSpec applied)
         {
-            if (PlacemakerVariantName.IsVariant(current.name) && !_stacked.Contains(building))
+            if (!_stacked.Contains(building) && IsPlacemakerBuilding(building, current))
             {
                 applied = DeformSpec.Identity;
                 return _adopted.TryGetValue(building, out basePrefab);
@@ -359,9 +359,20 @@ namespace Unsquare.Integration.Systems
         }
 
         bool IVariantPipeline.IsForeign(Entity building) =>
+            !_stacked.Contains(building) && !_adopted.ContainsKey(building) &&
             _resolver.TryGetPrefab(EntityManager, building, out var current) &&
-            PlacemakerVariantName.IsVariant(current.name) && !_stacked.Contains(building) &&
-            !_adopted.ContainsKey(building);
+            IsPlacemakerBuilding(building, current);
+
+        // Placemaker's light copies share the plain prefab's PrefabData (and so its name): ask Placemaker by entity.
+        private bool IsPlacemakerBuilding(Entity building, PrefabBase current)
+        {
+            if (PlacemakerVariantName.IsVariant(current.name))
+                return true;
+            if (VariantNaming.IsVariantName(current.name) || !TryGetPlacemakerBridge(out var bridge))
+                return false;
+            return EntityManager.TryGetComponent(building, out PrefabRef prefabRef) &&
+                   bridge.IsVariant(prefabRef.m_Prefab);
+        }
 
         void IVariantPipeline.AllowStacking(Entity building)
         {
@@ -384,8 +395,8 @@ namespace Unsquare.Integration.Systems
             if (!EntityManager.HasComponent<Building>(building) ||
                 !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
                 !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
-                !PlacemakerVariantName.IsVariant(current.name) || _stacked.Contains(building) ||
-                _adopted.ContainsKey(building))
+                _stacked.Contains(building) || _adopted.ContainsKey(building) ||
+                !IsPlacemakerBuilding(building, current))
                 return false;
             var shape = GetPlacemakerShape(prefabRef.m_Prefab, current.name, out var basePrefab);
             return shape.Status == PlacemakerAdoptionStatus.Ready &&
@@ -396,7 +407,7 @@ namespace Unsquare.Integration.Systems
         {
             if (!_simulationReady || !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
                 !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
-                !PlacemakerVariantName.IsVariant(current.name))
+                !IsPlacemakerBuilding(building, current))
                 return new PlacemakerAdoption(PlacemakerAdoptionStatus.Failed);
             if (!TryGetPlacemakerBridge(out var bridge))
                 return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
