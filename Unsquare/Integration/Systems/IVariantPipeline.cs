@@ -26,6 +26,9 @@ namespace Unsquare.Integration.Systems
         VariantStatus GetStatus(Entity building);
         void Request(Entity building, DeformSpec spec);
 
+        /// <summary>Bakes the building's pending request in the next update instead of after the quiet delay.</summary>
+        void BakeNow(Entity building);
+
         /// <summary>Swaps every deformed building back to its base prefab; returns the count.</summary>
         int ResetAll();
 

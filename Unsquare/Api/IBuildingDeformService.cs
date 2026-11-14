@@ -22,10 +22,14 @@ namespace Unsquare.Api
         bool TryGetCage(Entity building, CageTarget target, out CageState state);
 
         /// <summary>
-        /// Moves the start state's cage to <paramref name="view"/> (offsets on <see cref="CageState.Box"/>), debounced.
-        /// Drags pass the state from drag start, so rounding never drifts; other edits pass the current state.
+        /// Moves the start state's cage to <paramref name="view"/> (offsets on <see cref="CageState.Box"/>); bakes after
+        /// the rebake delay unless <see cref="BakeNow"/> follows. Drags pass the state from drag start, so rounding never
+        /// drifts; other edits pass the current state.
         /// </summary>
         DeformRequestResult SetOffsets(Entity building, in CageState start, CageOffsets view);
+
+        /// <summary>Ends the rebake delay of the building's pending edit, e.g. on drag release; no-op if none.</summary>
+        void BakeNow(Entity building);
 
         /// <summary>
         /// Sets what follows the building's walls on the ground (<see cref="BlendMode"/>). While the cages are linked it

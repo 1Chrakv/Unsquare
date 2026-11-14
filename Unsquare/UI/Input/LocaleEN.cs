@@ -200,7 +200,8 @@ namespace Unsquare.UI.Input
                 "Length of the gizmo arrows as a share of the screen height.");
 
             Option(entries, nameof(UnsquareSettings.RebakeDelay), "Rebake delay (s)",
-                "Quiet time after the last edit before the building is rebuilt. Higher values save work while dragging.");
+                "Quiet time after the last nudge, undo or pause in a drag before the building is rebuilt. Releasing a " +
+                "drag and one-click commands rebuild at once. Higher values save work while dragging.");
             Option(entries, nameof(UnsquareSettings.CoarseLodTwist), "Coarse model twist limit (m)",
                 "Buildings whose cage bends more than this keep their medium-detail model at a distance, because " +
                 "the coarsest one can't follow the bend. Lower: cleaner distant views, more triangles to draw." +

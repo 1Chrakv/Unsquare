@@ -138,7 +138,7 @@ namespace Unsquare.UI.Editing
                 return Record(command, DeformRequestResult.NotDeformable);
             var result = _service.Link(Target, follower);
             RememberEdit(state.TargetSpec, result);
-            return Record(command, result);
+            return RecordOneShot(command, result);
         }
 
         /// <summary>Sets what follows the building's walls on the ground, also ahead of a split; undoable.</summary>
@@ -151,7 +151,7 @@ namespace Unsquare.UI.Editing
                 return DeformRequestResult.Accepted;
             var result = _service.SetBlendMode(Target, mode);
             RememberEdit(state.TargetSpec, result);
-            return Record(command, result);
+            return RecordOneShot(command, result);
         }
 
         /// <summary>Switches between blending everything and blending nothing.</summary>
@@ -272,7 +272,9 @@ namespace Unsquare.UI.Editing
         public DeformRequestResult ResetHandle()
         {
             var handle = Selection.Handle;
-            return EditHandle($"Reset {handle}", offsets => offsets.Reset(handle));
+            var result = EditHandle($"Reset {handle}", offsets => offsets.Reset(handle));
+            _service.BakeNow(Target);
+            return result;
         }
 
         /// <summary>Starts dragging the selected handle by a gizmo part (axis, square or ring).</summary>
@@ -307,6 +309,7 @@ namespace Unsquare.UI.Editing
                 _history.Record(Target, _dragStart.TargetSpec, state.TargetSpec);
             ActiveDrag = null;
             DragAxis = -1;
+            _service.BakeNow(Target);
             Log($"Drag of {handle} ended -> {LastResult?.ToString() ?? "unchanged"}");
             Changed?.Invoke();
         }
@@ -319,7 +322,7 @@ namespace Unsquare.UI.Editing
             var drag = ActiveDrag;
             ActiveDrag = null;
             DragAxis = -1;
-            Record($"Drag of {drag.Handle} cancelled",
+            RecordOneShot($"Drag of {drag.Handle} cancelled",
                 _service.SetOffsets(Target, _dragStart, _dragStart.TargetOffsets));
         }
 
@@ -329,7 +332,7 @@ namespace Unsquare.UI.Editing
                 return Record("Reset", DeformRequestResult.NotDeformable);
             var result = _service.Reset(Target, EditMode);
             RememberEdit(state.TargetSpec, result);
-            return Record($"Reset ({EditMode})", result);
+            return RecordOneShot($"Reset ({EditMode})", result);
         }
 
         /// <summary>
@@ -347,6 +350,7 @@ namespace Unsquare.UI.Editing
             bool started = _service.TryFitToGround(building, EditMode, mode, (before, result) =>
             {
                 RememberEdit(building, before, result);
+                _service.BakeNow(building);
                 Record($"{command} on {building}", result);
             });
             if (!started)
@@ -389,7 +393,7 @@ namespace Unsquare.UI.Editing
             bool lift = !state.TerrainLift;
             var result = _service.SetTerrainLift(Target, lift);
             RememberEdit(state.TargetSpec, result);
-            return Record($"Terrain lift {(lift ? "on" : "off")}", result);
+            return RecordOneShot($"Terrain lift {(lift ? "on" : "off")}", result);
         }
 
         /// <summary>Aligns the target's left, back or right lot face to its nearest neighbour (<see cref="AlignMode"/>).</summary>
@@ -400,7 +404,7 @@ namespace Unsquare.UI.Editing
                 return Record(command, DeformRequestResult.NotDeformable);
             var result = _service.AlignToNeighbour(Target, EditMode, side, AlignMode, Options.Align);
             RememberEdit(state.TargetSpec, result);
-            return Record(command, result);
+            return RecordOneShot(command, result);
         }
 
         /// <summary>Moves the bottom of the target's left, back or right side to its neighbour's ground height.</summary>
@@ -411,7 +415,7 @@ namespace Unsquare.UI.Editing
                 return Record(command, DeformRequestResult.NotDeformable);
             var result = _service.AlignGroundToNeighbour(Target, EditMode, side, Options.Align);
             RememberEdit(state.TargetSpec, result);
-            return Record(command, result);
+            return RecordOneShot(command, result);
         }
 
         /// <summary>Move ↔ Rotate.</summary>
@@ -492,7 +496,9 @@ namespace Unsquare.UI.Editing
         {
             if (building == Target)
                 return;
-            ActiveDrag = null; // a drag never carries over to another building
+            if (ActiveDrag != null)
+                _service.BakeNow(Target); // a drag never carries over to another building
+            ActiveDrag = null;
             DragAxis = -1;
             Hover = CageHover.None;
             Selection = Selection.Clear();
@@ -540,6 +546,13 @@ namespace Unsquare.UI.Editing
                 return Record(command, DeformRequestResult.NotDeformable);
             var result = _service.SetOffsets(Target, state, change(state.TargetOffsets));
             RememberEdit(state.TargetSpec, result);
+            return Record(command, result);
+        }
+
+        // Finished edits skip the rebake delay; only drags in progress, nudges and undo/redo wait for it.
+        private DeformRequestResult RecordOneShot(string command, DeformRequestResult result)
+        {
+            _service.BakeNow(Target);
             return Record(command, result);
         }
 

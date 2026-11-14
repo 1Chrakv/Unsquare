@@ -92,7 +92,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 |---|---|---|
 | 1 | Select a zoned building, rotate the camera | Box and cage line up with the building at any building rotation |
 | 2 | Alt+1/2/3, Alt+Q/E | The selection visits every corner, edge and face; gizmo arrows match the move keys |
-| 3 | Alt+3, select the top face (Face 3), Alt+PageUp ×4 | Cage turns yellow; ~0.4 s after the last press the building rises and the cage turns green; one `Bake …` log line |
+| 3 | Alt+3, select the top face (Face 3), Alt+PageUp ×4 | Cage turns yellow; ~0.2 s after the last press the building rises and the cage turns green; one `Bake …` log line |
 | 4 | Zoom far out | Shape stays deformed (LODs deformed too) |
 | 5 | Move single corners and edges | Taper, skew and twist look smooth; lighting/normals look right |
 | 6 | Push a face through the opposite face | Log `-> Rejected`, shape unchanged |
@@ -123,7 +123,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 31 | Mode on: click a house, then another house, then empty ground | Cage moves to the second house; empty ground changes nothing; log `[Edit] Target …` per switch |
 | 32 | Hover the cage in each pick mode (Alt+W) | Edge mode: edges turn cyan near the mouse; face mode: faces; corner mode: corners; log `[Edit] Pick mode …` |
 | 33 | Click an edge, then a face (Alt+W), then a corner | First click of a house selects nothing; each later click moves the orange selection and gizmo; log `[Edit] Selected …` |
-| 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake after release; one `Drag of Face3 ended -> …` line |
+| 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake right at release; one `Drag of Face3 ended -> …` line |
 | 35 | Select a front edge, drag the red and blue arrows | Both corners of the edge move together along X / Z |
 | 36 | Start a drag, right-click while holding the mouse | Shape snaps back to before the drag; log `Drag … cancelled` |
 | 37 | With a handle selected, click a neighbour next to the cage; then right-click and click the neighbour | Locked: nothing changes; after the right-click (log `Selection cleared`) the neighbour becomes the target |

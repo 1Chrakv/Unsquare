@@ -211,6 +211,12 @@ namespace Unsquare.Integration.Systems
             Enabled = true;
         }
 
+        void IVariantPipeline.BakeNow(Entity building)
+        {
+            if (_debouncer.Release(building))
+                Enabled = true;
+        }
+
         int IVariantPipeline.ResetAll()
         {
             _debouncer.Clear();

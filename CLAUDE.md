@@ -100,6 +100,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   `AttachmentOptions`, rebake delay, pruning, sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
 - Flow: `UnsquareSettings` (Settings tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
   `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
+- The rebake delay only applies to nudges, undo/redo and pauses within a drag; drag release and one-shot commands
+  call `IBuildingDeformService.BakeNow` (`CageEditSession.RecordOneShot`).
 - Slider attributes are the single source of ranges (mapping clamps to them); defaults come from the option types.
 - Attachment options are read when a variant is created; variant names don't include them, so existing
   variants keep their placement until the next load. Never expose values baked into names or assets.

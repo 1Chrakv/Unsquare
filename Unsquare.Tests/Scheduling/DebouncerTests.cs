@@ -53,6 +53,32 @@ namespace Unsquare.Tests.Scheduling
         }
 
         [Test]
+        public void Release_PendingEntry_DueAtOnce()
+        {
+            _debouncer.Request(1, "a", 10.0);
+            Assert.That(_debouncer.Release(1), Is.True);
+            Assert.That(_debouncer.CollectDue(10.0, _due), Is.EqualTo(1));
+            Assert.That(_due[0].Value, Is.EqualTo("a"));
+        }
+
+        [Test]
+        public void Release_NothingPending_ReturnsFalse()
+        {
+            Assert.That(_debouncer.Release(1), Is.False);
+            Assert.That(_debouncer.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Request_AfterRelease_RestartsDelay()
+        {
+            _debouncer.Request(1, "a", 10.0);
+            _debouncer.Release(1);
+            _debouncer.Request(1, "b", 10.0);
+            Assert.That(_debouncer.CollectDue(10.1, _due), Is.EqualTo(0));
+            Assert.That(_debouncer.CollectDue(10.5, _due), Is.EqualTo(1));
+        }
+
+        [Test]
         public void Cancel_DropsRequest()
         {
             _debouncer.Request(1, "a", 0);

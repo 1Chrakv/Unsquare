@@ -10,7 +10,7 @@ namespace Unsquare.Core.Options
     /// </summary>
     public sealed class PipelineOptions
     {
-        public static readonly PipelineOptions Default = new(CageLimits.Default, AttachmentOptions.Default, 0.4, true,
+        public static readonly PipelineOptions Default = new(CageLimits.Default, AttachmentOptions.Default, 0.2, true,
             (int)PrunePlanner.DefaultMaxUnusedAge.TotalDays, 1f, 1f, true);
 
         public PipelineOptions(CageLimits limits, AttachmentOptions attachments, double rebakeDelaySeconds,

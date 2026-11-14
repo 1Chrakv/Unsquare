@@ -69,6 +69,7 @@ Both paths:
 Ordered by expected gain per effort. Items 2–4 keep prefab names, asset names and the manifest unchanged.
 
 1. **Shorten or drop the 0.4 s wait.** It is the largest part of the perceived delay, about four times the bake.
+   Done: drag release and one-shot commands bake at once; the delay for the rest is 0.2 s by default.
 2. **Deform on worker threads on the raw vertex buffer.** Removes most of the main-thread hitch and the managed
    copies. Core's `IDeformation` would need a job-friendly form.
 3. **Cache source meshes between bakes.** Repeated edits of one building obtain them every time.
