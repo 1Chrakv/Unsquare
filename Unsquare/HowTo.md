@@ -72,8 +72,7 @@ holding two 15-bit octahedral values plus the handedness in the sign bit (`_TANG
 **Two paths:** meshes are only ever baked with a plain cage (`CageKernel`, the cage as plain data), so
 `VertexBufferDeformer` runs the Burst job `VertexDeformJob` over the raw vertex streams on the worker threads and
 waits for it in the same frame. Other deformations or vertex layouts take the managed path
-(`MeshDeformer.DeformCopyManaged`). Both go through `VertexDeformer` and must give the same result; Debug builds
-log the difference for the first meshes of a session (`MeshPathCheck`).
+(`MeshDeformer.DeformCopyManaged`). Both go through `VertexDeformer` and must give the same result.
 
 **Meshes are shared:** always `Object.Instantiate` before editing and `Object.Destroy` every temporary mesh.
 
