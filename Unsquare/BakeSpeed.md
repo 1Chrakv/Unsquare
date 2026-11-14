@@ -76,7 +76,48 @@ Ordered by expected gain per effort. Items 2–4 keep prefab names, asset names 
 5. **Bone-style live preview while dragging, bake on release.** The biggest gain and the biggest change; it only
    fits plan-only edits cleanly.
 
-## Open question
+## Measuring
 
-Measure first: split the bake stopwatch into mesh work, asset save, attachments and prefab registration. Without
-that, items 2–4 cannot be ranked.
+Items 2–4 cannot be ranked without numbers, so every bake and swap now logs its phases (`PhaseTimer`, names in
+`BakePhase`):
+
+```
+Bake for building …: <variant>, 85 ms, 2 new assets
+Bake phases: obtain …, read …, deform …, pack …, write …, add …, save …, unload …, renderClone …, … ms; N vertices, M meshes
+Swap phases for building …: prepare …, remap …, swap … ms
+Saved manifest and bounds cache: … ms
+```
+
+| Phase | What it covers | Could leave the main thread |
+|---|---|---|
+| `obtain` | `RenderPrefab.ObtainMeshes` (may load the source geometry) | no; item 3 removes repeats |
+| `read` | mesh copy, positions, unpacking normals and tangents | unpacking only |
+| `deform` | `VertexDeformer.Deform` | yes (item 2) |
+| `pack` | packing normals and tangents | yes (item 2) |
+| `write` | writing positions and packed streams back, bounds | no, but fewer copies are possible |
+| `add`, `save`, `unload` | `GeometryAssetStore.Create` | no; item 4 moves `save` after the swap |
+| `renderClone`, `prefabClone` | prefab clones | no |
+| `attachments` | props, areas, lanes, nets in the clone | no |
+| `addPrefab` | `PrefabSystem.AddPrefab` | no |
+| `manifest` | manifest entry (the file is written later, see the last log line) | – |
+
+The phases don't add up to the bake total: naming, validation and cache lookups are untimed. Counters cover only
+meshes that were actually deformed. A bake that reuses everything logs `nothing timed`.
+
+Reading the result:
+
+- `deform` + `pack` dominate: item 2 is worth it.
+- `save` or `unload` dominate: item 4.
+- `obtain` dominates, mostly on the first bake of a building: item 3.
+- The swap dominates, or the hitch comes after it: none of items 2–4 helps.
+
+Still not measured: the game's own work in the frames after the swap (rebuilding batches, loading the unloaded
+geometry asset again, GPU upload). If the logged phases are small and the hitch remains, it is there.
+
+### Results
+
+To be filled in from a test run (row house edited three times, a large service building, a lot with paths).
+
+| Building | Total | obtain | read | deform | pack | write | save | attachments | addPrefab | Swap | Vertices |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | | | | |
