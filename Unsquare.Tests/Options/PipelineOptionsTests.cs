@@ -16,7 +16,7 @@ namespace Unsquare.Tests.Options
             Assert.That(options.Limits.MinVolumeRatio, Is.EqualTo(0.05f));
             Assert.That(options.Attachments.FacadeReachMeters, Is.EqualTo(6f));
             Assert.That(options.Attachments.AttachedPropMode, Is.EqualTo(PlacementMode.Follow));
-            Assert.That(options.RebakeDelaySeconds, Is.EqualTo(0.4));
+            Assert.That(options.RebakeDelaySeconds, Is.EqualTo(0.2));
             Assert.That(options.PruneUnused, Is.True);
             Assert.That(options.PruneAfter, Is.EqualTo(TimeSpan.FromDays(14)));
             Assert.That(options.AreaMatchMeters, Is.EqualTo(1f));
