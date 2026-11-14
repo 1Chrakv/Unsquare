@@ -174,6 +174,8 @@ namespace Unsquare.Api
             return Request(building, description, spec.WithBlendMode(mode));
         }
 
+        public void BakeNow(Entity building) => _pipeline.BakeNow(building);
+
         public DeformRequestResult SetTerrainLift(Entity building, bool lift)
         {
             if (!TryDescribeTarget(building, out var description, out var spec))
