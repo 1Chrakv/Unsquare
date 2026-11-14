@@ -14,8 +14,9 @@ namespace Unsquare.Integration.Meshes
     /// </summary>
     internal static class MeshDeformer
     {
+        /// <param name="check">Optional comparison of the two bake paths (debug builds).</param>
         public static Mesh[] DeformCopies(Mesh[] sources, in SubmeshTransform transform, IDeformation deformation,
-            PhaseTimer timer, out MinMaxBounds bounds)
+            PhaseTimer timer, MeshPathCheck check, out MinMaxBounds bounds)
         {
             var result = new Mesh[sources.Length];
             bounds = MinMaxBounds.Empty;
@@ -23,7 +24,7 @@ namespace Unsquare.Integration.Meshes
             {
                 for (int i = 0; i < sources.Length; i++)
                 {
-                    result[i] = DeformCopy(sources[i], transform, deformation, timer, out var meshBounds);
+                    result[i] = DeformCopy(sources[i], transform, deformation, timer, check, out var meshBounds);
                     bounds = bounds.Encapsulate(meshBounds);
                 }
                 return result;
@@ -45,7 +46,7 @@ namespace Unsquare.Integration.Meshes
         }
 
         private static Mesh DeformCopy(Mesh source, in SubmeshTransform transform, IDeformation deformation,
-            PhaseTimer timer, out MinMaxBounds bounds)
+            PhaseTimer timer, MeshPathCheck check, out MinMaxBounds bounds)
         {
             if (source == null)
                 throw new ArgumentException("Render prefab returned a null mesh.");
@@ -55,6 +56,21 @@ namespace Unsquare.Integration.Meshes
             if (!HasFloatChannel(source, VertexAttribute.Position, 3))
                 throw new InvalidOperationException($"Mesh {source.name} has packed positions.");
 
+            // Plain cages on the game's packed layout go through the vertex job; anything else stays managed.
+            if (CageKernel.TryFrom(deformation, out var cage) && VertexBufferDeformer.Supports(source))
+            {
+                Mesh fast = VertexBufferDeformer.DeformCopy(source, transform, cage, timer, out bounds);
+                check?.Compare(source, fast, transform, deformation);
+                return fast;
+            }
+            timer.Count(BakePhase.ManagedMeshes, 1);
+            return DeformCopyManaged(source, transform, deformation, timer, out bounds);
+        }
+
+        /// <summary>The managed path: any deformation and float or packed normals, on the main thread.</summary>
+        internal static Mesh DeformCopyManaged(Mesh source, in SubmeshTransform transform, IDeformation deformation,
+            PhaseTimer timer, out MinMaxBounds bounds)
+        {
             var reading = timer.Measure(BakePhase.Read);
             Mesh mesh = Object.Instantiate(source);
             mesh.name = source.name;

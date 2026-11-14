@@ -78,6 +78,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - Never edit shared meshes; `Object.Instantiate` first and `Object.Destroy` every temporary mesh.
 - Game meshes pack normals (SNorm16×2) and tangents (Float32×1, sign bit = handedness) octahedrally. Never use
   `mesh.normals`/`tangents` on them; go through `PackedVertexChannel` + `OctahedralPacking` (see `HowTo.md`).
+- Mesh vertices are deformed by the Burst job `VertexDeformJob` (`VertexBufferDeformer`), completed in the same
+  frame. Code it calls (`CageKernel`, `VertexDeformer.DeformVertex`, `OctahedralPacking`) must stay Burst-friendly:
+  structs and static methods only, no managed arrays, classes, interfaces or exceptions.
 - Buildings have no impostors (CS2 only gives them to trees). The coarsest LOD is left out for twisted cages
   (`CageTwist` > `PipelineOptions.CoarseLodTwistMeters`); it can't follow the bend.
 - Mesh and prefab APIs are main-thread only; keep hot loops allocation-free (no LINQ, no closures).

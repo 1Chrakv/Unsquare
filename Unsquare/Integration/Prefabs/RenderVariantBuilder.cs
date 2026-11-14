@@ -23,6 +23,7 @@ namespace Unsquare.Integration.Prefabs
 
         private readonly GeometryAssetStore _store;
         private readonly PhaseTimer _timer;
+        private readonly MeshPathCheck _pathCheck = MeshPathCheck.CreateForBuild();
         private readonly Dictionary<string, Built> _cache = new(StringComparer.Ordinal);
 
         public RenderVariantBuilder(GeometryAssetStore store, PhaseTimer timer)
@@ -100,7 +101,7 @@ namespace Unsquare.Integration.Prefabs
             UnityEngine.Mesh[] sources;
             using (_timer.Measure(BakePhase.Obtain))
                 sources = source.ObtainMeshes();
-            var meshes = MeshDeformer.DeformCopies(sources, transform, deformation, _timer, out bounds);
+            var meshes = MeshDeformer.DeformCopies(sources, transform, deformation, _timer, _pathCheck, out bounds);
             if (exists)
                 MeshDeformer.Destroy(meshes); // only needed the bounds
             else

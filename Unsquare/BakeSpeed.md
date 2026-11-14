@@ -114,6 +114,10 @@ Reading the result:
 Still not measured: the game's own work in the frames after the swap (rebuilding batches, loading the unloaded
 geometry asset again, GPU upload). If the logged phases are small and the hitch remains, it is there.
 
+With the vertex job (item 2, `VertexBufferDeformer`), `deform` is the wait for the job and includes unpacking and
+packing; `pack` is missing and `read` is only the mesh copy and one buffer copy per stream. Meshes that could not
+take the job show up as `N on the managed path` and keep the old phases.
+
 ### Results
 
 Run of 14 Nov 2026, build `1.0.1+dbc8296` (Debug), a city with 755 variants. Times in ms, steady state (repeated

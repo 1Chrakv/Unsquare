@@ -19,5 +19,8 @@ namespace Unsquare.Core.Diagnostics
 
         public const string Vertices = "vertices";
         public const string Meshes = "meshes";
+
+        /// <summary>Meshes that could not take the vertex job and were deformed on the main thread.</summary>
+        public const string ManagedMeshes = "on the managed path";
     }
 }
