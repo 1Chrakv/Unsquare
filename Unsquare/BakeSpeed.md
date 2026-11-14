@@ -116,8 +116,27 @@ geometry asset again, GPU upload). If the logged phases are small and the hitch 
 
 ### Results
 
-To be filled in from a test run (row house edited three times, a large service building, a lot with paths).
+Run of 14 Nov 2026, build `1.0.1+dbc8296` (Debug), a city with 755 variants. Times in ms, steady state (repeated
+edits of the same building; they varied by less than 5 %).
 
-| Building | Total | obtain | read | deform | pack | write | save | attachments | addPrefab | Swap | Vertices |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | | | | |
+| Building | Vertices | Total | read | deform | pack | write | save | Swap | deform + pack |
+|---|---|---|---|---|---|---|---|---|---|
+| `EU_ResidentialMediumRow01_L4_1x5` | 15 400 | 81 | 7.7 | 38 | 5.2 | 0.6 | 6 | 0.5 | 53 % |
+| `Hospital01` | 118 277 | 445 | 56 | 289 | 39 | 4 | 25 | 1.4 | 74 % |
+| `FR_Hospital` | 239 226 | 848 | 109 | 571 | 79 | 9 | 45 | 2–7 | 77 % |
+
+All other phases stayed below 4 ms each (`obtain` 0, `addPrefab` 0.1, `attachments` at most 3.7).
+
+- **The vertex maths is the freeze.** `deform` costs about 2.4 µs per vertex at every size, `pack` 0.33 µs. Together
+  they are half of a small bake and three quarters of a large one. Item 2 is justified.
+- **`read` is next** (0.47 µs per vertex, 10–13 %). It includes unpacking and the managed copies, which item 2 also
+  takes off the main thread or removes.
+- **The manifest write is a second, constant hitch:** 33–36 ms after every bake, whatever the building, because
+  the whole manifest (755 entries) is rewritten. For a row house that is almost half the bake again.
+- **Item 3 has nothing to gain:** `obtain` is 0 ms; the source meshes are already loaded.
+- **Item 4 gains little:** `save` is 5–7 % of the bake.
+- **The swap is negligible** (0.5–9 ms).
+- **First bake of a session:** 406 ms for the row house, from one-off costs in `read` (174 ms) and `save` (157 ms).
+  Not repeated for the next building.
+
+Open: the numbers are from a Debug build, and the frames after the swap are still not measured.

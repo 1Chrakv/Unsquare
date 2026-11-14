@@ -822,8 +822,8 @@ namespace Unsquare.Integration.Systems
                 PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab, extensions, _options.AreaMatchMeters,
                     netRemap);
                 double swapped = stopwatch.Elapsed.TotalMilliseconds;
-                Mod.Log.Info($"Swap phases for building {building}: prepare {prepared:0.0}, " +
-                             $"remap {remapped - prepared:0.0}, swap {swapped - remapped:0.0} ms");
+                Mod.Log.Info(FormattableString.Invariant($"Swap phases for building {building}: prepare {prepared:0.0}, ") +
+                             FormattableString.Invariant($"remap {remapped - prepared:0.0}, swap {swapped - remapped:0.0} ms"));
                 return true;
             }
             catch (Exception e)
