@@ -21,7 +21,7 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
 Next session: OnGamePreload ─▶ VariantManifest ─▶ re-create every variant (assets + BoundsCache reused)
               OnGameLoadingComplete ─▶ PrepareVariantPrefab ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
 
-PrepareVariantPrefab = SimDataCopier + upgrade setup (UpgradeRegistration, UpgradeArchetype, UpgradeOwnership).
+PrepareVariantPrefab = SimDataCopier + VariantArchetype + upgrade setup (UpgradeRegistration, UpgradeOwnership).
 On-lot upgrade extensions get their own variants with the owner's cage and swap with the owner; the UI edits a
 cage raised over them (ExtendedCage). Details: Upgrades.md.
 ```

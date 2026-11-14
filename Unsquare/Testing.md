@@ -201,7 +201,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 109 | Elementary school with the classroom extension wing (an upgrade building): deform the school, let the game run a few minutes, then Reset | No crash; the wing stays undeformed and its paths stay connected |
 | 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash, also when hovering the wing and the school; the wing's paths stay connected to the school's |
 | 111 | Repeat 106 and 107 (car park storey) | Still no crash |
-| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N given upgrade buffers)` with N ≥ 1 |
+| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N archetypes completed)` with N ≥ 1 |
 | 113 | Car park with the extra storey: select it in Unsquare mode | Green cage and dashed rest box reach the storey's top, not the base roof; the tool window sits above it |
 | 114 | After 113, drag a top corner, with the 0.1 m step nudge it up and sideways a few times (Alt+PageUp, Alt+arrows), then Ctrl+Z and Ctrl+Y | The storey's roof follows the cage corner; every nudge moves the corner; undo and redo restore each step; Reset brings back the plain building and storey |
 | 115 | A building without upgrades, and the car park before the storey is added | Cage ends at the roof as before |
@@ -250,6 +250,10 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 158 | Drag the whole cage far away | Stops at the max corner offset (clamped, cage yellow), never relocates beyond it |
 | 159 | Deform a level-1 growable (taper the plan, lean the top), let it level up | Right after the level-up the new building takes the shape: same lot outline, lean scaled to the new height, paths on the deformed lot; log `levelled up: carrying its cage over` |
 | 160 | After 159 save, reload; then turn off Keep shape on level-up and let another deformed building level up | The carried shape is kept after reload; with the option off the next level-up comes back undeformed |
+| 161 | Deform a zoned house, pick it with the eyedropper (or Find It's picker) and place the copy; wait, then hover and click the copy with the normal tool. Repeat with an office | No crash; the copy has the deformed shape and its info panel opens |
+| 162 | Load a save holding copies placed before this fix, then click them | Log `Repaired N copies of variants missing instance components` with N ≥ 1; no crash |
+| 163 | Copy a deformed service building that has an upgrade; hover and click the copy | No crash |
+| 164 | Let the game run with the copies of 161 | Residents or companies move in; no condemnation; Reset in Unsquare mode gives the plain building |
 
 ## Reporting problems
 
