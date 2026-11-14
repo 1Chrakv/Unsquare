@@ -144,3 +144,35 @@ All other phases stayed below 4 ms each (`obtain` 0, `addPrefab` 0.1, `attachmen
   Not repeated for the next building.
 
 Open: the numbers are from a Debug build, and the frames after the swap are still not measured.
+
+### Results with the vertex job
+
+Run of 14 Nov 2026, build `1.0.1+0c06c7b` (Debug), same city. Times in ms, steady state.
+
+| Building | Vertices | Total before → now | read | deform | write | save |
+|---|---|---|---|---|---|---|
+| `EU_ResidentialMediumRow01_L4_1x5` | 15 400 | 81 → 33 | 0.5 | 0.8 | 0.3 | 6–9 |
+| `Hospital01` | 118 277 | 445 → 65 | 3 | 2.6 | 1.5 | 25 |
+| `FR_Hospital` | 239 226 | 848 → 90 | 6 | 3.7 | 3.5 | 43 |
+
+- The vertex maths is gone as a cost (about 0.02 µs per vertex); `save` is now the largest bake phase.
+- The manifest write (33–45 ms after every bake) now costs about as much as a bake, or more for small buildings.
+- First bake of a session: 165 ms (was 406).
+
+## Second-long freezes: Placemaker's catalog rescan
+
+About every tenth edit the game froze for 1–2 s, before and after the vertex job. Unsquare's logs don't show it;
+the cause is in `Placemaker.log` (same run, from log timing only, not yet confirmed with Placemaker disabled):
+
+- Placemaker logs "+N prefab(s) from the game or other mods since the last scan; rescanning" and rebuilds its
+  whole asset catalog. Each rescan took 1.8–2.1 s; all 20 in the session followed Unsquare bakes, none happened
+  without them, and N matches the prefabs the bakes added (variant plus extension variants).
+- No mod logged anything inside any rescan window (Unsquare, Simulation, Move It, Find It), so it blocks the main
+  thread. Example: FR_Hospital bakes at 44.6, 45.8, 46.9, 49.2, 50.1 s; the one long gap is a rescan (46.9–48.8).
+- It is throttled to about one rescan per 9.5 s, batching all prefabs added since. At one edit per second, roughly
+  every tenth edit lands on one.
+- Find It re-indexes after every bake too, but takes 1–2 ms.
+
+Unsquare must register its variants as prefabs, so it can't avoid triggering the rescan. The fix belongs in
+Placemaker: skip variant prefabs (names containing `__uq`), update its catalog incrementally, or scan off the main
+thread. To confirm, deform 20–30 times with Placemaker disabled.
