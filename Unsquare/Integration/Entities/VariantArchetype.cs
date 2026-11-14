@@ -5,48 +5,45 @@ using Colossal.Entities;
 using Game.Prefabs;
 using Unity.Collections;
 using Unity.Entities;
-using InstalledUpgrade = Game.Buildings.InstalledUpgrade;
-using NetSubNet = Game.Net.SubNet;
-using SubRoute = Game.Routes.SubRoute;
 
 namespace Unsquare.Integration.Entities
 {
     /// <summary>
-    /// A building prefab gets upgrade buffers in its instance archetype only when upgrades register with it, which
-    /// they never do with a variant. The tool's temporary copies of a variant then lack <see cref="InstalledUpgrade"/>,
-    /// and the game's upgrade reference job crashes on them; this adds the buffers the base prefab's archetype has.
+    /// A variant's instance archetype lacks what its base gets from SpawnableBuilding and from upgrades registering
+    /// with it. Copies of a variant (eyedropper, hover) then miss components the game's jobs read unchecked, and the
+    /// game crashes natively; this gives the variant's archetype every type the base's archetype has.
     /// </summary>
-    internal static class UpgradeArchetype
+    internal static class VariantArchetype
     {
+        /// <summary>Adds the base archetype's types the variant lacks and lists them in <paramref name="added"/>.</summary>
         /// <returns>True if the variant's archetype was extended.</returns>
-        public static bool AddUpgradeBuffers(EntityManager entityManager, Entity basePrefab, Entity variantPrefab)
+        public static bool TryComplete(EntityManager entityManager, Entity basePrefab, Entity variantPrefab,
+            List<ComponentType> added)
         {
-            if (!entityManager.HasBuffer<BuildingUpgradeElement>(basePrefab) ||
+            added.Clear();
+            if (!entityManager.TryGetComponent(basePrefab, out ObjectData baseData) || !baseData.m_Archetype.Valid ||
                 !entityManager.TryGetComponent(variantPrefab, out ObjectData data) || !data.m_Archetype.Valid)
                 return false;
 
-            // The same types BuildingPrefab.RefreshArchetype adds for prefabs with upgrades.
-            var required = new[]
-            {
-                ComponentType.ReadWrite<InstalledUpgrade>(), ComponentType.ReadWrite<NetSubNet>(),
-                ComponentType.ReadWrite<SubRoute>(),
-            };
+            var baseTypes = baseData.m_Archetype.GetComponentTypes(Allocator.Temp);
             var types = data.m_Archetype.GetComponentTypes(Allocator.Temp);
-            var combined = new List<ComponentType>(types.Length + required.Length);
+            var combined = new List<ComponentType>(baseTypes.Length + types.Length);
             try
             {
                 combined.AddRange(types);
-                foreach (var type in required)
+                foreach (var type in baseTypes)
                 {
                     if (!Contains(types, type))
-                        combined.Add(type);
+                        added.Add(type);
                 }
+                combined.AddRange(added);
             }
             finally
             {
+                baseTypes.Dispose();
                 types.Dispose();
             }
-            if (combined.Count == types.Length)
+            if (added.Count == 0)
                 return false;
             try
             {
@@ -59,8 +56,9 @@ namespace Unsquare.Integration.Entities
             }
             catch (Exception e)
             {
-                // Without the buffers, hovering the building with an upgrade can crash the game.
-                Mod.Log.Error(e, $"Adding upgrade buffers to variant prefab {variantPrefab} failed.");
+                // Without the missing types, hovering or clicking a copy of the variant can crash the game.
+                Mod.Log.Error(e, $"Completing the archetype of variant prefab {variantPrefab} failed.");
+                added.Clear();
                 return false;
             }
         }
