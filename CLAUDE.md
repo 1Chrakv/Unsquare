@@ -189,8 +189,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
   - Prefab setup after init (`VariantSystem.PrepareVariantPrefab`):
     - `UpgradeRegistration` undoes a cloned upgrade registering itself as an option of its buildings.
-    - `UpgradeArchetype` gives variants the base's upgrade buffers in their instance archetype; without them hover
-      copies lack `InstalledUpgrade` and the game's upgrade job crashes natively.
+    - `VariantArchetype` gives a variant's instance archetype every type its base's has (upgrade buffers, and what
+      the removed `SpawnableBuilding` adds). Hover and eyedropper copies are created from it; without those types
+      the game's jobs crash natively. `VariantInstanceRepair` adds them to copies placed before.
     - `UpgradeOwnership` shares the base's upgrade list and lists the variant in the upgrades'
       `ServiceUpgradeBuilding`, so deformed buildings keep their Upgrades section and accept new upgrades.
   - Upgrade variants keep a `UIObject` without menu group (the info panel lists only upgrades with `UIObjectData`) and

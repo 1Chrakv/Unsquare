@@ -41,6 +41,8 @@ namespace Unsquare.Integration.Systems
         private readonly List<(Entity Building, bool Succeeded)> _finished = new();
         private readonly Dictionary<Entity, ObjectGeometryPrefab> _simDataPending = new();
         private readonly List<Entity> _readyPrefabs = new();
+        private readonly Dictionary<Entity, ComponentType[]> _archetypeGaps = new();
+        private readonly List<ComponentType> _addedTypes = new();
         private readonly List<Entity> _extensions = new();
         private readonly List<Entity> _describedExtensions = new();
         private readonly Dictionary<BuildingExtensionPrefab, CageBox?> _extensionBoxes = new();
@@ -120,6 +122,7 @@ namespace Unsquare.Integration.Systems
 
             ProcessSimData();
             ProcessSwaps();
+            RepairCopies();
             SaveIfDirty();
             Enabled = _debouncer.Count > 0 || _swaps.Count > 0 || _simDataPending.Count > 0 ||
                       _extensionRefreshes.Count > 0 || _levelUps.Count > 0;
@@ -132,6 +135,7 @@ namespace Unsquare.Integration.Systems
             _swaps.Clear();
             _statuses.Clear();
             _simDataPending.Clear();
+            _archetypeGaps.Clear();
             _extensionRefreshes.Clear();
             _levelUps.Clear();
             _upgradesLogged.Clear();
@@ -155,6 +159,7 @@ namespace Unsquare.Integration.Systems
             _simulationReady = (mode & GameMode.GameOrEditor) != 0;
             // Restored variants: copy before the UI or simulation reads them; the rest waits for OnUpdate.
             ProcessSimData();
+            RepairCopies();
             if (_simDataPending.Count > 0)
                 Enabled = true;
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
@@ -703,7 +708,7 @@ namespace Unsquare.Integration.Systems
                     _readyPrefabs.Add(pair.Key);
             }
 
-            int copied = 0, upgradable = 0;
+            int copied = 0, completed = 0;
             foreach (var variantEntity in _readyPrefabs)
             {
                 var basePrefab = _simDataPending[variantEntity];
@@ -713,7 +718,7 @@ namespace Unsquare.Integration.Systems
                     if (EntityManager.Exists(variantEntity) && _prefabSystem.TryGetEntity(basePrefab, out var donor))
                     {
                         if (PrepareVariantPrefab(donor, variantEntity))
-                            upgradable++;
+                            completed++;
                         copied++;
                     }
                 }
@@ -723,7 +728,7 @@ namespace Unsquare.Integration.Systems
                 }
             }
             if (copied > 0)
-                Mod.Log.Info($"Copied sim data to {copied} variants ({upgradable} given upgrade buffers), " +
+                Mod.Log.Info($"Copied sim data to {copied} variants ({completed} archetypes completed), " +
                              $"{_simDataPending.Count} still initializing.");
         }
 
@@ -732,9 +737,30 @@ namespace Unsquare.Integration.Systems
         {
             SimDataCopier.CopyMissing(EntityManager, donor, variant);
             UpgradeRegistration.RemoveFromBuildings(EntityManager, variant);
-            bool upgradable = UpgradeArchetype.AddUpgradeBuffers(EntityManager, donor, variant);
+            bool completed = VariantArchetype.TryComplete(EntityManager, donor, variant, _addedTypes);
+            if (completed)
+                _archetypeGaps[variant] = _addedTypes.ToArray();
             UpgradeOwnership.Share(EntityManager, _prefabSystem, donor, variant);
-            return upgradable;
+            return completed;
+        }
+
+        // Buildings created from a variant before its archetype was completed, e.g. copies in older saves.
+        private void RepairCopies()
+        {
+            if (_archetypeGaps.Count == 0)
+                return;
+            try
+            {
+                using var buildings = _buildingQuery.ToEntityArray(Allocator.Temp);
+                int repaired = VariantInstanceRepair.AddMissing(EntityManager, buildings, _archetypeGaps);
+                if (repaired > 0)
+                    Mod.Log.Info($"Repaired {repaired} copies of variants missing instance components.");
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, "Repairing copies of variants failed.");
+            }
+            _archetypeGaps.Clear();
         }
 
         private void ProcessSwaps()
