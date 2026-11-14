@@ -69,6 +69,11 @@ holding two 15-bit octahedral values plus the handedness in the sign bit (`_TANG
 `mesh.normals`/`mesh.tangents` can't read them and their setters change the layout the shader decodes.
 `MeshDeformer` reads and writes them raw (`PackedVertexChannel`) and converts with `OctahedralPacking`.
 
+**Two paths:** meshes are only ever baked with a plain cage (`CageKernel`, the cage as plain data), so
+`VertexBufferDeformer` runs the Burst job `VertexDeformJob` over the raw vertex streams on the worker threads and
+waits for it in the same frame. Other deformations or vertex layouts take the managed path
+(`MeshDeformer.DeformCopyManaged`). Both go through `VertexDeformer` and must give the same result.
+
 **Meshes are shared:** always `Object.Instantiate` before editing and `Object.Destroy` every temporary mesh.
 
 **LODs:** `RenderVariantBuilder` deforms every `LodProperties.m_LodMeshes` entry the same way; otherwise the

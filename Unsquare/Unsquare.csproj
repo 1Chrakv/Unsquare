@@ -3,6 +3,9 @@
     <PropertyGroup>
         <Configurations>Debug;Release</Configurations>
 
+        <!--VertexDeformJob reads and writes raw vertex streams through pointers-->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
         <!--Mod version; keep ModVersion in PublishConfiguration.xml equal (checked on build)-->
         <Version>1.0.1</Version>
 
