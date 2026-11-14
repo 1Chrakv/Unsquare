@@ -19,6 +19,9 @@ namespace Unsquare.Core.Deformation
 
         public float3 Offset { get; }
 
+        /// <summary>The deformation in the building's frame.</summary>
+        public IDeformation Inner => _inner;
+
         public float3 Apply(float3 p, out float3x3 jacobian) => _inner.Apply(p + Offset, out jacobian) - Offset;
     }
 }

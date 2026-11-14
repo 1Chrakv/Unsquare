@@ -37,18 +37,35 @@ namespace Unsquare.Core.Deformation
                 if (math.abs(math.determinant(jacobian)) < MinDeterminant)
                     continue;
                 if (hasNormals)
-                {
-                    float3x3 normalMatrix = math.transpose(math.inverse(jacobian));
-                    normals[i] = TransformDirection(normals[i], normalMatrix, transform);
-                }
+                    normals[i] = DeformNormal(normals[i], jacobian, transform);
                 if (hasTangents)
-                {
-                    float4 t = tangents[i];
-                    tangents[i] = new float4(TransformDirection(t.xyz, jacobian, transform), t.w);
-                }
+                    tangents[i] = DeformTangent(tangents[i], jacobian, transform);
             }
             return bounds;
         }
+
+        /// <summary>
+        /// One vertex through a cage kernel, job-friendly; same result as <see cref="Deform"/> with that cage.
+        /// </summary>
+        public static void DeformVertex(in CageKernel cage, in SubmeshTransform transform, ref float3 position,
+            ref float3 normal, ref float4 tangent, bool hasNormal, bool hasTangent)
+        {
+            float3 moved = cage.Apply(transform.PointToBuilding(position), out float3x3 jacobian);
+            position = transform.PointToLocal(moved);
+
+            if (math.abs(math.determinant(jacobian)) < MinDeterminant)
+                return;
+            if (hasNormal)
+                normal = DeformNormal(normal, jacobian, transform);
+            if (hasTangent)
+                tangent = DeformTangent(tangent, jacobian, transform);
+        }
+
+        private static float3 DeformNormal(float3 normal, in float3x3 jacobian, in SubmeshTransform transform) =>
+            TransformDirection(normal, math.transpose(math.inverse(jacobian)), transform);
+
+        private static float4 DeformTangent(float4 tangent, in float3x3 jacobian, in SubmeshTransform transform) =>
+            new(TransformDirection(tangent.xyz, jacobian, transform), tangent.w);
 
         private static float3 TransformDirection(float3 local, float3x3 matrix, in SubmeshTransform transform)
         {
