@@ -16,7 +16,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Diagnostics;
 using Unsquare.Core.Naming;
 using Unsquare.Core.Options;
 using Unsquare.Core.Persistence;
@@ -57,7 +56,6 @@ namespace Unsquare.Integration.Systems
         private PrefabSystem _prefabSystem;
         private CityConfigurationSystem _citySystem;
         private PrefabResolver _resolver;
-        private readonly PhaseTimer _bakeTimer = new();
         private GeometryAssetStore _store;
         private RenderVariantBuilder _renderBuilder;
         private VariantPrefabFactory _factory;
@@ -93,13 +91,13 @@ namespace Unsquare.Integration.Systems
             _prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
             _citySystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
             _resolver = new PrefabResolver(_prefabSystem);
-            _store = new GeometryAssetStore(_bakeTimer);
-            _renderBuilder = new RenderVariantBuilder(_store, _bakeTimer);
+            _store = new GeometryAssetStore();
+            _renderBuilder = new RenderVariantBuilder(_store);
             _factory = new VariantPrefabFactory(_prefabSystem, _renderBuilder,
                 new IAttachmentDeformer[]
                 {
                     new SubObjectDeformer(), new SubAreaDeformer(), new SubLaneDeformer(), new SubNetDeformer(),
-                }, _bakeTimer);
+                });
             _localization = new VariantLocalization(GameManager.instance?.localizationManager);
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
@@ -380,7 +378,6 @@ namespace Unsquare.Integration.Systems
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
-            _bakeTimer.Reset();
             var stopwatch = Stopwatch.StartNew();
             int createdBefore = _renderBuilder.CreatedAssetCount;
             bool created = TryGetOrCreateVariant(description.BasePrefab, spec, isRestore: false, out var variant);
@@ -388,7 +385,6 @@ namespace Unsquare.Integration.Systems
             // 0 new assets means everything was reused (existing prefab or cached geometry).
             Mod.Log.Info($"Bake for building {building}: {(created ? variant.name : "failed")}, " +
                          $"{stopwatch.ElapsedMilliseconds} ms, {_renderBuilder.CreatedAssetCount - createdBefore} new assets");
-            Mod.Log.Info($"Bake phases: {_bakeTimer.Summary()}");
 
             if (created && _prefabSystem.TryGetEntity(variant, out var variantEntity))
                 QueueSwap(building, variantEntity, description.BasePrefab, spec,
@@ -450,8 +446,7 @@ namespace Unsquare.Integration.Systems
                 Assets = new List<string>(assets),
             };
             entry.SetSpec(spec);
-            using (_bakeTimer.Measure(BakePhase.Manifest))
-                _manifest.Register(entry, _citySystem.cityName, DateTime.UtcNow);
+            _manifest.Register(entry, _citySystem.cityName, DateTime.UtcNow);
             return true;
         }
 
@@ -809,21 +804,15 @@ namespace Unsquare.Integration.Systems
         {
             try
             {
-                var stopwatch = Stopwatch.StartNew();
                 if (_prefabSystem.TryGetEntity(swap.BasePrefab, out var donor) && donor != swap.TargetPrefab)
                     PrepareVariantPrefab(donor, swap.TargetPrefab);
-                double prepared = stopwatch.Elapsed.TotalMilliseconds;
                 var netRemap = _resolver.TryGetPrefab(EntityManager, building, out var currentPrefab)
                     ? BuildNetRemap(currentPrefab, swap.BasePrefab, swap.Spec)
                     : null;
                 LogUpgradesOnce(building);
                 var extensions = BuildExtensionSwaps(swap.Extensions, netRemap, swap.BasePrefab, swap.Spec);
-                double remapped = stopwatch.Elapsed.TotalMilliseconds;
                 PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab, extensions, _options.AreaMatchMeters,
                     netRemap);
-                double swapped = stopwatch.Elapsed.TotalMilliseconds;
-                Mod.Log.Info(FormattableString.Invariant($"Swap phases for building {building}: prepare {prepared:0.0}, ") +
-                             FormattableString.Invariant($"remap {remapped - prepared:0.0}, swap {swapped - remapped:0.0} ms"));
                 return true;
             }
             catch (Exception e)
@@ -953,13 +942,10 @@ namespace Unsquare.Integration.Systems
         {
             try
             {
-                var stopwatch = Stopwatch.StartNew();
                 if (_manifest.IsDirty)
                     _manifest.Save(ModPaths.ManifestFile);
                 if (_renderBuilder.BoundsCache.IsDirty)
                     _renderBuilder.BoundsCache.Save(ModPaths.BoundsCacheFile);
-                if (stopwatch.ElapsedMilliseconds >= 1)
-                    Mod.Log.Info($"Saved manifest and bounds cache: {stopwatch.ElapsedMilliseconds} ms");
             }
             catch (Exception e)
             {

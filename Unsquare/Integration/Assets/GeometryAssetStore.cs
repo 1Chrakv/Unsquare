@@ -4,7 +4,6 @@ using System.IO;
 using Colossal.IO.AssetDatabase;
 using Hash128 = Colossal.Hash128;
 using Mesh = UnityEngine.Mesh;
-using Unsquare.Core.Diagnostics;
 using Unsquare.Core.Naming;
 
 namespace Unsquare.Integration.Assets
@@ -12,13 +11,6 @@ namespace Unsquare.Integration.Assets
     /// <summary>Creates, finds and deletes Unsquare's baked GeometryAssets in the user asset database.</summary>
     internal sealed class GeometryAssetStore
     {
-        private readonly PhaseTimer _timer;
-
-        public GeometryAssetStore(PhaseTimer timer)
-        {
-            _timer = timer;
-        }
-
         public bool TryGet(StableHash hash, out GeometryAsset asset) =>
             AssetDatabase.global.TryGetAsset(ToGuid(hash), out asset);
 
@@ -27,13 +19,9 @@ namespace Unsquare.Integration.Assets
         {
             var path = AssetDataPath.Create(ModPaths.AssetSubPath, assetName + GeometryAsset.kExtension,
                 hasExtension: true, EscapeStrategy.None);
-            GeometryAsset asset;
-            using (_timer.Measure(BakePhase.AssetAdd))
-                asset = AssetDatabase.user.AddAsset<GeometryAsset, Mesh[]>(path, meshes, ToGuid(hash));
-            using (_timer.Measure(BakePhase.AssetSave))
-                asset.Save(force: false);
-            using (_timer.Measure(BakePhase.AssetUnload))
-                asset.Unload(force: true);
+            var asset = AssetDatabase.user.AddAsset<GeometryAsset, Mesh[]>(path, meshes, ToGuid(hash));
+            asset.Save(force: false);
+            asset.Unload(force: true);
             return asset;
         }
 

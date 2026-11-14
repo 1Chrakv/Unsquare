@@ -4,7 +4,6 @@ using Colossal.IO.AssetDatabase;
 using Colossal.Mathematics;
 using Game.Prefabs;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Diagnostics;
 using Unsquare.Core.Naming;
 using Unsquare.Core.Persistence;
 using Unsquare.Integration.Assets;
@@ -22,13 +21,11 @@ namespace Unsquare.Integration.Prefabs
         private const string SkippedLodSuffix = "-fine";
 
         private readonly GeometryAssetStore _store;
-        private readonly PhaseTimer _timer;
         private readonly Dictionary<string, Built> _cache = new(StringComparer.Ordinal);
 
-        public RenderVariantBuilder(GeometryAssetStore store, PhaseTimer timer)
+        public RenderVariantBuilder(GeometryAssetStore store)
         {
             _store = store;
-            _timer = timer;
         }
 
         /// <summary>Replaced on every preload; lets restores skip vertex work.</summary>
@@ -69,9 +66,7 @@ namespace Unsquare.Integration.Prefabs
                 var assets = new HashSet<string>(StringComparer.Ordinal) { assetName };
                 var asset = ObtainAsset(source, transform, deformation, hash, assetName, out var bounds);
 
-                RenderPrefab clone;
-                using (_timer.Measure(BakePhase.RenderClone))
-                    clone = (RenderPrefab)source.Clone(cloneName);
+                var clone = (RenderPrefab)source.Clone(cloneName);
                 clone.Remove<ObsoleteIdentifiers>();
                 clone.geometryAsset = asset;
                 clone.bounds = new Bounds3(bounds.Min, bounds.Max);
@@ -97,10 +92,7 @@ namespace Unsquare.Integration.Prefabs
             if (exists && BoundsCache.TryGet(assetName, out bounds))
                 return asset;
 
-            UnityEngine.Mesh[] sources;
-            using (_timer.Measure(BakePhase.Obtain))
-                sources = source.ObtainMeshes();
-            var meshes = MeshDeformer.DeformCopies(sources, transform, deformation, _timer, out bounds);
+            var meshes = MeshDeformer.DeformCopies(source.ObtainMeshes(), transform, deformation, out bounds);
             if (exists)
                 MeshDeformer.Destroy(meshes); // only needed the bounds
             else

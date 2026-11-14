@@ -4,7 +4,6 @@ using Game.Prefabs;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Diagnostics;
 using Unsquare.Core.Naming;
 using Unsquare.Integration.Prefabs.Attachments;
 using Object = UnityEngine.Object;
@@ -23,12 +22,10 @@ namespace Unsquare.Integration.Prefabs
         private readonly PrefabSystem _prefabSystem;
         private readonly RenderVariantBuilder _renderBuilder;
         private readonly IReadOnlyList<IAttachmentDeformer> _attachmentDeformers;
-        private readonly PhaseTimer _timer;
 
         public VariantPrefabFactory(PrefabSystem prefabSystem, RenderVariantBuilder renderBuilder,
-            IReadOnlyList<IAttachmentDeformer> attachmentDeformers, PhaseTimer timer)
+            IReadOnlyList<IAttachmentDeformer> attachmentDeformers)
         {
-            _timer = timer;
             _prefabSystem = prefabSystem;
             _renderBuilder = renderBuilder;
             _attachmentDeformers = attachmentDeformers;
@@ -86,31 +83,22 @@ namespace Unsquare.Integration.Prefabs
             ObjectGeometryPrefab clone = null;
             try
             {
-                using (_timer.Measure(BakePhase.PrefabClone))
-                {
-                    clone = (ObjectGeometryPrefab)basePrefab.Clone(variantName);
-                    clone.m_Meshes = meshes;
-                    clone.Remove<SpawnableBuilding>();   // the zone spawner must never pick a variant
-                    clone.Remove<ObsoleteIdentifiers>(); // would alias the base prefab's old IDs
-                    KeepOutOfMenus(clone, basePrefab);
-                    HideFromAssetBrowsers(clone, basePrefab);
-                }
+                clone = (ObjectGeometryPrefab)basePrefab.Clone(variantName);
+                clone.m_Meshes = meshes;
+                clone.Remove<SpawnableBuilding>();   // the zone spawner must never pick a variant
+                clone.Remove<ObsoleteIdentifiers>(); // would alias the base prefab's old IDs
+                KeepOutOfMenus(clone, basePrefab);
+                HideFromAssetBrowsers(clone, basePrefab);
                 var counts = new List<string>(_attachmentDeformers.Count);
-                using (_timer.Measure(BakePhase.Attachments))
+                foreach (var attachmentDeformer in _attachmentDeformers)
                 {
-                    foreach (var attachmentDeformer in _attachmentDeformers)
-                    {
-                        counts.Add(attachments.IsEnabled(attachmentDeformer.Kind)
-                            ? attachmentDeformer.Apply(clone, basePrefab, context).ToString()
-                            : $"{attachmentDeformer.Kind} off");
-                    }
+                    counts.Add(attachments.IsEnabled(attachmentDeformer.Kind)
+                        ? attachmentDeformer.Apply(clone, basePrefab, context).ToString()
+                        : $"{attachmentDeformer.Kind} off");
                 }
                 Mod.Log.Info($"Attachments of {variantName}: {string.Join(", ", counts)}");
 
-                bool added;
-                using (_timer.Measure(BakePhase.AddPrefab))
-                    added = _prefabSystem.AddPrefab(clone);
-                if (!added)
+                if (!_prefabSystem.AddPrefab(clone))
                 {
                     Mod.Log.Warn($"PrefabSystem rejected variant {variantName}.");
                     Object.Destroy(clone);

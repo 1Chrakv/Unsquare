@@ -3,7 +3,6 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Diagnostics;
 using Object = UnityEngine.Object;
 
 namespace Unsquare.Integration.Meshes
@@ -15,7 +14,7 @@ namespace Unsquare.Integration.Meshes
     internal static class MeshDeformer
     {
         public static Mesh[] DeformCopies(Mesh[] sources, in SubmeshTransform transform, IDeformation deformation,
-            PhaseTimer timer, out MinMaxBounds bounds)
+            out MinMaxBounds bounds)
         {
             var result = new Mesh[sources.Length];
             bounds = MinMaxBounds.Empty;
@@ -23,7 +22,7 @@ namespace Unsquare.Integration.Meshes
             {
                 for (int i = 0; i < sources.Length; i++)
                 {
-                    result[i] = DeformCopy(sources[i], transform, deformation, timer, out var meshBounds);
+                    result[i] = DeformCopy(sources[i], transform, deformation, out var meshBounds);
                     bounds = bounds.Encapsulate(meshBounds);
                 }
                 return result;
@@ -45,7 +44,7 @@ namespace Unsquare.Integration.Meshes
         }
 
         private static Mesh DeformCopy(Mesh source, in SubmeshTransform transform, IDeformation deformation,
-            PhaseTimer timer, out MinMaxBounds bounds)
+            out MinMaxBounds bounds)
         {
             if (source == null)
                 throw new ArgumentException("Render prefab returned a null mesh.");
@@ -57,16 +56,14 @@ namespace Unsquare.Integration.Meshes
 
             // Plain cages on the game's packed layout go through the vertex job; anything else stays managed.
             if (CageKernel.TryFrom(deformation, out var cage) && VertexBufferDeformer.Supports(source))
-                return VertexBufferDeformer.DeformCopy(source, transform, cage, timer, out bounds);
-            timer.Count(BakePhase.ManagedMeshes, 1);
-            return DeformCopyManaged(source, transform, deformation, timer, out bounds);
+                return VertexBufferDeformer.DeformCopy(source, transform, cage, out bounds);
+            return DeformCopyManaged(source, transform, deformation, out bounds);
         }
 
         /// <summary>The managed path: any deformation and float or packed normals, on the main thread.</summary>
         private static Mesh DeformCopyManaged(Mesh source, in SubmeshTransform transform, IDeformation deformation,
-            PhaseTimer timer, out MinMaxBounds bounds)
+            out MinMaxBounds bounds)
         {
-            var reading = timer.Measure(BakePhase.Read);
             Mesh mesh = Object.Instantiate(source);
             mesh.name = source.name;
             Vector3[] vertices = mesh.vertices;
@@ -87,37 +84,27 @@ namespace Unsquare.Integration.Meshes
                 : packedNormals ? UnpackNormals(PackedVertexChannel.Read(mesh, VertexAttribute.Normal)) : null;
             float4[] t = floatTangents ? ToFloat4(mesh.tangents, count)
                 : packedTangents ? UnpackTangents(PackedVertexChannel.Read(mesh, VertexAttribute.Tangent)) : null;
-            reading.Dispose();
-            timer.Count(BakePhase.Vertices, count);
-            timer.Count(BakePhase.Meshes, 1);
 
-            using (timer.Measure(BakePhase.Deform))
-                bounds = VertexDeformer.Deform(positions, n, t, transform, deformation);
+            bounds = VertexDeformer.Deform(positions, n, t, transform, deformation);
 
-            uint[] packedNormalWords = null, packedTangentWords = null;
-            using (timer.Measure(BakePhase.Pack))
+            for (int i = 0; i < count; i++)
+                vertices[i] = positions[i];
+            mesh.vertices = vertices;
+            if (n != null)
             {
-                if (n != null && !floatNormals)
-                    packedNormalWords = PackNormals(n);
-                if (t != null && !floatTangents)
-                    packedTangentWords = PackTangents(t);
-            }
-
-            using (timer.Measure(BakePhase.Write))
-            {
-                for (int i = 0; i < count; i++)
-                    vertices[i] = positions[i];
-                mesh.vertices = vertices;
-                if (packedNormalWords != null)
-                    PackedVertexChannel.Write(mesh, VertexAttribute.Normal, packedNormalWords);
-                else if (n != null)
+                if (floatNormals)
                     mesh.normals = ToVector3(n);
-                if (packedTangentWords != null)
-                    PackedVertexChannel.Write(mesh, VertexAttribute.Tangent, packedTangentWords);
-                else if (t != null)
-                    mesh.tangents = ToVector4(t);
-                mesh.RecalculateBounds();
+                else
+                    PackedVertexChannel.Write(mesh, VertexAttribute.Normal, PackNormals(n));
             }
+            if (t != null)
+            {
+                if (floatTangents)
+                    mesh.tangents = ToVector4(t);
+                else
+                    PackedVertexChannel.Write(mesh, VertexAttribute.Tangent, PackTangents(t));
+            }
+            mesh.RecalculateBounds();
             return mesh;
         }
 

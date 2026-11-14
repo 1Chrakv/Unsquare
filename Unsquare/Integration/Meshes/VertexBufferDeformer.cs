@@ -5,7 +5,6 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Diagnostics;
 
 namespace Unsquare.Integration.Meshes
 {
@@ -28,9 +27,8 @@ namespace Unsquare.Integration.Meshes
 
         /// <summary>The caller owns (and must destroy) the returned mesh.</summary>
         public static unsafe Mesh DeformCopy(Mesh source, in SubmeshTransform transform, in CageKernel cage,
-            PhaseTimer timer, out MinMaxBounds bounds)
+            out MinMaxBounds bounds)
         {
-            var reading = timer.Measure(BakePhase.Read);
             Mesh mesh = Object.Instantiate(source);
             mesh.name = source.name;
             var streams = new NativeArray<byte>[MaxStreams];
@@ -48,31 +46,24 @@ namespace Unsquare.Integration.Meshes
                     if (data.HasVertexAttribute(VertexAttribute.Tangent))
                         job.Tangents = Attribute(data, VertexAttribute.Tangent, streams, out job.TangentStride);
                 }
-                reading.Dispose();
-                timer.Count(BakePhase.Vertices, job.VertexCount);
-                timer.Count(BakePhase.Meshes, 1);
 
                 int chunks = VertexDeformJob.ChunkCount(job.VertexCount);
                 mins = new NativeArray<float3>(chunks, Allocator.TempJob);
                 maxs = new NativeArray<float3>(chunks, Allocator.TempJob);
                 job.Mins = mins;
                 job.Maxs = maxs;
-                using (timer.Measure(BakePhase.Deform))
-                    job.Schedule(chunks, 1).Complete();
+                job.Schedule(chunks, 1).Complete();
 
                 bounds = MinMaxBounds.Empty;
                 for (int i = 0; i < chunks; i++)
                     bounds = bounds.Encapsulate(new MinMaxBounds(mins[i], maxs[i]));
 
-                using (timer.Measure(BakePhase.Write))
+                for (int stream = 0; stream < MaxStreams; stream++)
                 {
-                    for (int stream = 0; stream < MaxStreams; stream++)
-                    {
-                        if (streams[stream].IsCreated)
-                            mesh.SetVertexBufferData(streams[stream], 0, 0, streams[stream].Length, stream, WriteFlags);
-                    }
-                    mesh.RecalculateBounds();
+                    if (streams[stream].IsCreated)
+                        mesh.SetVertexBufferData(streams[stream], 0, 0, streams[stream].Length, stream, WriteFlags);
                 }
+                mesh.RecalculateBounds();
                 return mesh;
             }
             catch
