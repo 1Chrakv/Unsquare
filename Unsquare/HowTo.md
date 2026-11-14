@@ -14,7 +14,8 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
                │ variant prefab exists? ──yes──▶ (wait until initialized) ─▶ PrefabSwapper
                │ no
                ▼
-          Debouncer (PipelineOptions.RebakeDelaySeconds) ─▶ VariantPrefabFactory:
+          Debouncer (PipelineOptions.RebakeDelaySeconds; BakeNow on drag release and one-shot commands)
+          ─▶ VariantPrefabFactory:
               clone prefab, RenderVariantBuilder deforms meshes + LODs, GeometryAssetStore saves them,
               attachment deformers place props/areas/lanes/nets, AddPrefab, manifest entry
           ─▶ wait until the prefab entity loses `Created` ─▶ PrepareVariantPrefab ─▶ PrefabSwapper
