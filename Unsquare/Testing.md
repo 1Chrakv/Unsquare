@@ -18,8 +18,8 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
    `Mods\Unsquare` must also contain `Unsquare.mjs`, `Unsquare.css` and `images\` (toolbar button, tool window).
 4. Load a city, turn on Unsquare mode (button next to the Underground toggle, or Alt+U) and click a building: it
    becomes the edit target. A building selected in the info panel before entering the mode is taken over.
-5. After an update that bumps the manifest format (e.g. to 0.6.0), start a new city: older deformed buildings
-   are discarded (log `Variant manifest has an old format …`).
+5. After an update that bumps the manifest format, load an older save: its deformed buildings are migrated and
+   keep their shapes (rows 105, 126). Only pre-release manifests are discarded (log `Variant manifest has an old format …`).
 
 ## Mouse (in Unsquare mode)
 
