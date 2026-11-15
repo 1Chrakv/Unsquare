@@ -99,7 +99,8 @@ Highly recommended, but not required; Unsquare works without them:
 
 ## Usage
 
-1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**.
+1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**. The options can
+   move the button to the top left or top right, next to other mods' buttons.
 2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
 3. Click a corner, edge or face, or anywhere on the cage in the **cage** pick mode (moves or turns the whole building
    at once), to select it. A gizmo appears on the selection:
