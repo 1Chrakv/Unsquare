@@ -46,14 +46,15 @@ row holds only toggles, the bottom row only buttons:
   by default); bottom: Link, building follows lot (link, arrow to a lot, Alt+K) and lot follows building (link, arrow
   to a house, Alt+Shift+K). Link is disabled while the cages are equal; blend can be chosen before splitting. A hint
   line under the window says when the building is not on its lot's ground.
-- **Pick:** 4-way toggle for corners / edges / faces / the whole cage (a highlight slides to the active one; Alt+1/2/3/4).
+- **Pick:** top: 4-way toggle for corners / edges / faces / the whole cage (a highlight slides to the active one;
+  Alt+1/2/3/4); bottom: gizmo toggle move / rotate (tap Ctrl).
 - **Terrain:** top: 2-way toggle terrain follows the building / flat pad (dimmed while undeformed; Alt+T) and 2-way
   toggle for fitting back only / all corners (Alt+F); bottom: fit the bottom corners to the original ground (Alt+G).
-- **Align to neighbour:** top: align mode toggle (angle / flush / full; clicking selects directly, Alt+A cycles);
-  bottom: align left, back, right (as seen from the street; Alt+Shift+arrows), then level the left, back or right
-  side with its neighbour's ground (Ctrl+Alt+arrows).
-- **Reset:** bottom: the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
-  (Alt+Backspace).
+- **Align to neighbour:** top: align mode toggle (angle / flush / full; clicking selects directly, Alt+A cycles;
+  dimmed while levelling) and the position / height toggle; bottom: left, back, right and street side (as seen from
+  the street), which align (Alt+Shift+arrows) or level with the neighbour's ground (Ctrl+Alt+arrows).
+- **Reset:** top: the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
+  (Alt+Backspace); bottom: undo and redo (disabled when there is nothing to undo or redo).
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
@@ -74,9 +75,9 @@ row holds only toggles, the bottom row only buttons:
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off for the selected building | Alt+T |
 | Fit to the original ground / toggle back only (street side to road level) or all corners | Alt+G / Alt+F |
-| Align left / back / right side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → |
+| Align left / back / right / street side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → / ↓ |
 | Cycle align mode (angle → flush → full) | Alt+A |
-| Level left / back / right side with its neighbour's ground | Ctrl+Alt+← / ↑ / → |
+| Level left / back / right / street side with its neighbour's ground | Ctrl+Alt+← / ↑ / → / ↓ |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
@@ -267,6 +268,11 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 175 | After 173 press Reset on one house | Only that house turns plain; the other converted houses keep their shape |
 | 176 | Load a save with Placemaker | Log `Placemaker <version> (tested with <TestedWith>): detect ok, convert ok, rows ok.` once per load; any "missing …" means Placemaker changed |
 | 177 | After 173 press Reset on every house; wait until Placemaker bends them again, then click one | Dialog "Building shaped by Placemaker" opens again (row button included) |
+| 178 | Tool window: Pick section | Gizmo move/rotate toggle sits under the pick toggle and switches like tapping Ctrl |
+| 179 | Pull the street side of a lot back from the road, then Alt+Shift+↓ (or the street-side align button), flush | The street side moves back onto the road edge; log `Aligning Front of building … to road …` |
+| 180 | Street at a slope: Ctrl+Alt+↓ | Both front bottom corners go to the road surface height next to them; the back stays |
+| 181 | Align section: switch the toggle to height | The four side buttons show the level icons and level (log `Levelling …`); the align mode toggle is dimmed; switch back and they align again |
+| 182 | Nudge a handle, then the window's undo and redo buttons | Undo takes the nudge back, redo repeats it; each button is greyed out when there is nothing to undo or redo |
 
 ## Reporting problems
 

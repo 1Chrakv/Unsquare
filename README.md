@@ -32,7 +32,7 @@ angled streets and slopes.
   switched off per building to keep a flat pad.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street
   side goes to road level, or (toggle) all four corners follow the terrain.
-- **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road
+- **Align to neighbour.** Turns the left, back, right or street side of the lot to the nearest road
   or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
 - **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same
@@ -123,9 +123,10 @@ ground. The mode is remembered.
 ### Tool window
 
 While a building is selected, a small window floats above its roof, in labelled sections with toggles in the top
-row and buttons below: the edit mode (building, lot, both) and Link; the pick mode (corners, edges, faces); terrain lift (follow or flat) and fit to ground with its
-mode (back only or all corners); align the sides to their neighbours or level them with their ground (a toggle picks
-the align mode: angle, flush or full); and reset the selected handle or the whole building.
+row and buttons below: the edit mode (building, lot, both) and Link; the pick mode (corners, edges, faces) with the
+move/rotate gizmo toggle under it; terrain lift (follow or flat) and fit to ground with its mode (back only or all
+corners); four side buttons that align the sides to their neighbours or level them with their ground (toggles pick
+which, and the align mode: angle, flush or full); reset the selected handle or the whole building, and undo/redo.
 
 ### Hotkeys
 
@@ -148,9 +149,9 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 | Reset building / reset all buildings | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off | Alt+T |
 | Fit to ground / toggle the fit mode (back only or all corners) | Alt+G / Alt+F |
-| Align left / back / right side to its neighbour | Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→ |
+| Align left / back / right / street side to its neighbour | Alt+Shift+← / ↑ / → / ↓ |
 | Cycle align mode (angle → flush → full) | Alt+A |
-| Level left / back / right side with its neighbour | Ctrl+Alt+← / Ctrl+Alt+↑ / Ctrl+Alt+→ |
+| Level left / back / right / street side with its neighbour | Ctrl+Alt+← / ↑ / → / ↓ |
 | Undo / redo | Ctrl+Z / Ctrl+Y |
 | Write the cage state to the log | Alt+L |
 

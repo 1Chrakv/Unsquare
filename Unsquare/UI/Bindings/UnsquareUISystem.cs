@@ -52,6 +52,10 @@ namespace Unsquare.UI.Bindings
             AddBinding(new TriggerBinding<string>(Group, "selectGizmoMode", SelectGizmoMode));
             AddBinding(new TriggerBinding(Group, "resetHandle", () => _editor.Session.ResetHandle()));
             AddBinding(new TriggerBinding(Group, "resetBuilding", () => _editor.Session.Reset()));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canUndo", () => _editor.Session.CanUndo));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canRedo", () => _editor.Session.CanRedo));
+            AddBinding(new TriggerBinding(Group, "undo", () => _editor.Session.Undo()));
+            AddBinding(new TriggerBinding(Group, "redo", () => _editor.Session.Redo()));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "editMode",
                 () => _editor.Session.EditMode.ToString()));
             AddBinding(new TriggerBinding<string>(Group, "selectEditMode", SelectEditMode));

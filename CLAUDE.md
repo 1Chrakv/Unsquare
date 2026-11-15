@@ -205,12 +205,13 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - `ExtensionInstallSystem` bakes a new on-lot extension on a deformed building with its cage at once.
   - Open work, the upgrade crash (cause, fix, disproved theories) and the combined cage design:
     `Unsquare/Upgrades.md`.
-- **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
-  street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
+- **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z), right (−X) or front (+Z) face,
+  seen from the street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
   clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,
   flush slides both corners along their edges onto the line, full takes a lot edge's end points (roads: like flush).
   `NeighbourQuery` (Integration) reads road `EdgeGeometry` and buildings from the game's search trees;
-  `DeformService` turns other lots into edges via their cages. Alt+Shift+arrows align, Alt+A cycles the mode.
+  `DeformService` turns other lots into edges via their cages. Alt+Shift+arrows align, Alt+A cycles the mode;
+  the tool window shows four side buttons that align or level depending on a view-only toggle.
   Edges carry ground heights (road surface, neighbour lot ground); `NeighbourAlign.FitHeight` (Ctrl+Alt+arrows)
   moves the same side's two columns to the neighbour's height next to them via `GroundFit.Fit`.
 
