@@ -84,7 +84,7 @@ namespace Unsquare.UI.Editing
         public DeformRequestResult? LastResult { get; private set; }
 
         /// <summary>
-        /// Placemaker building the player picked and must decide about first (convert, deform on top or cancel);
+        /// Placemaker building the player picked and must decide about first (convert or cancel);
         /// nothing else can be picked meanwhile.
         /// </summary>
         public Entity PendingConversion { get; private set; } = Entity.Null;
@@ -246,17 +246,6 @@ namespace Unsquare.UI.Editing
             ClearPendingConversion();
             SetTarget(building);
             return result;
-        }
-
-        /// <summary>Selects the pending building with Placemaker's shape as its base; edits stack on it.</summary>
-        public void DeformOnTopOfPlacemaker()
-        {
-            if (!IsEnabled || !HasPendingConversion)
-                return;
-            var building = PendingConversion;
-            _service.DeformOnTopOfPlacemaker(building);
-            ClearPendingConversion();
-            SetTarget(building);
         }
 
         /// <summary>Drops the pending building: it stays unselected and keeps Placemaker's shape.</summary>

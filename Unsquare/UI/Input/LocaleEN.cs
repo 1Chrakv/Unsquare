@@ -71,14 +71,8 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ConvertDialog.Message",
                     "Placemaker has bent this building to fit its row. Convert it to an Unsquare cage of the same " +
                     "shape? Placemaker then leaves it alone; Reset gives the plain building back." },
-                { "Unsquare.ConvertDialog.Convert", "Convert to Unsquare" },
+                { "Unsquare.ConvertDialog.Convert", "Convert only this building" },
                 { "Unsquare.ConvertDialog.ConvertRow", "Convert whole row ({COUNT} houses)" },
-                { "Unsquare.ConvertDialog.RowHint",
-                    "Placemaker straightens the neighbours of a house it no longer shapes. Convert the whole row to " +
-                    "keep it joined." },
-                { "Unsquare.ConvertDialog.OnTop", "Deform on top of Placemaker" },
-                { "Unsquare.ConvertDialog.OnTopWarning",
-                    "Keeps Placemaker's model as the base. Such buildings may not survive reloading the save." },
                 { "Unsquare.ConvertDialog.Cancel", "Cancel" },
                 { "Unsquare.ConvertDialog.Problem.PlacemakerBusy",
                     "Placemaker is reshaping this building right now. Try again in a moment." },

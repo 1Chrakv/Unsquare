@@ -95,8 +95,8 @@ namespace Unsquare.Api
         FlexItImportResult ImportFlexIt();
 
         /// <summary>
-        /// True for a building on a Placemaker variant the player has not decided about: it can't be edited until it
-        /// is converted (<see cref="ConvertPlacemaker"/>) or deformed on top (<see cref="DeformOnTopOfPlacemaker"/>).
+        /// True for a building on a Placemaker variant the player has not converted (<see cref="ConvertPlacemaker"/>,
+        /// <see cref="ConvertPlacemakerRow"/>): it can't be edited until then.
         /// </summary>
         bool NeedsConversion(Entity building);
 
@@ -119,11 +119,6 @@ namespace Unsquare.Api
         /// </summary>
         PlacemakerConversionResult ConvertPlacemakerRow(Entity building);
 
-        /// <summary>
-        /// Lets cage edits stack on Placemaker's shape (its variant becomes the base). Such variants may not survive
-        /// a reload: Placemaker only recreates its variants after loading.
-        /// </summary>
-        void DeformOnTopOfPlacemaker(Entity building);
 
         /// <summary>Current tunables (limits, attachments, rebake delay, pruning, lot sync).</summary>
         PipelineOptions Options { get; }

@@ -49,30 +49,16 @@ const ConversionDialog = () => {
                 )}
                 <div className={styles.buttons}>
                     {rowSize > 1 && (
-                        <>
-                            <Button className={styles.button} variant="primary"
-                                onSelect={() => trigger(group, "confirmRowConversion")}>
-                                {text("ConvertRow", "Convert whole row ({COUNT} houses)")
-                                    .replace("{COUNT}", String(rowSize))}
-                            </Button>
-                            <div className={styles.warning}>
-                                {text("RowHint", "Placemaker straightens the neighbours of a house it no longer " +
-                                    "shapes. Convert the whole row to keep it joined.")}
-                            </div>
-                        </>
+                        <Button className={styles.button} variant="primary"
+                            onSelect={() => trigger(group, "confirmRowConversion")}>
+                            {text("ConvertRow", "Convert whole row ({COUNT} houses)")
+                                .replace("{COUNT}", String(rowSize))}
+                        </Button>
                     )}
                     <Button className={styles.button} variant={rowSize > 1 ? "flat" : "primary"}
                         onSelect={() => trigger(group, "confirmConversion")}>
-                        {text("Convert", "Convert to Unsquare")}
+                        {text("Convert", "Convert only this building")}
                     </Button>
-                    <Button className={styles.button} variant="flat"
-                        onSelect={() => trigger(group, "deformOnTop")}>
-                        {text("OnTop", "Deform on top of Placemaker")}
-                    </Button>
-                    <div className={styles.warning}>
-                        {text("OnTopWarning", "Keeps Placemaker's model as the base. Such buildings may not survive " +
-                            "reloading the save.")}
-                    </div>
                     <Button className={styles.button} variant="flat"
                         onSelect={() => trigger(group, "declineConversion")}>
                         {text("Cancel", "Cancel")}

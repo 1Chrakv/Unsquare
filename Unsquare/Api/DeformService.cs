@@ -505,7 +505,6 @@ namespace Unsquare.Api
             }
         }
 
-        public void DeformOnTopOfPlacemaker(Entity building) => _pipeline.AllowStacking(building);
 
         private readonly struct EditOffsets
         {

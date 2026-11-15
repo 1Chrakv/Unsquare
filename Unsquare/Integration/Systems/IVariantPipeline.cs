@@ -44,7 +44,7 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>
         /// On a Placemaker variant the player has not decided about yet: such buildings cannot be described (so not
-        /// edited) until they are adopted or allowed to stack.
+        /// edited) until they are adopted.
         /// </summary>
         bool IsForeign(Entity building);
 
@@ -53,9 +53,6 @@ namespace Unsquare.Integration.Systems
         /// the cage Convert would give applied. Never used for edits.
         /// </summary>
         bool TryDescribeForeign(Entity building, out BuildingDescription description);
-
-        /// <summary>Lets Unsquare deform the building on top of Placemaker's variant (its prefab becomes the base).</summary>
-        void AllowStacking(Entity building);
 
         /// <summary>
         /// Takes a Placemaker building over: it is described on Placemaker's plain base from now on, and requesting

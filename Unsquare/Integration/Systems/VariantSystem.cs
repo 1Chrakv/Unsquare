@@ -54,8 +54,6 @@ namespace Unsquare.Integration.Systems
         private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
         private readonly Dictionary<Entity, ObjectGeometryPrefab> _adopted = new();
-        // Building -> the Placemaker variant prefab the player chose to deform on top of.
-        private readonly Dictionary<Entity, Entity> _stacked = new();
         private readonly Dictionary<Entity, (ObjectGeometryPrefab Base, PlacemakerAdoption Shape)> _placemakerShapes =
             new();
         private PlacemakerBridge _placemaker;
@@ -155,7 +153,6 @@ namespace Unsquare.Integration.Systems
             _levelUps.Clear();
             _upgradesLogged.Clear();
             _adopted.Clear();
-            _stacked.Clear();
             _placemakerShapes.Clear();
             _placemaker = null;
             _placemakerLooked = false;
@@ -360,12 +357,12 @@ namespace Unsquare.Integration.Systems
             return true;
         }
 
-        // Placemaker variants: adopted ones sit on Placemaker's plain base, stacked ones are their own base (as
-        // before), undecided ones are not described at all, so nothing can edit them.
+        // Placemaker variants: adopted ones sit on Placemaker's plain base, undecided ones are not described at all,
+        // so nothing can edit them. Older Unsquare variants on a Placemaker base resolve by name as before.
         private bool TryResolveBase(Entity building, PrefabBase current, out ObjectGeometryPrefab basePrefab,
             out DeformSpec applied)
         {
-            if (!IsStackedOnCurrent(building) && IsPlacemakerBuilding(building, current))
+            if (IsPlacemakerBuilding(building, current))
             {
                 applied = DeformSpec.Identity;
                 return _adopted.TryGetValue(building, out basePrefab);
@@ -374,14 +371,9 @@ namespace Unsquare.Integration.Systems
         }
 
         bool IVariantPipeline.IsForeign(Entity building) =>
-            !IsStackedOnCurrent(building) && !_adopted.ContainsKey(building) &&
+            !_adopted.ContainsKey(building) &&
             _resolver.TryGetPrefab(EntityManager, building, out var current) &&
             IsPlacemakerBuilding(building, current);
-
-        // A choice to deform on top holds for the Placemaker shape it was made for; a new shape asks again.
-        private bool IsStackedOnCurrent(Entity building) =>
-            _stacked.TryGetValue(building, out var stackedOn) &&
-            EntityManager.TryGetComponent(building, out PrefabRef prefabRef) && prefabRef.m_Prefab == stackedOn;
 
         // Placemaker's light copies share the plain prefab's PrefabData (and so its name): ask Placemaker by entity.
         private bool IsPlacemakerBuilding(Entity building, PrefabBase current)
@@ -430,15 +422,6 @@ namespace Unsquare.Integration.Systems
             Enabled = true;
         }
 
-        void IVariantPipeline.AllowStacking(Entity building)
-        {
-            if (EntityManager.TryGetComponent(building, out PrefabRef prefabRef))
-                _stacked[building] = prefabRef.m_Prefab;
-            _adopted.Remove(building);
-            Mod.Log.Info($"Building {building}: Unsquare deforms it on top of Placemaker's shape.");
-            _buildingChanged?.Invoke(building);
-        }
-
         void IVariantPipeline.ReleaseAdoption(Entity building)
         {
             if (_adopted.Remove(building))
@@ -452,7 +435,7 @@ namespace Unsquare.Integration.Systems
             if (!EntityManager.HasComponent<Building>(building) ||
                 !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
                 !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
-                IsStackedOnCurrent(building) || _adopted.ContainsKey(building) ||
+                _adopted.ContainsKey(building) ||
                 !IsPlacemakerBuilding(building, current))
                 return false;
             var shape = GetPlacemakerShape(prefabRef.m_Prefab, current.name, out var basePrefab);
@@ -477,7 +460,6 @@ namespace Unsquare.Integration.Systems
             if (shape.Status != PlacemakerAdoptionStatus.Ready)
                 return shape;
             _adopted[building] = basePrefab;
-            _stacked.Remove(building);
             Mod.Log.Info($"Building {building}: adopting {current.name} on {basePrefab.name}.");
             return shape;
         }

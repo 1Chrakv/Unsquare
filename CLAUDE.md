@@ -244,10 +244,11 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     straightens the neighbours. `ConvertPlacemakerRow` takes every undecided house joined to it (`TryGetPlanned`
     → `RowCollector`) at once, all or nothing while Placemaker is busy, and `SwapGroups` holds their swaps until
     all are baked (10 s timeout), so they land in one frame.
-  - Deform on top: the old behaviour, Placemaker's variant is the base. Such variants may not survive a reload.
-- Adoption and stacking are runtime only (cleared on load); saves only ever hold Unsquare variants and their bases.
-  An adoption ends with the building's next swap (it is then off Placemaker's variant), so after a Reset a shape
-  Placemaker bends again asks again. Stacking holds only for the Placemaker variant prefab it was chosen on.
+  - Deforming on top of Placemaker's variant (its variant as the base) was removed: such variants may not survive a
+    reload. Unsquare variants on a Placemaker base in older saves still resolve by name (`PrefabResolver`).
+- Adoption is runtime only (cleared on load); saves only ever hold Unsquare variants and their bases. It ends with
+  the building's next swap (it is then off Placemaker's variant), so after a Reset a house Placemaker bends again
+  asks again.
 - Placemaker updates itself, so the bridge is defensive. The whole contract (members, out-struct fields) is listed in
   `PlacemakerBridge` and checked at load with `ReflectionContract`. One log line gives the version (`TestedWith`) and
   the features detect, convert and rows; a missing member or a runtime exception turns off only its feature.

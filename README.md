@@ -80,12 +80,10 @@ Highly recommended, but not required; Unsquare works without them:
   fences between neighbouring lots and hides them again whenever they move, so the fences of a reshaped row house
   stayed hidden while a building on its own was fine.
 - **Placemaker** also bends row houses to fit their row. Picking such a building in Unsquare mode asks first:
-  - **Convert to Unsquare** gives it an Unsquare cage of the same shape. Placemaker then leaves it alone; Reset
+  - **Convert only this building** gives it an Unsquare cage of the same shape. Placemaker then leaves it alone; Reset
     returns the plain building, which Placemaker may bend again.
   - **Convert whole row** does the same for every house Placemaker joined to it. Placemaker straightens the
     neighbours of a house it no longer shapes, so converting a single house of a row detaches its neighbours.
-  - **Deform on top of Placemaker** keeps Placemaker's shape as the starting point and adds your changes to it. Such
-    buildings may not survive reloading the save, since Placemaker only rebuilds its shapes after loading.
   - **Cancel** leaves the building to Placemaker; Unsquare won't edit it.
   Placemaker does not bend buildings reshaped with Unsquare.
 

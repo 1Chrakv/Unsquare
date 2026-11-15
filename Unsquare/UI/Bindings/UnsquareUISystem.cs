@@ -101,7 +101,6 @@ namespace Unsquare.UI.Bindings
             AddBinding(new TriggerBinding(Group, "confirmConversion", () => _editor.Session.ConfirmConversion()));
             AddBinding(new TriggerBinding(Group, "confirmRowConversion",
                 () => _editor.Session.ConfirmConversion(wholeRow: true)));
-            AddBinding(new TriggerBinding(Group, "deformOnTop", () => _editor.Session.DeformOnTopOfPlacemaker()));
             AddBinding(new TriggerBinding(Group, "declineConversion", () => _editor.Session.DeclineConversion()));
         }
 
