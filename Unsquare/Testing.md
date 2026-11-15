@@ -273,6 +273,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 180 | Street at a slope: Ctrl+Alt+↓ | Both front bottom corners go to the road surface height next to them; the back stays |
 | 181 | Align section: switch the toggle to height | The four side buttons show the level icons and level (log `Levelling …`); the align mode toggle is dimmed; switch back and they align again |
 | 182 | Nudge a handle, then the window's undo and redo buttons | Undo takes the nudge back, redo repeats it; each button is greyed out when there is nothing to undo or redo |
+| 183 | Options → Interface: set the Unsquare button position to Top left, Top right, then Bottom toolbar | The button moves at once to the top left, top right and back next to the photo mode toggle; it is never shown twice, highlights while the mode is on and toggles it in every place |
 
 ## Reporting problems
 

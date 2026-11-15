@@ -56,6 +56,7 @@ namespace Unsquare
             updateSystem.UpdateAt<PlacemakerUISystem>(SystemUpdatePhase.UIUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
+            world.GetOrCreateSystemManaged<UnsquareUISystem>().Bind(_settings);
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
             _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
             _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world), session,
