@@ -16,6 +16,8 @@ namespace Unsquare.Core.Editing
         // street in front, seen from the back face) belong to the other side.
         private const float MaxOverlapDepthShare = 0.5f;
         private const float ParallelEpsilon = 1e-4f;
+        // Paths may sit this far inside the face, so a face already on the path still finds it.
+        private const float PathToleranceMeters = 0.5f;
         private const int TopBit = 2;
 
         // The face's two ground corners; the first is the back (sides) or the −X one (back and front faces).
@@ -30,7 +32,7 @@ namespace Unsquare.Core.Editing
 
         /// <summary>
         /// Finds the edge nearest to the face that is roughly parallel to it and beside it: outside, or inside up to
-        /// half the lot depth when the lot clips into a neighbour. Lot edges must face the face.
+        /// half the lot depth when the lot clips into a neighbour (paths: outside only). Lot edges must face the face.
         /// </summary>
         /// <param name="nearestOutOfReach">Distance of the nearest edge that only failed the reach, for logs;
         /// infinity if there is none.</param>
@@ -66,7 +68,8 @@ namespace Unsquare.Core.Editing
                 float distance = math.dot(mid - face.Mid, face.Outward);
                 if (distance > options.SearchMeters)
                     nearestOutOfReach = math.min(nearestOutOfReach, distance);
-                if (distance < minDistance || distance > options.SearchMeters)
+                if (distance < (edge.IsPath ? -PathToleranceMeters : minDistance) ||
+                    distance > options.SearchMeters)
                     continue;
                 if (math.abs(distance) < best)
                 {

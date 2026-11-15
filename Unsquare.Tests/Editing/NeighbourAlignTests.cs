@@ -50,6 +50,34 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void TryFindNeighbour_PathOutsideFace_IsFound()
+        {
+            Assert.That(Find(AlignSide.Left, NeighbourEdge.Path(new float3(11, 0, -20), new float3(11, 0, 20))),
+                Is.True);
+            Assert.That(Find(AlignSide.Left, NeighbourEdge.Path(new float3(7.8f, 0, -20), new float3(7.8f, 0, 20))),
+                Is.True);
+        }
+
+        [Test]
+        public void TryFindNeighbour_PathInsideFace_IsIgnored()
+        {
+            var path = NeighbourEdge.Path(new float3(5, 0, -20), new float3(5, 0, 20));
+            Assert.That(Find(AlignSide.Left, path), Is.False);
+            Assert.That(Find(AlignSide.Left, NeighbourEdge.Road(new float3(5, 0, -20), new float3(5, 0, 20))),
+                Is.True);
+        }
+
+        [Test]
+        public void TryFindNeighbour_PathInsideAndRoadOutside_PicksRoad()
+        {
+            var path = NeighbourEdge.Path(new float3(7, 0, -20), new float3(7, 0, 20));
+            var road = NeighbourEdge.Road(new float3(12, 0, -20), new float3(12, 0, 20));
+            Assert.That(NeighbourAlign.TryFindNeighbour(Lot, CageOffsets.Identity, AlignSide.Left,
+                new[] { path, road }, Options, out var found, out _), Is.True);
+            Assert.That(found.IsPath, Is.False);
+        }
+
+        [Test]
         public void TryFindNeighbour_EdgeOnOtherSide_IsIgnored()
         {
             Assert.That(Find(AlignSide.Left, LotEdge(-10, -12, -10, 12)), Is.False);

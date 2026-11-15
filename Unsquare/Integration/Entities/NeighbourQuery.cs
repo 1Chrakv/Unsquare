@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using Colossal.Collections;
+using Colossal.Entities;
 using Colossal.Mathematics;
 using Game.Buildings;
 using Game.Common;
 using Game.Net;
+using Game.Prefabs;
 using Game.Tools;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -14,8 +16,8 @@ using ObjectSearchSystem = Game.Objects.SearchSystem;
 namespace Unsquare.Integration.Entities
 {
     /// <summary>
-    /// Finds what lies around a building for aligning to neighbours: road edges (outer curves of road segments, in
-    /// world space) and other buildings, via the game's search trees. Main thread only.
+    /// Finds what lies around a building for aligning to neighbours: road and path edges (outer curves of their
+    /// segments, in world space) and other buildings, via the game's search trees. Main thread only.
     /// </summary>
     internal sealed class NeighbourQuery
     {
@@ -33,18 +35,24 @@ namespace Unsquare.Integration.Entities
             _objects = objects;
         }
 
-        /// <summary>Adds the road edges in the world xz area, as straight world pieces at road surface height.</summary>
-        public void CollectRoadEdges(Bounds2 area, List<Line3.Segment> pieces)
+        /// <summary>
+        /// Adds the road and free path edges in the world xz area, as straight world pieces at their surface height.
+        /// </summary>
+        public void CollectWayEdges(Bounds2 area, List<Line3.Segment> roadPieces, List<Line3.Segment> pathPieces)
         {
             try
             {
                 Search(_nets.GetNetSearchTree(true, out var dependencies), dependencies, area);
                 foreach (var edge in _found)
                 {
-                    // Building sub-nets (paths) carry an Owner; only free-standing roads count.
-                    if (!_entityManager.HasComponent<Road>(edge) || _entityManager.HasComponent<Owner>(edge) ||
-                        _entityManager.HasComponent<Temp>(edge) || _entityManager.HasComponent<Deleted>(edge) ||
-                        !_entityManager.HasComponent<EdgeGeometry>(edge))
+                    // Building sub-nets (lot paths) carry an Owner; only free-standing roads and paths count.
+                    if (_entityManager.HasComponent<Owner>(edge) || _entityManager.HasComponent<Temp>(edge) ||
+                        _entityManager.HasComponent<Deleted>(edge) || !_entityManager.HasComponent<EdgeGeometry>(edge))
+                        continue;
+                    var pieces = _entityManager.HasComponent<Road>(edge) ? roadPieces
+                        : IsPath(edge) ? pathPieces
+                        : null;
+                    if (pieces == null)
                         continue;
                     var geometry = _entityManager.GetComponentData<EdgeGeometry>(edge);
                     AddCurve(geometry.m_Start.m_Left, pieces);
@@ -55,7 +63,7 @@ namespace Unsquare.Integration.Entities
             }
             catch (Exception e)
             {
-                Mod.Log.Error(e, "Collecting road edges for neighbour alignment failed.");
+                Mod.Log.Error(e, "Collecting road and path edges for neighbour alignment failed.");
             }
         }
 
@@ -88,6 +96,11 @@ namespace Unsquare.Integration.Entities
             var iterator = new Collector(area, _found);
             tree.Iterate(ref iterator);
         }
+
+        // Paths have no marker on the edge itself; their prefab carries PathwayData.
+        private bool IsPath(Entity edge) =>
+            _entityManager.TryGetComponent(edge, out PrefabRef prefab) &&
+            _entityManager.HasComponent<PathwayData>(prefab.m_Prefab);
 
         private bool IsOwnedBy(Entity entity, Entity owner)
         {

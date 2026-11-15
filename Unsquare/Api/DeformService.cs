@@ -28,6 +28,7 @@ namespace Unsquare.Api
         private readonly EntityManager _entityManager;
         private readonly List<NeighbourEdge> _edges = new();
         private readonly List<Line3.Segment> _roadPieces = new();
+        private readonly List<Line3.Segment> _pathPieces = new();
         private readonly List<Entity> _buildings = new();
         private readonly Dictionary<Entity, EditOffsets> _editOffsets = new();
 
@@ -276,10 +277,14 @@ namespace Unsquare.Api
 
             _edges.Clear();
             _roadPieces.Clear();
+            _pathPieces.Clear();
             _buildings.Clear();
-            _neighbours.CollectRoadEdges(area, _roadPieces);
+            _neighbours.CollectWayEdges(area, _roadPieces, _pathPieces);
             foreach (var piece in _roadPieces)
                 _edges.Add(NeighbourEdge.Road(BuildingSpace.PointToBuilding(transform, piece.a),
+                    BuildingSpace.PointToBuilding(transform, piece.b)));
+            foreach (var piece in _pathPieces)
+                _edges.Add(NeighbourEdge.Path(BuildingSpace.PointToBuilding(transform, piece.a),
                     BuildingSpace.PointToBuilding(transform, piece.b)));
             _neighbours.CollectBuildings(building, area, _buildings);
             foreach (var other in _buildings)
@@ -290,8 +295,8 @@ namespace Unsquare.Api
 
             string nearestText = float.IsPositiveInfinity(nearest) ? "none" : $"{nearest:0.0} m";
             Mod.Log.Info($"Align {side} of building {building} ({target}): no neighbour within " +
-                $"{options.SearchMeters} m ({_roadPieces.Count} road pieces, {_buildings.Count} lots nearby; " +
-                $"nearest parallel edge: {nearestText}).");
+                $"{options.SearchMeters} m ({_roadPieces.Count} road and {_pathPieces.Count} path pieces, " +
+                $"{_buildings.Count} lots nearby; nearest parallel edge: {nearestText}).");
             failure = DeformRequestResult.NoNeighbour;
             return false;
         }
