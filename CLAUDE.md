@@ -240,6 +240,10 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     `PlacemakerCageConverter` maps the lot corners (exact within the span) or fits when that folds. The building is
     described on the plain base and swaps straight from Placemaker's variant to ours. Refused while Placemaker is
     still reshaping it (`IsRequested`). Not undoable; Reset hands the plain building back to Placemaker.
+  - Convert whole row: a converted house leaves Placemaker's plan, so its next plan drops the joints and
+    straightens the neighbours. `ConvertPlacemakerRow` takes every undecided house joined to it (`TryGetPlanned`
+    → `RowCollector`) at once, all or nothing while Placemaker is busy, and `SwapGroups` holds their swaps until
+    all are baked (10 s timeout), so they land in one frame.
   - Deform on top: the old behaviour, Placemaker's variant is the base. Such variants may not survive a reload.
 - Adoption and stacking are runtime only (cleared on load); saves only ever hold Unsquare variants and their bases.
 

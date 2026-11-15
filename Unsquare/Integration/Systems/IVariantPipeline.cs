@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Game.Prefabs;
 using Unity.Entities;
 using Unsquare.Core.Cage;
@@ -64,5 +65,17 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>Undoes <see cref="PreparePlacemakerAdoption"/> when the request was refused.</summary>
         void ReleaseAdoption(Entity building);
+
+        /// <summary>
+        /// The undecided Placemaker buildings in the building's row: itself and every house Placemaker joined to it,
+        /// directly or along the row. Empty without Placemaker.
+        /// </summary>
+        IReadOnlyList<Entity> PlacemakerRow(Entity building);
+
+        /// <summary>
+        /// Holds the swaps of these buildings' requests until all are baked, so they land in the same frame. Members
+        /// that fail or are cancelled stop being waited for; after a timeout the rest swap anyway.
+        /// </summary>
+        void SwapTogether(IReadOnlyCollection<Entity> buildings);
     }
 }

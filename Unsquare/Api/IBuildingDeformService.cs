@@ -107,6 +107,19 @@ namespace Unsquare.Api
         PlacemakerConversionResult ConvertPlacemaker(Entity building);
 
         /// <summary>
+        /// How many houses <see cref="ConvertPlacemakerRow"/> would convert: the building and every undecided house
+        /// Placemaker joined to it along its row. 0 or 1 when there is no row.
+        /// </summary>
+        int PlacemakerRowSize(Entity building);
+
+        /// <summary>
+        /// Converts the building and the rest of its Placemaker row at once; their swaps land in the same frame, so
+        /// Placemaker can't straighten the neighbours of a house that left its plan. Returns the building's result;
+        /// refused as a whole while Placemaker reshapes any of them.
+        /// </summary>
+        PlacemakerConversionResult ConvertPlacemakerRow(Entity building);
+
+        /// <summary>
         /// Lets cage edits stack on Placemaker's shape (its variant becomes the base). Such variants may not survive
         /// a reload: Placemaker only recreates its variants after loading.
         /// </summary>

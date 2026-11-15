@@ -90,6 +90,9 @@ namespace Unsquare.UI.Editing
         public Entity PendingConversion { get; private set; } = Entity.Null;
         public bool HasPendingConversion => PendingConversion != Entity.Null;
 
+        /// <summary>Houses in the pending building's Placemaker row (itself included); 2 or more offers the row.</summary>
+        public int PendingRowSize { get; private set; }
+
         /// <summary>Why the last conversion attempt failed; the decision stays open so the player can retry.</summary>
         public PlacemakerConversionResult? ConversionProblem { get; private set; }
 
@@ -211,6 +214,7 @@ namespace Unsquare.UI.Editing
             {
                 SetTarget(Entity.Null);
                 PendingConversion = building;
+                PendingRowSize = _service.PlacemakerRowSize(building);
                 ConversionProblem = null;
                 Log($"Building {building} is shaped by Placemaker: asking to convert");
                 Changed?.Invoke();
@@ -221,16 +225,17 @@ namespace Unsquare.UI.Editing
         }
 
         /// <summary>
-        /// Converts the pending Placemaker building to an Unsquare cage of the same shape and selects it. Not
-        /// undoable; on failure the decision stays open with <see cref="ConversionProblem"/>.
+        /// Converts the pending Placemaker building (with <paramref name="wholeRow"/> also the rest of its row) to an
+        /// Unsquare cage of the same shape and selects it. Not undoable; on failure the decision stays open with
+        /// <see cref="ConversionProblem"/>.
         /// </summary>
-        public PlacemakerConversionResult? ConfirmConversion()
+        public PlacemakerConversionResult? ConfirmConversion(bool wholeRow = false)
         {
             if (!IsEnabled || !HasPendingConversion)
                 return null;
             var building = PendingConversion;
-            var result = _service.ConvertPlacemaker(building);
-            Log($"Convert Placemaker building {building} -> {result}");
+            var result = wholeRow ? _service.ConvertPlacemakerRow(building) : _service.ConvertPlacemaker(building);
+            Log($"Convert Placemaker building {building}{(wholeRow ? " with its row" : "")} -> {result}");
             if (result is PlacemakerConversionResult.PlacemakerBusy or PlacemakerConversionResult.PlacemakerMissing
                 or PlacemakerConversionResult.Failed)
             {
@@ -566,6 +571,7 @@ namespace Unsquare.UI.Editing
         private void ClearPendingConversion()
         {
             PendingConversion = Entity.Null;
+            PendingRowSize = 0;
             ConversionProblem = null;
         }
 

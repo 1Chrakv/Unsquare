@@ -418,18 +418,74 @@ namespace Unsquare.Api
         public PlacemakerConversionResult ConvertPlacemaker(Entity building)
         {
             var adoption = _pipeline.PreparePlacemakerAdoption(building);
-            switch (adoption.Status)
+            return adoption.Status == PlacemakerAdoptionStatus.Ready
+                ? RequestAdopted(building, adoption)
+                : Refusal(adoption.Status);
+        }
+
+        public int PlacemakerRowSize(Entity building) => _pipeline.PlacemakerRow(building).Count;
+
+        public PlacemakerConversionResult ConvertPlacemakerRow(Entity building)
+        {
+            var row = _pipeline.PlacemakerRow(building);
+            if (row.Count < 2 || !Contains(row, building))
+                return ConvertPlacemaker(building);
+
+            // All or nothing while Placemaker is busy: converting part of the row would let it re-plan the rest.
+            var adoptions = new List<(Entity Building, PlacemakerAdoption Adoption)>(row.Count);
+            foreach (var member in row)
             {
-                case PlacemakerAdoptionStatus.Ready:
-                    break;
-                case PlacemakerAdoptionStatus.PlacemakerBusy:
-                    return PlacemakerConversionResult.PlacemakerBusy;
-                case PlacemakerAdoptionStatus.PlacemakerMissing:
-                    return PlacemakerConversionResult.PlacemakerMissing;
-                default:
-                    return PlacemakerConversionResult.Failed;
+                var adoption = _pipeline.PreparePlacemakerAdoption(member);
+                adoptions.Add((member, adoption));
+                if (adoption.Status is PlacemakerAdoptionStatus.PlacemakerBusy or
+                    PlacemakerAdoptionStatus.PlacemakerMissing)
+                {
+                    foreach (var (prepared, _) in adoptions)
+                        _pipeline.ReleaseAdoption(prepared);
+                    Mod.Log.Info($"Row conversion of building {building} refused: {adoption.Status} at {member}.");
+                    return Refusal(adoption.Status);
+                }
             }
 
+            var result = PlacemakerConversionResult.Failed;
+            var converted = new List<Entity>(row.Count);
+            foreach (var (member, adoption) in adoptions)
+            {
+                var memberResult = adoption.Status == PlacemakerAdoptionStatus.Ready
+                    ? RequestAdopted(member, adoption)
+                    : Refusal(adoption.Status);
+                if (member == building)
+                    result = memberResult;
+                if (memberResult is PlacemakerConversionResult.Converted or PlacemakerConversionResult.Approximated
+                    or PlacemakerConversionResult.Clamped)
+                    converted.Add(member);
+            }
+            _pipeline.SwapTogether(converted);
+            foreach (var member in converted)
+                _pipeline.BakeNow(member);
+            Mod.Log.Info($"Row conversion of building {building}: {converted.Count} of {row.Count} converted.");
+            return result;
+        }
+
+        private static bool Contains(IReadOnlyList<Entity> row, Entity building)
+        {
+            foreach (var member in row)
+            {
+                if (member == building)
+                    return true;
+            }
+            return false;
+        }
+
+        private static PlacemakerConversionResult Refusal(PlacemakerAdoptionStatus status) => status switch
+        {
+            PlacemakerAdoptionStatus.PlacemakerBusy => PlacemakerConversionResult.PlacemakerBusy,
+            PlacemakerAdoptionStatus.PlacemakerMissing => PlacemakerConversionResult.PlacemakerMissing,
+            _ => PlacemakerConversionResult.Failed,
+        };
+
+        private PlacemakerConversionResult RequestAdopted(Entity building, PlacemakerAdoption adoption)
+        {
             // Adopted buildings are described on Placemaker's plain base, so this is an ordinary first request.
             var result = _pipeline.TryDescribe(building, out var description)
                 ? Request(building, description, adoption.Spec)

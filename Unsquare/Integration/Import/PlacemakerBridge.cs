@@ -19,12 +19,15 @@ namespace Unsquare.Integration.Import
         private readonly MethodInfo _baseOf;
         private readonly MethodInfo _tryGetCage;
         private readonly MethodInfo _isRequested;
+        private readonly MethodInfo _tryGetPlanned;
         private readonly Func<Entity, bool> _isVariant;
         private bool _loggedVariantFailure;
+        private bool _loggedPlanFailure;
 
         private PlacemakerBridge(object system, Func<Entity, bool> isVariant, MethodInfo baseOf,
-            MethodInfo tryGetCage, MethodInfo isRequested)
+            MethodInfo tryGetCage, MethodInfo isRequested, MethodInfo tryGetPlanned)
         {
+            _tryGetPlanned = tryGetPlanned;
             _system = system;
             _isVariant = isVariant;
             _baseOf = baseOf;
@@ -54,13 +57,17 @@ namespace Unsquare.Integration.Import
                 var baseOf = type.GetMethod("BaseOf", flags, null, new[] { typeof(Entity) }, null);
                 var isRequested = type.GetMethod("IsRequested", flags, null, new[] { typeof(Entity) }, null);
                 var isVariant = type.GetMethod("IsVariant", flags, null, new[] { typeof(Entity) }, null);
-                MethodInfo tryGetCage = null;
+                MethodInfo tryGetCage = null, tryGetPlanned = null;
                 foreach (var method in type.GetMethods(flags))
                 {
                     var parameters = method.GetParameters();
-                    if (method.Name == "TryGetCage" && method.ReturnType == typeof(bool) && parameters.Length == 2 &&
-                        parameters[0].ParameterType == typeof(Entity) && parameters[1].IsOut)
+                    if (method.ReturnType != typeof(bool) || parameters.Length != 2 ||
+                        parameters[0].ParameterType != typeof(Entity) || !parameters[1].IsOut)
+                        continue;
+                    if (method.Name == "TryGetCage")
                         tryGetCage = method;
+                    else if (method.Name == "TryGetPlanned")
+                        tryGetPlanned = method;
                 }
                 if (system == null || baseOf == null || isRequested == null || tryGetCage == null ||
                     isVariant == null || isVariant.ReturnType != typeof(bool))
@@ -70,7 +77,10 @@ namespace Unsquare.Integration.Import
                 }
                 // Asked every frame for the hovered and edited building, so no reflection call per question.
                 var ask = (Func<Entity, bool>)Delegate.CreateDelegate(typeof(Func<Entity, bool>), system, isVariant);
-                bridge = new PlacemakerBridge(system, ask, baseOf, tryGetCage, isRequested);
+                // Optional: without it only whole-row conversion is missing.
+                if (tryGetPlanned == null)
+                    Mod.Log.Warn("Placemaker's row plan can't be read: rows can only be converted house by house.");
+                bridge = new PlacemakerBridge(system, ask, baseOf, tryGetCage, isRequested, tryGetPlanned);
                 return true;
             }
             catch (Exception e)
@@ -135,6 +145,40 @@ namespace Unsquare.Integration.Import
             catch (Exception e)
             {
                 Mod.Log.Error(e, $"Reading Placemaker's shape of prefab {variantPrefab} failed.");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The neighbours Placemaker joined the building to in its row plan (Entity.Null where there is no joint);
+        /// false if the plan can't be read or doesn't hold the building.
+        /// </summary>
+        public bool TryGetJoinedNeighbours(Entity building, out Entity left, out Entity right)
+        {
+            left = Entity.Null;
+            right = Entity.Null;
+            if (_tryGetPlanned == null)
+                return false;
+            try
+            {
+                var args = new object[] { building, null };
+                if (!(bool)_tryGetPlanned.Invoke(_system, args) || args[1] == null)
+                    return false;
+                var planned = args[1];
+                var type = planned.GetType();
+                object Read(string name) => type.GetField(name, BindingFlags.Instance | BindingFlags.Public)
+                    .GetValue(planned);
+                if ((bool)Read("JoinedLeft"))
+                    left = (Entity)Read("LeftNeighbour");
+                if ((bool)Read("JoinedRight"))
+                    right = (Entity)Read("RightNeighbour");
+                return true;
+            }
+            catch (Exception e)
+            {
+                if (!_loggedPlanFailure)
+                    Mod.Log.Error(e, $"Reading Placemaker's row plan for building {building} failed.");
+                _loggedPlanFailure = true;
                 return false;
             }
         }

@@ -10,6 +10,8 @@ const group = "Unsquare";
 const conversionPending$ = bindValue<boolean>(group, "conversionPending", false);
 // Why converting failed: a PlacemakerConversionResult name, empty while nothing failed.
 const conversionProblem$ = bindValue<string>(group, "conversionProblem", "");
+// Houses in the picked building's Placemaker row (itself included); 2 or more offers converting the row.
+const conversionRowSize$ = bindValue<number>(group, "conversionRowSize", 0);
 
 const problemFallbacks: Record<string, string> = {
     PlacemakerBusy: "Placemaker is reshaping this building right now. Try again in a moment.",
@@ -21,6 +23,7 @@ const problemFallbacks: Record<string, string> = {
 const ConversionDialog = () => {
     const pending = useValue(conversionPending$);
     const problem = useValue(conversionProblem$);
+    const rowSize = useValue(conversionRowSize$);
     const { translate } = useLocalization();
     if (!pending || !Panel || !Button)
         return null;
@@ -44,7 +47,20 @@ const ConversionDialog = () => {
                     </div>
                 )}
                 <div className={styles.buttons}>
-                    <Button className={styles.button} variant="primary"
+                    {rowSize > 1 && (
+                        <>
+                            <Button className={styles.button} variant="primary"
+                                onSelect={() => trigger(group, "confirmRowConversion")}>
+                                {text("ConvertRow", "Convert whole row ({COUNT} houses)")
+                                    .replace("{COUNT}", String(rowSize))}
+                            </Button>
+                            <div className={styles.warning}>
+                                {text("RowHint", "Placemaker straightens the neighbours of a house it no longer " +
+                                    "shapes. Convert the whole row to keep it joined.")}
+                            </div>
+                        </>
+                    )}
+                    <Button className={styles.button} variant={rowSize > 1 ? "flat" : "primary"}
                         onSelect={() => trigger(group, "confirmConversion")}>
                         {text("Convert", "Convert to Unsquare")}
                     </Button>

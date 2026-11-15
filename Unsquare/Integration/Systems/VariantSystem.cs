@@ -59,6 +59,12 @@ namespace Unsquare.Integration.Systems
             new();
         private PlacemakerBridge _placemaker;
         private bool _placemakerLooked;
+        private readonly SwapGroups<Entity> _swapGroups = new();
+        private Func<Entity, SwapMemberState> _swapState;
+
+        // Longest row converted at once, and how long its swaps wait for the slowest bake before going alone.
+        private const int MaxRowSize = 64;
+        private const double SwapGroupTimeoutSeconds = 10;
 
         private PrefabSystem _prefabSystem;
         private CityConfigurationSystem _citySystem;
@@ -106,6 +112,7 @@ namespace Unsquare.Integration.Systems
                     new SubObjectDeformer(), new SubAreaDeformer(), new SubLaneDeformer(), new SubNetDeformer(),
                 });
             _localization = new VariantLocalization(GameManager.instance?.localizationManager);
+            _swapState = SwapState;
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
@@ -151,6 +158,7 @@ namespace Unsquare.Integration.Systems
             _placemakerShapes.Clear();
             _placemaker = null;
             _placemakerLooked = false;
+            _swapGroups.Clear();
             _simulationReady = false;
 
             // First preload of the session: nothing is registered yet, so pruning cannot strand a live prefab.
@@ -234,6 +242,7 @@ namespace Unsquare.Integration.Systems
             _debouncer.Clear();
             _swaps.Clear();
             _statuses.Clear();
+            _swapGroups.Clear();
 
             int count = 0;
             using var buildings = _buildingQuery.ToEntityArray(Allocator.Temp);
@@ -372,6 +381,30 @@ namespace Unsquare.Integration.Systems
                 return false;
             return EntityManager.TryGetComponent(building, out PrefabRef prefabRef) &&
                    bridge.IsVariant(prefabRef.m_Prefab);
+        }
+
+        IReadOnlyList<Entity> IVariantPipeline.PlacemakerRow(Entity building)
+        {
+            var row = new List<Entity>();
+            if (!TryGetPlacemakerBridge(out var bridge))
+                return row;
+            foreach (var member in RowCollector.Collect(building, Entity.Null, bridge.TryGetJoinedNeighbours,
+                         MaxRowSize))
+            {
+                // Plain or already decided houses are walked through but keep what they have.
+                if (EntityManager.Exists(member) && !EntityManager.HasComponent<Deleted>(member) &&
+                    Pipeline.IsForeign(member))
+                    row.Add(member);
+            }
+            return row;
+        }
+
+        void IVariantPipeline.SwapTogether(IReadOnlyCollection<Entity> buildings)
+        {
+            if (buildings.Count < 2)
+                return;
+            _swapGroups.Add(buildings, UnityEngine.Time.realtimeSinceStartupAsDouble + SwapGroupTimeoutSeconds);
+            Enabled = true;
         }
 
         void IVariantPipeline.AllowStacking(Entity building)
@@ -931,6 +964,9 @@ namespace Unsquare.Integration.Systems
         private void ProcessSwaps()
         {
             _finished.Clear();
+            if (_swapGroups.Count > 0 &&
+                _swapGroups.Update(_swapState, UnityEngine.Time.realtimeSinceStartupAsDouble) > 0)
+                Mod.Log.Warn($"Swapping a group after {SwapGroupTimeoutSeconds} s without all of its bakes.");
             foreach (var pair in _swaps)
             {
                 Entity building = pair.Key;
@@ -940,6 +976,8 @@ namespace Unsquare.Integration.Systems
                     _finished.Add((building, true));
                     continue;
                 }
+                if (_swapGroups.IsHeld(building))
+                    continue;
                 // A new prefab entity keeps Created until PrefabInitializeSystem has filled its data.
                 if (!_simulationReady || !IsInitialized(swap))
                     continue;
@@ -951,6 +989,17 @@ namespace Unsquare.Integration.Systems
                 _swaps.Remove(building);
                 SetStatus(building, succeeded ? VariantStatus.Idle : VariantStatus.Failed);
             }
+        }
+
+        // Swaps held together: a member is ready once its swap could run, done once nothing is in flight for it.
+        private SwapMemberState SwapState(Entity building)
+        {
+            if (_swaps.TryGetValue(building, out var swap))
+                return !EntityManager.Exists(building) || EntityManager.HasComponent<Deleted>(building) ||
+                       (_simulationReady && IsInitialized(swap))
+                    ? SwapMemberState.Ready
+                    : SwapMemberState.Waiting;
+            return _debouncer.TryPeek(building, out _) ? SwapMemberState.Waiting : SwapMemberState.Done;
         }
 
         private bool IsInitialized(PendingSwap swap)
