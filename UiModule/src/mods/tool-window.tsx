@@ -38,7 +38,7 @@ import terrainFlatIcon from "images/terrain-flat.svg";
 import terrainLiftIcon from "images/terrain-lift.svg";
 import undoIcon from "images/undo.svg";
 import { Guard } from "mods/guard";
-import { SegmentedToggle, SegmentOption } from "mods/segmented-toggle";
+import { ButtonGroup, SegmentedToggle, SegmentOption } from "mods/segmented-toggle";
 import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./tool-window.module.scss";
 
@@ -230,7 +230,7 @@ const ToolWindow = () => {
                             onSelect={mode => trigger(group, "selectBlendMode", mode)}
                         />
                     </>}
-                    buttons={<>
+                    buttons={<ButtonGroup>
                         <ActionButton
                             icon={linkToLotIcon}
                             tooltip={translate("Unsquare.ToolWindow.Link", "Building follows the lot again")}
@@ -243,7 +243,7 @@ const ToolWindow = () => {
                             disabled={!isSplit}
                             onSelect={() => trigger(group, "linkLot")}
                         />
-                    </>}
+                    </ButtonGroup>}
                 />
                 <div className={styles.divider} />
                 <Section
@@ -277,14 +277,17 @@ const ToolWindow = () => {
                             onSelect={mode => trigger(group, "selectGroundFitMode", mode)}
                         />
                     </>}
-                    buttons={<ActionButton
-                        icon={fitGroundIcon}
-                        tooltip={buildingMode
-                            ? translate("Unsquare.ToolWindow.SeatBuilding", "Set the building onto its lot's ground")
-                            : translate("Unsquare.ToolWindow.FitToGround",
-                                "Fit the bottom corners to the original ground")}
-                        onSelect={() => trigger(group, "fitToGround")}
-                    />}
+                    buttons={<ButtonGroup>
+                        <ActionButton
+                            icon={fitGroundIcon}
+                            tooltip={buildingMode
+                                ? translate("Unsquare.ToolWindow.SeatBuilding",
+                                    "Set the building onto its lot's ground")
+                                : translate("Unsquare.ToolWindow.FitToGround",
+                                    "Fit the bottom corners to the original ground")}
+                            onSelect={() => trigger(group, "fitToGround")}
+                        />
+                    </ButtonGroup>}
                 />
                 <div className={styles.divider} />
                 <Section
@@ -303,21 +306,23 @@ const ToolWindow = () => {
                             onSelect={setAlignKind}
                         />
                     </>}
-                    buttons={sideButtons.map(({ side, icon, fallback }) => (
-                        <ActionButton
-                            key={side}
-                            icon={icon}
-                            tooltip={translate(`Unsquare.ToolWindow.Align${levelling ? "Ground" : ""}${side}`,
-                                fallback)}
-                            onSelect={() => trigger(group,
-                                levelling ? "alignGroundToNeighbour" : "alignToNeighbour", side)}
-                        />
-                    ))}
+                    buttons={<ButtonGroup>
+                        {sideButtons.map(({ side, icon, fallback }) => (
+                            <ActionButton
+                                key={side}
+                                icon={icon}
+                                tooltip={translate(`Unsquare.ToolWindow.Align${levelling ? "Ground" : ""}${side}`,
+                                    fallback)}
+                                onSelect={() => trigger(group,
+                                    levelling ? "alignGroundToNeighbour" : "alignToNeighbour", side)}
+                            />
+                        ))}
+                    </ButtonGroup>}
                 />
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Reset", "Reset")}
-                    toggles={<>
+                    toggles={<ButtonGroup>
                         <ActionButton
                             icon={resetHandleIcon}
                             tooltip={translate("Unsquare.ToolWindow.ResetHandle",
@@ -330,8 +335,8 @@ const ToolWindow = () => {
                             tooltip={translate("Unsquare.ToolWindow.ResetBuilding", "Reset the whole building")}
                             onSelect={() => trigger(group, "resetBuilding")}
                         />
-                    </>}
-                    buttons={<>
+                    </ButtonGroup>}
+                    buttons={<ButtonGroup>
                         <ActionButton
                             icon={undoIcon}
                             tooltip={translate("Unsquare.ToolWindow.Undo", "Undo the last cage edit")}
@@ -344,7 +349,7 @@ const ToolWindow = () => {
                             disabled={!canRedo}
                             onSelect={() => trigger(group, "redo")}
                         />
-                    </>}
+                    </ButtonGroup>}
                 />
             </div>
             {offGround && (

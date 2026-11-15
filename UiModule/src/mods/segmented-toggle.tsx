@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./segmented-toggle.module.scss";
 
@@ -22,6 +22,11 @@ interface ThumbBox {
     width: number;
     height: number;
 }
+
+// Plain buttons in a toggle's frame (invisible), so they line up with the toggles' inner buttons.
+export const ButtonGroup = ({ children }: { children: ReactNode }) => (
+    <div className={styles.group}>{children}</div>
+);
 
 /**
  * A rounded track with one tool button per option and a thumb that slides to the active one; clicks select directly.
