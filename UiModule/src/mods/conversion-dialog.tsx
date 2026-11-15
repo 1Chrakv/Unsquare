@@ -15,7 +15,8 @@ const conversionRowSize$ = bindValue<number>(group, "conversionRowSize", 0);
 
 const problemFallbacks: Record<string, string> = {
     PlacemakerBusy: "Placemaker is reshaping this building right now. Try again in a moment.",
-    PlacemakerMissing: "Placemaker could not be read (not running or changed). The building stays as it is.",
+    PlacemakerMissing: "Placemaker could not be read: it is not running or has changed since Unsquare was " +
+        "tested with it. The building stays as it is; please report this with Unsquare.Mod.log.",
     Failed: "The building could not be converted. See Unsquare.Mod.log.",
 };
 

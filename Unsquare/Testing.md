@@ -265,6 +265,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 173 | In 172 press Convert whole row | All N houses swap in the same frame and keep their shape; neighbours stay joined; log `Row conversion of building …: N of N converted`; Placemaker's next plan moves none of them |
 | 174 | In 172 press Convert to Unsquare (one house only) | That house converts; Placemaker straightens its neighbours (known; the row button avoids it) |
 | 175 | After 173 press Reset on one house | Only that house turns plain; the other converted houses keep their shape |
+| 176 | Load a save with Placemaker | Log `Placemaker <version> (tested with <TestedWith>): detect ok, convert ok, rows ok.` once per load; any "missing …" means Placemaker changed |
 
 ## Reporting problems
 

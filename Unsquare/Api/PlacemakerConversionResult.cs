@@ -15,7 +15,7 @@ namespace Unsquare.Api
         /// <summary>Placemaker is reshaping the building right now; try again a moment later.</summary>
         PlacemakerBusy,
 
-        /// <summary>Placemaker is not running or has changed; the building stays as it is.</summary>
+        /// <summary>Placemaker is not running or has changed (see its status line in the log); the building stays.</summary>
         PlacemakerMissing,
 
         /// <summary>No base prefab, no lot or a cage that folds; the building stays as it is (see the log).</summary>

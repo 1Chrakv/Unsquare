@@ -83,7 +83,8 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ConvertDialog.Problem.PlacemakerBusy",
                     "Placemaker is reshaping this building right now. Try again in a moment." },
                 { "Unsquare.ConvertDialog.Problem.PlacemakerMissing",
-                    "Placemaker could not be read (not running or changed). The building stays as it is." },
+                    "Placemaker could not be read: it is not running or has changed since Unsquare was tested " +
+                    "with it. The building stays as it is; please report this with Unsquare.Mod.log." },
                 { "Unsquare.ConvertDialog.Problem.Failed",
                     "The building could not be converted. See Unsquare.Mod.log." },
                 { "Unsquare.ToolWindow.SeatBuilding", "Set the building onto its lot's ground (Alt+G)" },

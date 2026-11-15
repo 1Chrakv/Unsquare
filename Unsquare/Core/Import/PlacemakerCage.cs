@@ -44,6 +44,24 @@ namespace Unsquare.Core.Import
         /// <summary>True if the lot lies within the span's depth, so <see cref="Map"/> is bilinear over the whole lot.</summary>
         public bool CoversDepth(CageBox lot) => Min.y <= lot.Min.z + 1e-3f && Max.y >= lot.Max.z - 1e-3f;
 
+        /// <summary>
+        /// False for shapes no bent row house has: an empty span, a span beside the lot, or shifts that are not finite or
+        /// reach past twice the lot's diagonal. Catches Placemaker changing units or frames without notice.
+        /// </summary>
+        public bool IsPlausible(CageBox lot)
+        {
+            if (!math.all(Max > Min))
+                return false;
+            if (Max.x <= lot.Min.x || Min.x >= lot.Max.x || Max.y <= lot.Min.z || Min.y >= lot.Max.z)
+                return false;
+            float reach = 2f * math.length(lot.Max.xz - lot.Min.xz);
+            return IsShift(BackLeft, reach) && IsShift(BackRight, reach) && IsShift(FrontLeft, reach) &&
+                   IsShift(FrontRight, reach);
+        }
+
+        private static bool IsShift(float2 shift, float reach) =>
+            math.all(math.isfinite(shift)) && math.length(shift) <= reach;
+
         private float2 Shift(float2 xz, bool clampDepth)
         {
             float2 size = math.max(Max - Min, new float2(MinSpan));

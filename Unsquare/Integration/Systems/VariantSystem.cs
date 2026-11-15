@@ -182,6 +182,8 @@ namespace Unsquare.Integration.Systems
             RepairCopies();
             if (_simDataPending.Count > 0)
                 Enabled = true;
+            if (_simulationReady)
+                TryGetPlacemakerBridge(out _); // logs Placemaker's version and which features work, once per load
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
             {
                 _manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
@@ -388,8 +390,15 @@ namespace Unsquare.Integration.Systems
             var row = new List<Entity>();
             if (!TryGetPlacemakerBridge(out var bridge))
                 return row;
-            foreach (var member in RowCollector.Collect(building, Entity.Null, bridge.TryGetJoinedNeighbours,
-                         MaxRowSize))
+            bool Neighbours(Entity house, out Entity left, out Entity right)
+            {
+                bool read = bridge.TryGetJoinedNeighbours(house, out left, out right);
+                left = IsBuilding(left) ? left : Entity.Null;
+                right = IsBuilding(right) ? right : Entity.Null;
+                return read;
+            }
+
+            foreach (var member in RowCollector.Collect(building, Entity.Null, Neighbours, MaxRowSize))
             {
                 // Plain or already decided houses are walked through but keep what they have.
                 if (EntityManager.Exists(member) && !EntityManager.HasComponent<Deleted>(member) &&
@@ -398,6 +407,11 @@ namespace Unsquare.Integration.Systems
             }
             return row;
         }
+
+        // Placemaker's plan may still name houses that were demolished since.
+        private bool IsBuilding(Entity entity) =>
+            entity != Entity.Null && EntityManager.Exists(entity) && EntityManager.HasComponent<Building>(entity) &&
+            !EntityManager.HasComponent<Deleted>(entity);
 
         void IVariantPipeline.SwapTogether(IReadOnlyCollection<Entity> buildings)
         {
@@ -445,7 +459,9 @@ namespace Unsquare.Integration.Systems
             if (!TryGetPlacemakerBridge(out var bridge))
                 return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
             // A shape Placemaker is still baking or swapping in would replace ours after our swap.
-            if (bridge.IsBusyWith(building))
+            if (!bridge.TryIsBusyWith(building, out bool busy))
+                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
+            if (busy)
                 return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerBusy);
             var shape = GetPlacemakerShape(prefabRef.m_Prefab, current.name, out var basePrefab);
             if (shape.Status != PlacemakerAdoptionStatus.Ready)
@@ -494,6 +510,19 @@ namespace Unsquare.Integration.Systems
                 !(found is ObjectGeometryPrefab geometry) || !TryGetBoxes(geometry, out var lotBox, out var buildingBox))
             {
                 Mod.Log.Warn($"{variantName}: no base prefab with a lot.");
+                return failed;
+            }
+            // Placemaker skips prefabs without an asset, i.e. ours; bending one anyway means that rule changed.
+            if (VariantNaming.IsVariantName(geometry.name))
+            {
+                Mod.Log.Warn($"{variantName}: Placemaker {bridge.Version} bent the Unsquare variant {geometry.name}. " +
+                             $"Tested with {PlacemakerBridge.TestedWith}, which leaves them alone; not converted.");
+                return failed;
+            }
+            if (!cage.IsPlausible(lotBox))
+            {
+                Mod.Log.Warn($"{variantName}: Placemaker {bridge.Version} gave an implausible shape ({cage}) for " +
+                             $"the lot {lotBox}; not converted.");
                 return failed;
             }
 
