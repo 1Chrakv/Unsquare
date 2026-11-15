@@ -23,12 +23,12 @@ Unsquare lets you reshape any building. Taper, skew, twist, raise or lean buildi
 
 **How to use**
 
-1. Click the Unsquare button in the bottom row on the right.
+1. Click the Unsquare button (by default in the bottom row on the right).
 2. Click a building and then select what you want to move (default is edge).
 3. Drag the arrows on the gizmo, or drag the handle itself to move it sideways.
 4. Right-click to step back.
 
-A small window above the building has more tools: deform and pick modes, terrain, fit to ground, align to neighbours and undo/reset.
+A small window above the building has more tools: deform and pick modes, switch between translation and rotation, terrain + fit to ground, align to neighbours and undo/reset.
 
 **Limitations**
 
@@ -68,7 +68,7 @@ A small window above the building has more tools: deform and pick modes, terrain
 	<GameVersion Value="1.6.*" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
 	<ChangeLog>
-- **Reshape the building and its lot separately**, or both together as before. Optionally, the ground next to the building blends with its walls.
+- **Reshape the building and its lot separately**, or both together as before. Optionally, blending between the building and the lot can be activated to smoothen the transition.
 - **Rotate** edges and faces with rotation rings, e.g. twist the top or slope the roof, or move and turn the whole building at once.
 - **Level-ups keep the shape:** a reshaped growable that levels up stays reshaped.
 - **Placemaker:** row houses bent by Placemaker can be converted to Unsquare, one house or the whole row.
@@ -78,9 +78,9 @@ A small window above the building has more tools: deform and pick modes, terrain
 - The terrain, fences, hedges and lot paths follow reshaped lots better.
 - Fixed: copies of reshaped buildings could crash the game.
 
-Saves from 1.0.x are updated automatically and keep their shapes.
-
-Known issue: forcing an upgrade onto a reshaped building (only possible with Anarchy) leads to undefined behaviour; deleting such an upgrade can crash the game.
+Saves from 1.0.x are updated automatically and keep their shapes. 
+		
+Known issue with Placemaker: the game can freeze for about 2 seconds after reshaping with Unsquare as Placemaker rescans its assets.
 	</ChangeLog>
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/1Chrakv/Unsquare" />
