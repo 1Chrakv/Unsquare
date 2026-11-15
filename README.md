@@ -32,11 +32,11 @@ angled streets and slopes.
   switched off per building to keep a flat pad.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street
   side goes to road level, or (toggle) all four corners follow the terrain.
-- **Align to neighbour.** Turns the left, back, right or street side of the lot to the nearest road
-  or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
+- **Align to neighbour.** Turns the left, back, right or street side of the lot to the nearest road,
+  footpath or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
 - **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same
-  neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
+  neighbour: the neighbouring lot's ground or the road or path surface. The building keeps its height.
 - **Upgrades.** Deformed buildings keep their upgrades and accept new ones. On-lot upgrades (e.g. an extra car park
   storey) are reshaped with the building under one cage; upgrade buildings such as school wings have their own cage.
 - **Level-ups keep the shape.** When a deformed growable levels up, the new building gets the same lot outline;

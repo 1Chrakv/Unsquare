@@ -282,3 +282,6 @@ Note the checklist number, press Alt+L on the affected building and attach the l
 
 Known risks to watch: Alt+arrow keys may also pan the camera (rebind if so); baking fails with "not CPU readable" if
 render meshes cannot be read; if buildings come back undeformed after reload, variant restore at preload did not run.
+| 184 | Building beside a free-standing footpath, align that side (angle, then flush) | The side turns parallel to the path and moves onto its near edge; log `Aligning … to path …` |
+| 185 | Same side, Ctrl+Alt+arrow toward the path | That side's bottom corners go to the path surface height next to them |
+| 186 | Draw a footpath through the lot parallel to a side, a road beyond it; align that side | The path inside the lot is ignored, the side goes to the road; the lot's own paths and neighbours' lot paths never count |
