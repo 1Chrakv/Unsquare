@@ -10,39 +10,36 @@
 	<LongDescription>
 Unsquare lets you reshape any building. Taper, skew, twist, raise or lean buildings so they fit odd plots, angled streets and slopes.
 
-**The change is only visual.** The building keeps its residents, jobs, level and upkeep, and its lot keeps its size and zone cells.
+**The change is only visual.** The reshaped building gets its residents, jobs, upkeep, level, zone cells, etc. from the original asset.
 
 **Features**
 
-- **Reshape the whole lot.** The building, its props, paths, paving and grass all follow.
-- **Building and lot separately.** Reshape just the building, just its grounds, or both together.
-- **Terrain follows.** Raise or lower the bottom and the ground follows, or keep it flat.
+- **Reshape a building and its lot, together or separately.** Props, paths, paving and grass all follow.
+- **Terrain follows.** Raise or lower the bottom and the ground follows, or leave it as is.
 - **Fit to ground.** Sets the building onto the slope with one click.
 - **Align to neighbours.** Turns a side to the next road or building, or levels it with their ground.
-- **Upgrades come along.** Reshaped buildings keep their upgrades and can get new ones; extensions on the lot are reshaped with them.
-- **Level-ups keep the shape.** A reshaped building that levels up gets the same shape.
-- **Undo and redo** for every change.
+- **Undo and redo** for every change, or easily reset.
 - **Saved with your city.**
 
 **How to use**
 
-1. Click the Unsquare button next to the underground toggle.
-2. Click a building, then a corner, edge or side.
-3. Drag the arrows to move it, or drag the handle itself to move it sideways.
+1. Click the Unsquare button in the bottom row on the right.
+2. Click a building and then select what you want to move (default is edge).
+3. Drag the arrows on the gizmo, or drag the handle itself to move it sideways.
 4. Right-click to step back.
 
-A small window above the building has more tools: terrain, fit to ground, align to neighbours and reset.
+A small window above the building has more tools: deform and pick modes, terrain, fit to ground, align to neighbours and undo/reset.
 
 **Limitations**
 
 - The ground is only shaped inside the original rectangular lot.
-- Props move and turn with the building but don't bend.
+- Props move and turn with the building but don't bend. Some asset fences and walls may get pulled apart.
 - Lights and other effects don't move yet.
 - Only buildings with a lot can be reshaped.
 
 **Recommended mods** (not required): **Move It**, **Find It** and **Anarchy** work well alongside Unsquare for placing and fine-tuning buildings.
 
-**Placemaker:** buildings deformed by Placemaker can be converted to Unsquare. Placemaker may meddle with fences between neighbouring row houses, and while it is active the game can pause for about 2 seconds now and then after reshaping, while Placemaker rescans its assets.
+**Placemaker:** buildings deformed by Placemaker can be converted to Unsquare. Placemaker may meddle with fences between neighbouring row houses, and while it is active the game can freeze for about 2 seconds now and then after reshaping, while Placemaker rescans its assets.
 
 **Coming from FlexIt:** back up your save, keep FlexIt active, add Unsquare and load the city. Click Options → Unsquare → Settings → Import FlexIt buildings, then save, and FlexIt can be removed. Tapered and skewed buildings keep their shape; curved ones become straight.
 
