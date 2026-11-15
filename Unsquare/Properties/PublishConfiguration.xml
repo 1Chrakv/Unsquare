@@ -42,7 +42,7 @@ A small window above the building has more tools: terrain, fit to ground, align 
 
 **Recommended mods** (not required): **Move It**, **Find It** and **Anarchy** work well alongside Unsquare for placing and fine-tuning buildings.
 
-**Compatibility:** Placemaker may interfere with fence and prop placement, especially for row houses.
+**Placemaker:** buildings deformed by Placemaker can be converted to Unsquare. Placemaker may meddle with fences between neighbouring row houses, and while it is active the game can pause for about 2 seconds now and then after reshaping, while Placemaker rescans its assets.
 
 **Coming from FlexIt:** back up your save, keep FlexIt active, add Unsquare and load the city. Click Options → Unsquare → Settings → Import FlexIt buildings, then save, and FlexIt can be removed. Tapered and skewed buildings keep their shape; curved ones become straight.
 

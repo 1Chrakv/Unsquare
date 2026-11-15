@@ -76,16 +76,26 @@ Highly recommended, but not required; Unsquare works without them:
 
 ## Compatibility
 
-- **Placemaker** may interfere with fence and prop placement, especially for row houses. A test showed that it hides
-  fences between neighbouring lots and hides them again whenever they move, so the fences of a reshaped row house
-  stayed hidden while a building on its own was fine.
-- **Placemaker** also bends row houses to fit their row. Picking such a building in Unsquare mode asks first:
-  - **Convert only this building** gives it an Unsquare cage of the same shape. Placemaker then leaves it alone; Reset
-    returns the plain building, which Placemaker may bend again.
-  - **Convert whole row** does the same for every house Placemaker joined to it. Placemaker straightens the
-    neighbours of a house it no longer shapes, so converting a single house of a row detaches its neighbours.
+**Placemaker** works alongside Unsquare, with a few things to know:
+
+- **Buildings bent by Placemaker can be converted to Unsquare.** Placemaker bends row houses to fit their row.
+  Picking such a building in Unsquare mode asks first:
+  - **Convert whole row** gives the building and every house Placemaker joined to it an Unsquare cage of the same
+    shape, all at once.
+  - **Convert only this building** does the same for this house alone. Placemaker straightens the neighbours of a
+    house it no longer shapes, so converting a single house of a row detaches its neighbours.
   - **Cancel** leaves the building to Placemaker; Unsquare won't edit it.
-  Placemaker does not bend buildings reshaped with Unsquare.
+
+  Placemaker leaves converted buildings alone. Reset returns the plain building, which Placemaker may bend again;
+  picking it then asks again.
+- **Short pauses while reshaping.** Each time Unsquare adds a reshaped model, Placemaker rescans its asset catalog,
+  which freezes the game for about 2 seconds. Placemaker does this at most about every 10 seconds, so when you
+  reshape a lot, roughly every tenth change pauses briefly. It comes from Placemaker and doesn't happen without it.
+- **Fences.** Placemaker may meddle with fence and prop placement, especially for row houses. A test showed that it
+  hides fences between neighbouring lots and hides them again whenever they move, so the fences of a reshaped row
+  house stayed hidden while a building on its own was fine.
+- **Placemaker updates.** When a city loads, Unsquare checks that Placemaker still works the way it expects and turns
+  off only what changed. `Unsquare.Mod.log` names it; please report it.
 
 ## Usage
 
