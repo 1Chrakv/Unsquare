@@ -1,4 +1,4 @@
-namespace Unsquare.Integration.Import
+namespace Unsquare.Integration.PlacemakerCompatibility
 {
     internal enum PlacemakerAdoptionStatus
     {

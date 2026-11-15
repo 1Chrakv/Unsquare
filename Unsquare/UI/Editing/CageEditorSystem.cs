@@ -2,6 +2,7 @@ using Colossal.Serialization.Entities;
 using Game;
 using Unity.Entities;
 using Unsquare.Api;
+using Unsquare.UI.PlacemakerCompatibility;
 
 namespace Unsquare.UI.Editing
 {
@@ -13,10 +14,14 @@ namespace Unsquare.UI.Editing
     {
         public CageEditSession Session { get; private set; }
 
+        /// <summary>Asks before the session edits a building Placemaker has bent.</summary>
+        public PlacemakerDecision Placemaker { get; private set; }
+
         protected override void OnCreate()
         {
             base.OnCreate();
-            Session = new CageEditSession(UnsquareApi.GetDeformService(World));
+            Placemaker = new PlacemakerDecision(UnsquareApi.GetPlacemakerService(World));
+            Session = new CageEditSession(UnsquareApi.GetDeformService(World), Placemaker);
         }
 
         protected override void OnUpdate()

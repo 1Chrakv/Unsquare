@@ -2,9 +2,9 @@ import { bindValue, trigger, useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import { Button, Panel } from "cs2/ui";
 import { Guard } from "mods/guard";
-import styles from "./conversion-dialog.module.scss";
+import styles from "./placemaker-dialog.module.scss";
 
-// Group and names must match UnsquareUISystem on the C# side.
+// Group and names must match PlacemakerUISystem on the C# side.
 const group = "Unsquare";
 
 const conversionPending$ = bindValue<boolean>(group, "conversionPending", false);
@@ -21,7 +21,7 @@ const problemFallbacks: Record<string, string> = {
 };
 
 // Asks what to do with a building Placemaker has bent, before Unsquare may edit it.
-const ConversionDialog = () => {
+const PlacemakerDialog = () => {
     const pending = useValue(conversionPending$);
     const problem = useValue(conversionProblem$);
     const rowSize = useValue(conversionRowSize$);
@@ -69,8 +69,8 @@ const ConversionDialog = () => {
     );
 };
 
-export const GuardedConversionDialog = () => (
-    <Guard name="conversion dialog">
-        <ConversionDialog />
+export const GuardedPlacemakerDialog = () => (
+    <Guard name="Placemaker dialog">
+        <PlacemakerDialog />
     </Guard>
 );

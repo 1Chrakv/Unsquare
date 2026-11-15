@@ -1,6 +1,6 @@
-namespace Unsquare.Api
+namespace Unsquare.Api.PlacemakerCompatibility
 {
-    /// <summary>Outcome of <see cref="IBuildingDeformService.ConvertPlacemaker"/>.</summary>
+    /// <summary>Outcome of <see cref="IPlacemakerService.Convert"/> and <see cref="IPlacemakerService.ConvertRow"/>.</summary>
     public enum PlacemakerConversionResult
     {
         /// <summary>Unsquare's cage reproduces Placemaker's shape; the variant swaps in after its bake.</summary>

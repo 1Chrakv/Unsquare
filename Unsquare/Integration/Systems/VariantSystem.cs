@@ -16,15 +16,14 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Import;
 using Unsquare.Core.Naming;
 using Unsquare.Core.Options;
-using Unsquare.Core.PlacemakerCompatibility;
 using Unsquare.Core.Persistence;
 using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;
 using Unsquare.Integration.Entities;
 using Unsquare.Integration.Import;
+using Unsquare.Integration.PlacemakerCompatibility;
 using Unsquare.Integration.Prefabs;
 using Unsquare.Integration.Prefabs.Attachments;
 
@@ -54,16 +53,11 @@ namespace Unsquare.Integration.Systems
         private readonly Dictionary<Entity, PendingLevelUp> _levelUps = new();
         private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
-        private readonly Dictionary<Entity, ObjectGeometryPrefab> _adopted = new();
-        private readonly Dictionary<Entity, (ObjectGeometryPrefab Base, PlacemakerAdoption Shape)> _placemakerShapes =
-            new();
-        private PlacemakerBridge _placemaker;
-        private bool _placemakerLooked;
         private readonly SwapGroups<Entity> _swapGroups = new();
         private Func<Entity, SwapMemberState> _swapState;
+        private IForeignPrefabs _foreign;
 
-        // Longest row converted at once, and how long its swaps wait for the slowest bake before going alone.
-        private const int MaxRowSize = 64;
+        // How long the swaps of a group (e.g. a converted row) wait for the slowest bake before going alone.
         private const double SwapGroupTimeoutSeconds = 10;
 
         private PrefabSystem _prefabSystem;
@@ -87,6 +81,9 @@ namespace Unsquare.Integration.Systems
         }
 
         internal IVariantPipeline Pipeline => this;
+
+        /// <summary>Placemaker's bent buildings and their takeover; see <see cref="PlacemakerAdoptions"/>.</summary>
+        internal PlacemakerAdoptions Placemaker { get; private set; }
 
         PipelineOptions IVariantPipeline.Options
         {
@@ -113,6 +110,8 @@ namespace Unsquare.Integration.Systems
                 });
             _localization = new VariantLocalization(GameManager.instance?.localizationManager);
             _swapState = SwapState;
+            Placemaker = new PlacemakerAdoptions(World, _prefabSystem, TryGetBoxes, () => _options.Limits);
+            _foreign = Placemaker;
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
@@ -153,10 +152,7 @@ namespace Unsquare.Integration.Systems
             _extensionRefreshes.Clear();
             _levelUps.Clear();
             _upgradesLogged.Clear();
-            _adopted.Clear();
-            _placemakerShapes.Clear();
-            _placemaker = null;
-            _placemakerLooked = false;
+            _foreign.Clear();
             _swapGroups.Clear();
             _simulationReady = false;
 
@@ -182,7 +178,7 @@ namespace Unsquare.Integration.Systems
             if (_simDataPending.Count > 0)
                 Enabled = true;
             if (_simulationReady)
-                TryGetPlacemakerBridge(out _); // logs Placemaker's version and which features work, once per load
+                _foreign.OnLoaded();
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
             {
                 _manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
@@ -215,8 +211,8 @@ namespace Unsquare.Integration.Systems
             if (spec.Equals(description.Applied))
             {
                 _debouncer.Cancel(building);
-                // Converted, then reset before the swap: still Placemaker's, so the next pick asks again.
-                _adopted.Remove(building);
+                // Taken over, then reset before the swap: still foreign, so the next pick asks again.
+                _foreign.Release(building);
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
@@ -246,7 +242,7 @@ namespace Unsquare.Integration.Systems
             _swaps.Clear();
             _statuses.Clear();
             _swapGroups.Clear();
-            _adopted.Clear(); // every conversion in flight is cancelled
+            _foreign.ReleaseAll(); // every takeover in flight is cancelled
 
             int count = 0;
             using var buildings = _buildingQuery.ToEntityArray(Allocator.Temp);
@@ -358,62 +354,18 @@ namespace Unsquare.Integration.Systems
             return true;
         }
 
-        // Placemaker variants: adopted ones sit on Placemaker's plain base, undecided ones are not described at all,
-        // so nothing can edit them. Older Unsquare variants on a Placemaker base resolve by name as before.
+        // Buildings on another mod's variants (Placemaker's) are only described once taken over, on the plain base;
+        // undecided ones are not described, so nothing edits them. Unsquare variants resolve by name as always.
         private bool TryResolveBase(Entity building, PrefabBase current, out ObjectGeometryPrefab basePrefab,
             out DeformSpec applied)
         {
-            if (IsPlacemakerBuilding(building, current))
+            if (_foreign.IsForeignPrefab(building, current))
             {
                 applied = DeformSpec.Identity;
-                return _adopted.TryGetValue(building, out basePrefab);
+                return _foreign.TryGetTakenOverBase(building, out basePrefab);
             }
             return _resolver.TryResolveBase(current, out basePrefab, out applied);
         }
-
-        bool IVariantPipeline.IsForeign(Entity building) =>
-            !_adopted.ContainsKey(building) &&
-            _resolver.TryGetPrefab(EntityManager, building, out var current) &&
-            IsPlacemakerBuilding(building, current);
-
-        // Placemaker's light copies share the plain prefab's PrefabData (and so its name): ask Placemaker by entity.
-        private bool IsPlacemakerBuilding(Entity building, PrefabBase current)
-        {
-            if (PlacemakerVariantName.IsVariant(current.name))
-                return true;
-            if (VariantNaming.IsVariantName(current.name) || !TryGetPlacemakerBridge(out var bridge))
-                return false;
-            return EntityManager.TryGetComponent(building, out PrefabRef prefabRef) &&
-                   bridge.IsVariant(prefabRef.m_Prefab);
-        }
-
-        IReadOnlyList<Entity> IVariantPipeline.PlacemakerRow(Entity building)
-        {
-            var row = new List<Entity>();
-            if (!TryGetPlacemakerBridge(out var bridge))
-                return row;
-            bool Neighbours(Entity house, out Entity left, out Entity right)
-            {
-                bool read = bridge.TryGetJoinedNeighbours(house, out left, out right);
-                left = IsBuilding(left) ? left : Entity.Null;
-                right = IsBuilding(right) ? right : Entity.Null;
-                return read;
-            }
-
-            foreach (var member in RowCollector.Collect(building, Entity.Null, Neighbours, MaxRowSize))
-            {
-                // Plain or already decided houses are walked through but keep what they have.
-                if (EntityManager.Exists(member) && !EntityManager.HasComponent<Deleted>(member) &&
-                    Pipeline.IsForeign(member))
-                    row.Add(member);
-            }
-            return row;
-        }
-
-        // Placemaker's plan may still name houses that were demolished since.
-        private bool IsBuilding(Entity entity) =>
-            entity != Entity.Null && EntityManager.Exists(entity) && EntityManager.HasComponent<Building>(entity) &&
-            !EntityManager.HasComponent<Deleted>(entity);
 
         void IVariantPipeline.SwapTogether(IReadOnlyCollection<Entity> buildings)
         {
@@ -423,120 +375,12 @@ namespace Unsquare.Integration.Systems
             Enabled = true;
         }
 
-        void IVariantPipeline.ReleaseAdoption(Entity building)
-        {
-            if (_adopted.Remove(building))
-                _buildingChanged?.Invoke(building);
-        }
-
-        // Hover preview only: the cage Convert would give, around Placemaker's shape, without adopting.
+        // Hover preview only: the cage taking the building over would give, without taking it over.
         bool IVariantPipeline.TryDescribeForeign(Entity building, out BuildingDescription description)
         {
             description = default;
-            if (!EntityManager.HasComponent<Building>(building) ||
-                !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
-                !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
-                _adopted.ContainsKey(building) ||
-                !IsPlacemakerBuilding(building, current))
-                return false;
-            var shape = GetPlacemakerShape(prefabRef.m_Prefab, current.name, out var basePrefab);
-            return shape.Status == PlacemakerAdoptionStatus.Ready &&
-                   TryDescribe(building, basePrefab, shape.Spec, out description);
-        }
-
-        PlacemakerAdoption IVariantPipeline.PreparePlacemakerAdoption(Entity building)
-        {
-            if (!_simulationReady || !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
-                !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
-                !IsPlacemakerBuilding(building, current))
-                return new PlacemakerAdoption(PlacemakerAdoptionStatus.Failed);
-            if (!TryGetPlacemakerBridge(out var bridge))
-                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
-            // A shape Placemaker is still baking or swapping in would replace ours after our swap.
-            if (!bridge.TryIsBusyWith(building, out bool busy))
-                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
-            if (busy)
-                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerBusy);
-            var shape = GetPlacemakerShape(prefabRef.m_Prefab, current.name, out var basePrefab);
-            if (shape.Status != PlacemakerAdoptionStatus.Ready)
-                return shape;
-            _adopted[building] = basePrefab;
-            Mod.Log.Info($"Building {building}: adopting {current.name} on {basePrefab.name}.");
-            return shape;
-        }
-
-        private bool TryGetPlacemakerBridge(out PlacemakerBridge bridge)
-        {
-            if (!_placemakerLooked)
-            {
-                PlacemakerBridge.TryFind(World, out _placemaker);
-                _placemakerLooked = true;
-            }
-            bridge = _placemaker;
-            return bridge != null;
-        }
-
-        // A Placemaker variant's shape never changes, so its conversion is worked out once per prefab.
-        private PlacemakerAdoption GetPlacemakerShape(Entity variantPrefab, string variantName,
-            out ObjectGeometryPrefab basePrefab)
-        {
-            if (!_placemakerShapes.TryGetValue(variantPrefab, out var cached))
-            {
-                var shape = ConvertPlacemakerShape(variantPrefab, variantName, out var found);
-                cached = (found, shape);
-                _placemakerShapes[variantPrefab] = cached;
-            }
-            basePrefab = cached.Base;
-            return cached.Shape;
-        }
-
-        private PlacemakerAdoption ConvertPlacemakerShape(Entity variantPrefab, string variantName,
-            out ObjectGeometryPrefab basePrefab)
-        {
-            basePrefab = null;
-            var failed = new PlacemakerAdoption(PlacemakerAdoptionStatus.Failed);
-            if (!TryGetPlacemakerBridge(out var bridge))
-                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
-            if (!bridge.TryGetCage(variantPrefab, out var cage) || !bridge.TryGetBase(variantPrefab, out var baseEntity))
-                return new PlacemakerAdoption(PlacemakerAdoptionStatus.PlacemakerMissing);
-            if (!_prefabSystem.TryGetPrefab(baseEntity, out PrefabBase found) ||
-                !(found is ObjectGeometryPrefab geometry) || !TryGetBoxes(geometry, out var lotBox, out var buildingBox))
-            {
-                Mod.Log.Warn($"{variantName}: no base prefab with a lot.");
-                return failed;
-            }
-            // Placemaker skips prefabs without an asset, i.e. ours; bending one anyway means that rule changed.
-            if (VariantNaming.IsVariantName(geometry.name))
-            {
-                Mod.Log.Warn($"{variantName}: Placemaker {bridge.Version} bent the Unsquare variant {geometry.name}. " +
-                             $"Tested with {PlacemakerBridge.TestedWith}, which leaves them alone; not converted.");
-                return failed;
-            }
-            if (!cage.IsPlausible(lotBox))
-            {
-                Mod.Log.Warn($"{variantName}: Placemaker {bridge.Version} gave an implausible shape ({cage}) for " +
-                             $"the lot {lotBox}; not converted.");
-                return failed;
-            }
-
-            var spec = new DeformSpec(PlacemakerCageConverter.ToOffsets(lotBox, cage), false);
-            bool approximated = false;
-            float maxError = 0f;
-            // Extending the body's shape over a deep yard can fold the lot: fit Placemaker's held yard shift instead.
-            if (CageValidator.ValidateSplit(lotBox, buildingBox, spec, _options.Limits) != CageValidity.Valid)
-            {
-                var samples = new List<float2>(PlanCageFit.Outline(buildingBox.Min.xz, buildingBox.Max.xz, 16));
-                samples.AddRange(PlanCageFit.Outline(lotBox.Min.xz, lotBox.Max.xz, 16));
-                if (!PlacemakerCageConverter.TryFitOffsets(lotBox, samples.ToArray(), cage, out var fitted,
-                        out maxError))
-                    return failed;
-                spec = new DeformSpec(fitted, false);
-                approximated = true;
-            }
-            basePrefab = geometry;
-            Mod.Log.Info($"Placemaker shape {variantName} ({cage}) on {geometry.name}: " +
-                         (approximated ? $"fitted, max deviation {maxError:0.00} m." : "exact."));
-            return new PlacemakerAdoption(PlacemakerAdoptionStatus.Ready, spec, approximated, maxError);
+            return _foreign.TryGetPreview(building, out var basePrefab, out var spec) &&
+                   TryDescribe(building, basePrefab, spec, out description);
         }
 
         // Over the on-lot extensions the owner's cage deforms (PlanExtensionTargets), in building space: the top of
@@ -1009,9 +853,9 @@ namespace Unsquare.Integration.Systems
             foreach (var (building, succeeded) in _finished)
             {
                 _swaps.Remove(building);
-                // Off Placemaker's variant now: if Placemaker bends it again later, picking it asks again.
+                // Off the foreign variant now: if the other mod bends it again later, picking it asks again.
                 if (succeeded)
-                    _adopted.Remove(building);
+                    _foreign.Release(building);
                 SetStatus(building, succeeded ? VariantStatus.Idle : VariantStatus.Failed);
             }
         }

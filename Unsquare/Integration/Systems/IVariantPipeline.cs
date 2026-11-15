@@ -43,31 +43,10 @@ namespace Unsquare.Integration.Systems
         FlexItImportBatch PrepareFlexItImport();
 
         /// <summary>
-        /// On a Placemaker variant the player has not decided about yet: such buildings cannot be described (so not
-        /// edited) until they are adopted.
-        /// </summary>
-        bool IsForeign(Entity building);
-
-        /// <summary>
-        /// Read-only description of an undecided Placemaker building for the hover preview: on its plain base with
-        /// the cage Convert would give applied. Never used for edits.
+        /// Read-only description of a building on another mod's variant that was not taken over yet (see
+        /// <see cref="IForeignPrefabs"/>), for the hover preview: on its plain base with the takeover's cage applied.
         /// </summary>
         bool TryDescribeForeign(Entity building, out BuildingDescription description);
-
-        /// <summary>
-        /// Takes a Placemaker building over: it is described on Placemaker's plain base from now on, and requesting
-        /// the returned spec swaps it straight to an Unsquare variant of the same shape.
-        /// </summary>
-        PlacemakerAdoption PreparePlacemakerAdoption(Entity building);
-
-        /// <summary>Undoes <see cref="PreparePlacemakerAdoption"/> when the request was refused.</summary>
-        void ReleaseAdoption(Entity building);
-
-        /// <summary>
-        /// The undecided Placemaker buildings in the building's row: itself and every house Placemaker joined to it,
-        /// directly or along the row. Empty without Placemaker.
-        /// </summary>
-        IReadOnlyList<Entity> PlacemakerRow(Entity building);
 
         /// <summary>
         /// Holds the swaps of these buildings' requests until all are baked, so they land in the same frame. Members

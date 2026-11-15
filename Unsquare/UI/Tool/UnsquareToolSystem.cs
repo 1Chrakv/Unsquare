@@ -304,7 +304,7 @@ namespace Unsquare.UI.Tool
 
         private static void SelectBuilding(CageEditSession session, Entity building)
         {
-            if (session.SelectBuilding(building) && !session.HasPendingConversion && !session.TryGetCage(out _))
+            if (session.SelectBuilding(building) && !session.IsDecisionOpen && !session.TryGetCage(out _))
                 Mod.Log.Info($"[Edit] Building {building} has no lot cage and cannot be deformed.");
         }
 

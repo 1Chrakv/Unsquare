@@ -90,18 +90,6 @@ namespace Unsquare.UI.Bindings
                 if (TryParseSide(side, out var parsed))
                     _editor.Session.AlignGroundToNeighbour(parsed);
             }));
-
-            // The Placemaker dialog (conversion-dialog.tsx): shown while a picked building waits for a decision.
-            AddUpdateBinding(new GetterValueBinding<bool>(Group, "conversionPending",
-                () => _tool.IsActive && _editor.Session.HasPendingConversion));
-            AddUpdateBinding(new GetterValueBinding<string>(Group, "conversionProblem",
-                () => _editor.Session.ConversionProblem?.ToString() ?? string.Empty));
-            AddUpdateBinding(new GetterValueBinding<int>(Group, "conversionRowSize",
-                () => _editor.Session.PendingRowSize));
-            AddBinding(new TriggerBinding(Group, "confirmConversion", () => _editor.Session.ConfirmConversion()));
-            AddBinding(new TriggerBinding(Group, "confirmRowConversion",
-                () => _editor.Session.ConfirmConversion(wholeRow: true)));
-            AddBinding(new TriggerBinding(Group, "declineConversion", () => _editor.Session.DeclineConversion()));
         }
 
         // The latest failure for a few seconds (as long as a drag keeps pushing into it), else a failed bake.

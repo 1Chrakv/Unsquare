@@ -22,8 +22,8 @@ namespace Unsquare.Api
         bool TryGetCage(Entity building, CageTarget target, out CageState state);
 
         /// <summary>
-        /// Like <see cref="TryGetCage"/>, but also for buildings that need a decision first (e.g. Placemaker's): their
-        /// cage as converting would give it. For hover previews only; such buildings still can't be edited.
+        /// Like <see cref="TryGetCage"/>, but also for buildings on another mod's variant not taken over yet (e.g.
+        /// Placemaker's): their cage as converting would give it. For hover previews only; they can't be edited.
         /// </summary>
         bool TryGetPreviewCage(Entity building, CageTarget target, out CageState state);
 
@@ -93,32 +93,6 @@ namespace Unsquare.Api
         /// corner fits become the closest cage, arches and bends go back to their original prefab. Same entity.
         /// </summary>
         FlexItImportResult ImportFlexIt();
-
-        /// <summary>
-        /// True for a building on a Placemaker variant the player has not converted (<see cref="ConvertPlacemaker"/>,
-        /// <see cref="ConvertPlacemakerRow"/>): it can't be edited until then.
-        /// </summary>
-        bool NeedsConversion(Entity building);
-
-        /// <summary>
-        /// Gives a Placemaker building an Unsquare cage of the same shape on its plain prefab; Placemaker then leaves
-        /// it alone. Not undoable; a reset returns the plain building.
-        /// </summary>
-        PlacemakerConversionResult ConvertPlacemaker(Entity building);
-
-        /// <summary>
-        /// How many houses <see cref="ConvertPlacemakerRow"/> would convert: the building and every undecided house
-        /// Placemaker joined to it along its row. 0 or 1 when there is no row.
-        /// </summary>
-        int PlacemakerRowSize(Entity building);
-
-        /// <summary>
-        /// Converts the building and the rest of its Placemaker row at once; their swaps land in the same frame, so
-        /// Placemaker can't straighten the neighbours of a house that left its plan. Returns the building's result;
-        /// refused as a whole while Placemaker reshapes any of them.
-        /// </summary>
-        PlacemakerConversionResult ConvertPlacemakerRow(Entity building);
-
 
         /// <summary>Current tunables (limits, attachments, rebake delay, pruning, lot sync).</summary>
         PipelineOptions Options { get; }

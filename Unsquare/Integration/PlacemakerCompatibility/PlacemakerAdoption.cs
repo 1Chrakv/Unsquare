@@ -1,6 +1,6 @@
 using Unsquare.Core.Cage;
 
-namespace Unsquare.Integration.Import
+namespace Unsquare.Integration.PlacemakerCompatibility
 {
     /// <summary>Outcome of taking a Placemaker building over: the Unsquare cage reproducing its shape.</summary>
     internal readonly struct PlacemakerAdoption

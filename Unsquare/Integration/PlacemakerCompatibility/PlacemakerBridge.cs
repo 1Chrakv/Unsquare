@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unsquare.Core.PlacemakerCompatibility;
 using Unsquare.Core.Interop;
 
-namespace Unsquare.Integration.Import
+namespace Unsquare.Integration.PlacemakerCompatibility
 {
     /// <summary>
     /// Reads Placemaker's bent row houses through the public members of its shape system, found by reflection (no
