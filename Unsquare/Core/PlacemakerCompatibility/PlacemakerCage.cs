@@ -2,7 +2,7 @@ using System;
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
 
-namespace Unsquare.Core.Import
+namespace Unsquare.Core.PlacemakerCompatibility
 {
     /// <summary>
     /// Placemaker's plan-only building shape in building space: a span (x/z, back = min z) whose 4 corners shift in

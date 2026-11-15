@@ -19,6 +19,7 @@ using Unsquare.Core.Deformation;
 using Unsquare.Core.Import;
 using Unsquare.Core.Naming;
 using Unsquare.Core.Options;
+using Unsquare.Core.PlacemakerCompatibility;
 using Unsquare.Core.Persistence;
 using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;

@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unsquare.Core.Import;
+using Unsquare.Core.PlacemakerCompatibility;
 using Unsquare.Core.Interop;
 
 namespace Unsquare.Integration.Import

@@ -1,7 +1,8 @@
 using Unity.Mathematics;
 using Unsquare.Core.Cage;
+using Unsquare.Core.Import;
 
-namespace Unsquare.Core.Import
+namespace Unsquare.Core.PlacemakerCompatibility
 {
     /// <summary>
     /// Expresses a Placemaker shape as lot cage offsets. Its map is bilinear in plan within its span, so mapping the

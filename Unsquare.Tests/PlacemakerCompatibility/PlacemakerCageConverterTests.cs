@@ -3,8 +3,9 @@ using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Import;
+using Unsquare.Core.PlacemakerCompatibility;
 
-namespace Unsquare.Tests.Import
+namespace Unsquare.Tests.PlacemakerCompatibility
 {
     public class PlacemakerCageConverterTests
     {
