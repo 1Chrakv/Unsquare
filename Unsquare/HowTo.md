@@ -14,14 +14,15 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
                │ variant prefab exists? ──yes──▶ (wait until initialized) ─▶ PrefabSwapper
                │ no
                ▼
-          Debouncer (PipelineOptions.RebakeDelaySeconds) ─▶ VariantPrefabFactory:
+          Debouncer (PipelineOptions.RebakeDelaySeconds; BakeNow on drag release and one-shot commands)
+          ─▶ VariantPrefabFactory:
               clone prefab, RenderVariantBuilder deforms meshes + LODs, GeometryAssetStore saves them,
               attachment deformers place props/areas/lanes/nets, AddPrefab, manifest entry
           ─▶ wait until the prefab entity loses `Created` ─▶ PrepareVariantPrefab ─▶ PrefabSwapper
 Next session: OnGamePreload ─▶ VariantManifest ─▶ re-create every variant (assets + BoundsCache reused)
               OnGameLoadingComplete ─▶ PrepareVariantPrefab ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
 
-PrepareVariantPrefab = SimDataCopier + upgrade setup (UpgradeRegistration, UpgradeArchetype, UpgradeOwnership).
+PrepareVariantPrefab = SimDataCopier + VariantArchetype + upgrade setup (UpgradeRegistration, UpgradeOwnership).
 On-lot upgrade extensions get their own variants with the owner's cage and swap with the owner; the UI edits a
 cage raised over them (ExtendedCage). Details: Upgrades.md.
 ```
@@ -68,6 +69,11 @@ y = up, z = depth. `VertexDeformer` maps each vertex submesh-local → building 
 holding two 15-bit octahedral values plus the handedness in the sign bit (`_TANGENTSPACE_OCTO`).
 `mesh.normals`/`mesh.tangents` can't read them and their setters change the layout the shader decodes.
 `MeshDeformer` reads and writes them raw (`PackedVertexChannel`) and converts with `OctahedralPacking`.
+
+**Two paths:** meshes are only ever baked with a plain cage (`CageKernel`, the cage as plain data), so
+`VertexBufferDeformer` runs the Burst job `VertexDeformJob` over the raw vertex streams on the worker threads and
+waits for it in the same frame. Other deformations or vertex layouts take the managed path
+(`MeshDeformer.DeformCopyManaged`). Both go through `VertexDeformer` and must give the same result.
 
 **Meshes are shared:** always `Object.Instantiate` before editing and `Object.Destroy` every temporary mesh.
 

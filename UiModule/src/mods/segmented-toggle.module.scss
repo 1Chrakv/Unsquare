@@ -1,6 +1,7 @@
 // Segments are vanilla tool buttons; the thumb's size and position are measured from them (segmented-toggle.tsx).
 $inset: 2rem;
 $radius: 5rem;
+$border: 1rem;
 
 .track {
     position: relative;
@@ -10,7 +11,16 @@ $radius: 5rem;
     padding: $inset;
     border-radius: $radius + $inset;
     background-color: rgba(0, 0, 0, 0.35);
-    border: 1rem solid rgba(255, 255, 255, 0.12);
+    border: $border solid rgba(255, 255, 255, 0.12);
+}
+
+// The track's frame without its look: plain buttons in it line up with the segments of a toggle.
+.group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: $inset;
+    border: $border solid transparent;
 }
 
 .thumb {

@@ -6,7 +6,7 @@ namespace Unsquare.Core.Editing
 {
     /// <summary>
     /// Finds the cage handle of one kind under a mouse ray: corners and edges within an angular tolerance,
-    /// faces by the first hit.
+    /// faces by the first hit, the whole cage by a face hit or a near edge.
     /// </summary>
     public static class CagePicker
     {
@@ -18,6 +18,7 @@ namespace Unsquare.Core.Editing
             CageHandleKind.Corner => TryPickCorner(box, offsets, ray, tolerance, out handle, out along),
             CageHandleKind.Edge => TryPickEdge(box, offsets, ray, tolerance, out handle, out along),
             CageHandleKind.Face => TryPickFace(box, offsets, ray, out handle, out along),
+            CageHandleKind.Cage => TryPickCage(box, offsets, ray, tolerance, out handle, out along),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
         };
 
@@ -51,6 +52,20 @@ namespace Unsquare.Core.Editing
             handle = pick.Found ? CageHandle.Edge(pick.Index) : default;
             along = pick.Found ? pick.Along : 0f;
             return pick.Found;
+        }
+
+        /// <summary>
+        /// The whole cage if the ray enters it or passes close to one of its edges; along is the nearer of both, so
+        /// a press-drag keeps the grabbed spot under the mouse.
+        /// </summary>
+        public static bool TryPickCage(CageBox box, CageOffsets offsets, CageRay ray, float tolerance,
+            out CageHandle handle, out float along)
+        {
+            bool face = TryPickFace(box, offsets, ray, out _, out float faceAlong);
+            bool edge = TryPickEdge(box, offsets, ray, tolerance, out _, out float edgeAlong);
+            handle = face || edge ? CageHandle.Cage() : default;
+            along = face && edge ? math.min(faceAlong, edgeAlong) : face ? faceAlong : edge ? edgeAlong : 0f;
+            return face || edge;
         }
 
         /// <summary>The face the ray enters first; deformed faces are split into two triangles.</summary>

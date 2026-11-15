@@ -7,6 +7,7 @@ using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Terrain;
 using Unsquare.UI.Editing;
+using Unsquare.UI.Input;
 using Unsquare.UI.Tool;
 
 namespace Unsquare.UI.Bindings
@@ -22,10 +23,16 @@ namespace Unsquare.UI.Bindings
         // Keeps the window's anchor this far from the screen border (share of the screen size).
         private const float ScreenMargin = 0.04f;
 
+        // How long the hint under the tool window names a failure.
+        private const float ProblemSeconds = 4f;
+
         private readonly float3[] _cornerViewports = new float3[CageTopology.CornerCount];
         private UnsquareToolSystem _tool;
         private CageEditorSystem _editor;
+        private UnsquareSettings _settings;
         private bool _loggedAnchorFailure;
+        private int _shownProblemCount;
+        private float _problemShownAt = float.NegativeInfinity;
 
         protected override void OnCreate()
         {
@@ -34,6 +41,8 @@ namespace Unsquare.UI.Bindings
             _editor = World.GetOrCreateSystemManaged<CageEditorSystem>();
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "modeActive", () => _tool.IsActive));
             AddBinding(new TriggerBinding(Group, "toggleMode", () => _tool.Toggle()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "buttonPosition",
+                () => (_settings?.ToButtonPosition() ?? ButtonPosition.Bottom).ToString()));
 
             AddUpdateBinding(new GetterValueBinding<ToolWindowAnchor>(Group, "toolWindow", GetToolWindowAnchor,
                 new ValueWriter<ToolWindowAnchor>()));
@@ -42,12 +51,35 @@ namespace Unsquare.UI.Bindings
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "hasHandle",
                 () => _editor.Session.Selection.HasHandle));
             AddBinding(new TriggerBinding<string>(Group, "selectPickKind", SelectPickKind));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "gizmoMode",
+                () => _editor.Session.GizmoMode.ToString()));
+            AddBinding(new TriggerBinding<string>(Group, "selectGizmoMode", SelectGizmoMode));
             AddBinding(new TriggerBinding(Group, "resetHandle", () => _editor.Session.ResetHandle()));
             AddBinding(new TriggerBinding(Group, "resetBuilding", () => _editor.Session.Reset()));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canUndo", () => _editor.Session.CanUndo));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canRedo", () => _editor.Session.CanRedo));
+            AddBinding(new TriggerBinding(Group, "undo", () => _editor.Session.Undo()));
+            AddBinding(new TriggerBinding(Group, "redo", () => _editor.Session.Redo()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "editMode",
+                () => _editor.Session.EditMode.ToString()));
+            AddBinding(new TriggerBinding<string>(Group, "selectEditMode", SelectEditMode));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "isSplit",
+                () => _editor.Session.TryGetCage(out var cage) && cage.IsSplit));
+            AddBinding(new TriggerBinding(Group, "linkBuilding", () => _editor.Session.LinkBuildingToLot()));
+            AddBinding(new TriggerBinding(Group, "linkLot", () => _editor.Session.LinkLotToBuilding()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "blendMode",
+                () => _editor.Session.TryGetCage(out var cage) ? cage.BlendMode.ToString() : nameof(BlendMode.None)));
+            AddBinding(new TriggerBinding<string>(Group, "selectBlendMode", SelectBlendMode));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "problem", GetProblem));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "offGround",
+                () => _editor.Session.TryGetCage(out var cage) && cage.IsOffGround));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "terrainLift",
                 () => _editor.Session.TryGetCage(out var cage) && cage.TerrainLift));
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "canLiftTerrain",
-                () => _editor.Session.TryGetCage(out var cage) && cage.IsDeformed));
+                () => _editor.Session.EditMode != CageTarget.Building &&
+                      _editor.Session.TryGetCage(out var cage) && cage.LotDeformed));
+            AddUpdateBinding(new GetterValueBinding<bool>(Group, "canSelectGroundFitMode",
+                () => _editor.Session.EditMode != CageTarget.Building));
             AddBinding(new TriggerBinding(Group, "toggleTerrainLift", () => _editor.Session.ToggleTerrainLift()));
             AddBinding(new TriggerBinding(Group, "fitToGround", () => _editor.Session.FitToGround()));
             AddUpdateBinding(new GetterValueBinding<string>(Group, "groundFitMode",
@@ -68,12 +100,54 @@ namespace Unsquare.UI.Bindings
             }));
         }
 
+        /// <summary>Hooks up the options read by the UI module (button position).</summary>
+        internal void Bind(UnsquareSettings settings) => _settings = settings;
+
+        // The latest failure for a few seconds (as long as a drag keeps pushing into it), else a failed bake.
+        private string GetProblem()
+        {
+            var session = _editor.Session;
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            if (session.ProblemCount != _shownProblemCount || (session.ActiveDrag != null && session.Problem != null))
+            {
+                _shownProblemCount = session.ProblemCount;
+                _problemShownAt = now;
+            }
+            if (session.Problem is { } problem && now - _problemShownAt < ProblemSeconds)
+                return problem.ToString();
+            return session.TryGetCage(out var cage) && cage.Status == DeformStatus.Failed ? "BakeFailed" : string.Empty;
+        }
+
+        private void SelectEditMode(string mode)
+        {
+            if (Enum.TryParse(mode, out CageTarget parsed) && Enum.IsDefined(typeof(CageTarget), parsed))
+                _editor.Session.SetEditMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown edit mode '{mode}'.");
+        }
+
+        private void SelectBlendMode(string mode)
+        {
+            if (Enum.TryParse(mode, out BlendMode parsed) && Enum.IsDefined(typeof(BlendMode), parsed))
+                _editor.Session.SetBlendMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown blend mode '{mode}'.");
+        }
+
         private void SelectGroundFitMode(string mode)
         {
             if (Enum.TryParse(mode, out GroundFitMode parsed) && Enum.IsDefined(typeof(GroundFitMode), parsed))
                 _editor.Session.SetGroundFitMode(parsed);
             else
                 Mod.Log.Warn($"[UI] Unknown ground fit mode '{mode}'.");
+        }
+
+        private void SelectGizmoMode(string mode)
+        {
+            if (Enum.TryParse(mode, out GizmoMode parsed) && Enum.IsDefined(typeof(GizmoMode), parsed))
+                _editor.Session.SetGizmoMode(parsed);
+            else
+                Mod.Log.Warn($"[UI] Unknown gizmo mode '{mode}'.");
         }
 
         private void SelectAlignMode(string mode)

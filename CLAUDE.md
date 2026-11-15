@@ -12,17 +12,22 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
-| `UiModule/` | React UI module (game template): mode button next to the underground toggle and the tool window above the edited building (pick mode, resets); talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
+| `UiModule/` | React UI module (game template): mode button (next to the underground toggle, or top left/right by option `ButtonPosition`) and the tool window above the edited building (pick mode, resets); talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
+| `*/PlacemakerCompatibility/` | Everything for buildings the Placemaker mod has bent, per layer (see Placemaker compatibility) | as its layer |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
 Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageEditSession` commands; views only
 read the session. Nothing runs outside Unsquare mode (tool active): the session is disabled and hotkeys are ignored.
-Selection is two-step (building, then a handle of the pick mode, `HandleSelection`); a selected handle locks the
+Selection is two-step (building, then a handle of the pick mode: corner, edge, face or the whole cage,
+`CageHandleKind.Cage` = all 8 corners; `HandleSelection`); a selected handle locks the
 building until right-click (`CageEditSession.StepBack`).
 Picking and gizmo math (`CagePicker`, `AxisDrag`, `PlaneDrag`, `GizmoAxes`) live in `Core/Editing`, in building space.
 Drags are axis-constrained (gizmo arrows) or horizontal (gizmo square `GizmoAxes.PlaneXZ`, or pressing on a handle,
-which selects it and drags once past `DragThreshold`); horizontal drags keep heights.
+which selects it and drags once past `DragThreshold`); horizontal drags keep heights. `GizmoMode` Rotate (Ctrl tap,
+`ModifierTap` in `CageHotkeySystem`, or the tool window) swaps arrows for rings (`GizmoAxes.Ring`, `RingDrag`) around
+every axis that turns the handle (none for corners, which keep the arrows). Drags yield a `HandleMotion` (translation
+or turn around the handle centre), applied to the drag-start offsets and quantized once.
 Undo/redo (`EditHistory`, Core) is one global history of cage edits; the session records nudges, whole drags and
 resets, and undo makes the edited building the target. Selection changes are not undoable.
 
@@ -74,6 +79,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - Never edit shared meshes; `Object.Instantiate` first and `Object.Destroy` every temporary mesh.
 - Game meshes pack normals (SNorm16×2) and tangents (Float32×1, sign bit = handedness) octahedrally. Never use
   `mesh.normals`/`tangents` on them; go through `PackedVertexChannel` + `OctahedralPacking` (see `HowTo.md`).
+- Mesh vertices are deformed by the Burst job `VertexDeformJob` (`VertexBufferDeformer`), completed in the same
+  frame. Code it calls (`CageKernel`, `VertexDeformer.DeformVertex`, `OctahedralPacking`) must stay Burst-friendly:
+  structs and static methods only, no managed arrays, classes, interfaces or exceptions.
 - Buildings have no impostors (CS2 only gives them to trees). The coarsest LOD is left out for twisted cages
   (`CageTwist` > `PipelineOptions.CoarseLodTwistMeters`); it can't follow the bend.
 - Mesh and prefab APIs are main-thread only; keep hot loops allocation-free (no LINQ, no closures).
@@ -93,16 +101,28 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   `AttachmentOptions`, rebake delay, pruning, sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
 - Flow: `UnsquareSettings` (Settings tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
   `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
+- The rebake delay only applies to nudges, undo/redo and pauses within a drag; drag release and one-shot commands
+  call `IBuildingDeformService.BakeNow` (`CageEditSession.RecordOneShot`).
 - Slider attributes are the single source of ranges (mapping clamps to them); defaults come from the option types.
 - Attachment options are read when a variant is created; variant names don't include them, so existing
   variants keep their placement until the next load. Never expose values baked into names or assets.
 
 ## Lot deformation
 
-- The cage is always the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
+- Cages are stored on the lot box: lot rectangle (`lotSize × 8 m`) from the ground to the roof
   (`CageBoxMeasurer.TryMeasureLot`), at least 8 m tall (`LotBox.MinHeight`) so flat lots have pickable vertical
-  edges. Prefabs without a lot are not deformable. A building-only cage was removed
-  (0.6.0): it left garden props, ground and paths misplaced.
+  edges. Prefabs without a lot are not deformable.
+- **Split cages** (`Unsquare/SplitCages.md`): `DeformSpec` holds a lot cage and a building cage, both on the lot box;
+  equal cages are "linked" and name, bake and remap exactly like the single cage before (v1 names, manifest v2 entries
+  migrate as linked). Meshes and attached props follow the building cage; ground items (paths, props, areas) follow
+  the lot cage, or the blend while blending is on: outside the footprint the nearest wall's change fades out along an
+  S-curve across a ring that spans to the lot edge (wider only where an outward change needs room not to fold), never
+  extrapolated (`BlendedDeformation`, `CageBlend.Ring`; its constants are part of the naming scheme). `BlendMode` per building (None by default, or All) decides whether the
+  ground blends; it is in the split name. Linked variants ignore it (`DeformSpec.ForVariant`); a mode chosen while
+  linked waits in `DeformService` (memory).
+  Edit modes (`CageTarget`): Building edits the building cage on the mesh box grown over storeys and wings and converts only
+  changes to the lot box (`SplitCageEdit`, snap rules); Lot edits the plain lot box; Both keeps the old raised edit
+  box and carries the building along. History stores lot-frame specs.
 - With deformed on-lot upgrades (e.g. a storey), the cage shown and edited (`BuildingDescription.EditBox`,
   `CageState.Box`) is raised to their top. Variants are still named and baked on the lot box; `DeformService`
   converts offsets between the two (`ExtendedCage.Convert`, exact up to the 0.1 m grid) and keeps the last edit
@@ -129,6 +149,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - It collapses the flat area to the lot centre at the centre lift (`TerrainSlopePlanner`, `TerrainSlopeApplier`).
   - It adds the edge lift, relative to that, to every instance's `Lot`. The game interpolates in between; diagonal
     creases come from its blend.
+  - Lifts are the deformed ground above each lot point (`GroundSurface`: cage inverted in plan, clamped to the
+    outline), not the rise of the point that started there; otherwise turned cages slope the terrain wrongly.
   - Runtime only: `Lot` is not saved and variant prefabs are rebuilt on load. `LotHeightSystem` rewrites lots near
     changed objects/nets: compare with the written value, never add twice.
   - Stepped `AdditionalBuildingTerraformElement` cells had no visible effect in game; don't retry them.
@@ -141,6 +163,13 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   side goes to road level (`BackOnly`); `AllCorners` fits all four. Only the GPU `TerrainSystem.heightmap` has
   the terrain before lots/roads (CPU heights are read from the modified cascade), so `BaseTerrainSystem` reads a small
   region back asynchronously and samples it with the cascade's `TerrainHeightData` mapping.
+- **Level-ups:** the game adds `UnderConstruction` naming a plain prefab one level up and swaps `PrefabRef` at a
+  later EndFrameBarrier, rebuilding areas and nets from that prefab. `LevelUpCarrySystem` catches the frames in between
+  and hands the old spec to `VariantSystem.PrepareLevelUp`, which bakes the new prefab with `LevelUpCarry.Rescale`
+  (bottom corners kept, each column's rise scaled by the height ratio) and swaps after the level-up. The swap waits
+  until the building's `Updated` is cleaned up: the new areas and nets only appear in Modification1 of the frame after
+  the prefab change, and swapping earlier leaves them plain. A cage the new building can't take leaves it plain.
+  Option `PipelineOptions.KeepOnLevelUp`.
 - Effects (`EffectSource`) are not deformed yet.
 - **Zoning and condemnation:**
   - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot
@@ -157,6 +186,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     position) and swapped together with the owner. Their nets are synced together with the owner's (`NetOwner` per
     sub-net owner), so shared nodes stay connected. A storey above the roof gets the lot cage extrapolated upwards,
     which equals the raised edit cage the user sees.
+  - Structures (storeys, wings beside the building, top ≥ `ExtensionCage.StructureMinHeight`) follow the building
+    cage and the Building-mode box encloses them; flat pieces beside it (car park, helipad) follow the lot cage.
   - Name: `VariantNaming.ExtensionVariantName` (seed `Unsquare:extension:v1:` + owner variant name). The owner's
     manifest entry lists them in `Extensions` ("Type/BaseName") and holds their assets; restored after the owner.
   - Skipped: external lots, extensions without meshes or attachments, and extensions moved off their prefab place.
@@ -164,8 +195,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     tool raycasts with `RaycastFlags.SubBuildings`, so clicking one picks it, not its owner.
   - Prefab setup after init (`VariantSystem.PrepareVariantPrefab`):
     - `UpgradeRegistration` undoes a cloned upgrade registering itself as an option of its buildings.
-    - `UpgradeArchetype` gives variants the base's upgrade buffers in their instance archetype; without them hover
-      copies lack `InstalledUpgrade` and the game's upgrade job crashes natively.
+    - `VariantArchetype` gives a variant's instance archetype every type its base's has (upgrade buffers, and what
+      the removed `SpawnableBuilding` adds). Hover and eyedropper copies are created from it; without those types
+      the game's jobs crash natively. `VariantInstanceRepair` adds them to copies placed before.
     - `UpgradeOwnership` shares the base's upgrade list and lists the variant in the upgrades'
       `ServiceUpgradeBuilding`, so deformed buildings keep their Upgrades section and accept new upgrades.
   - Upgrade variants keep a `UIObject` without menu group (the info panel lists only upgrades with `UIObjectData`) and
@@ -173,13 +205,14 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - `ExtensionInstallSystem` bakes a new on-lot extension on a deformed building with its cage at once.
   - Open work, the upgrade crash (cause, fix, disproved theories) and the combined cage design:
     `Unsquare/Upgrades.md`.
-- **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z) or right (−X) face, seen from the
-  street, goes to the nearest roughly parallel road or lot edge, outside it or inside up to half the lot depth (a lot
-  clipping into its neighbour); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,
+- **Align to neighbour** (`NeighbourAlign`, Core/Editing): the left (+X), back (−Z), right (−X) or front (+Z) face,
+  seen from the street, goes to the nearest roughly parallel road, path or lot edge, outside it or inside up to half the lot depth (a lot
+  clipping into its neighbour; free paths only outside, they may cross the lot); lot edges carry an outward normal and must face the face. `AlignMode`: angle keeps the nearer corner,
   flush slides both corners along their edges onto the line, full takes a lot edge's end points (roads: like flush).
-  `NeighbourQuery` (Integration) reads road `EdgeGeometry` and buildings from the game's search trees;
-  `DeformService` turns other lots into edges via their cages. Alt+Shift+arrows align, Alt+A cycles the mode.
-  Edges carry ground heights (road surface, neighbour lot ground); `NeighbourAlign.FitHeight` (Ctrl+Alt+arrows)
+  `NeighbourQuery` (Integration) reads `EdgeGeometry` of roads and paths (prefab `PathwayData`; owned lot paths skipped) and buildings from the game's search trees;
+  `DeformService` turns other lots into edges via their cages. Alt+Shift+arrows align, Alt+A cycles the mode;
+  the tool window shows four side buttons that align or level depending on a view-only toggle.
+  Edges carry ground heights (road or path surface, neighbour lot ground); `NeighbourAlign.FitHeight` (Ctrl+Alt+arrows)
   moves the same side's two columns to the neighbour's height next to them via `GroundFit.Fit`.
 
 ## FlexIt import
@@ -194,6 +227,50 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - The taper and shear are relative to FlexIt's own measures (`FlexItFootprint`: mesh half extents, geometry bounds
   `max.z`), not to the lot box. Shear is read and removed through FlexIt's public `SkewRegistrySystem` by reflection
   (`FlexItBridge`); if FlexIt changes, the bridge must fail softly and the import reports FlexIt as missing.
+
+## Placemaker compatibility
+
+All Placemaker code lives in `PlacemakerCompatibility/` folders, one per layer (namespace
+`Unsquare.<Layer>.PlacemakerCompatibility`); generic code only knows the hooks `IForeignPrefabs` and `IPickGate`.
+
+| Layer | Types |
+|---|---|
+| Core | `PlacemakerCage` (its shape), `PlacemakerCageConverter` (shape → lot cage), `PlacemakerVariantName` |
+| Integration | `PlacemakerBridge` (reflection), `PlacemakerAdoptions` (implements `IForeignPrefabs` for `VariantSystem`) |
+| Api | `IPlacemakerService` / `PlacemakerService` (`UnsquareApi.GetPlacemakerService`), `PlacemakerConversionResult` |
+| UI | `PlacemakerDecision` (implements `IPickGate` for `CageEditSession`), `PlacemakerUISystem` (dialog bindings) |
+| UiModule | `mods/placemaker-compatibility/placemaker-dialog.tsx` |
+
+- Placemaker bends row houses into runtime variants (`Placemaker Shape <base> <hash> <key>`, `PlacemakerVariantName`):
+  a plan-only bilinear map of 4 corner shifts over a span (depth clamped outside it, `PlacemakerCage`). It skips
+  prefabs without an asset, i.e. every Unsquare variant, and rebuilds its own variants only after loading.
+  Since its build 20 most are bone-skinned light copies: prefab entities with the plain prefab's `PrefabData`, so
+  `PrefabSystem` returns the plain prefab for them. Detect by entity (`PlacemakerBridge.IsVariant`), never by name alone.
+- Picking one asks first: `CageEditSession.SelectBuilding` hands it to the gate (`PlacemakerDecision`), which keeps
+  it pending until Convert or Cancel. Until then `VariantSystem.TryDescribe` refuses it (`IForeignPrefabs`), so
+  nothing edits it; the hover preview reads it through `TryDescribeForeign` (`IBuildingDeformService.TryGetPreviewCage`),
+  on the plain base with the converted cage.
+  - Convert: `PlacemakerBridge` (reflection on its public `ShapeSystem`) gives base and shape;
+    `PlacemakerCageConverter` maps the lot corners (exact within the span) or fits when that folds. The building is
+    adopted (described on the plain base) and `PlacemakerService` requests the cage through
+    `IBuildingDeformService.Apply`, so it swaps straight from Placemaker's variant to ours. Refused while Placemaker
+    is still reshaping it (`IsRequested`). Not undoable; Reset hands the plain building back to Placemaker.
+  - Convert whole row: a converted house leaves Placemaker's plan, so its next plan drops the joints and
+    straightens the neighbours. `PlacemakerService.ConvertRow` takes every undecided house joined to it
+    (`TryGetPlanned` → `RowCollector`) at once, all or nothing while Placemaker is busy, and
+    `IVariantPipeline.SwapTogether` (`SwapGroups`) holds their swaps until all are baked (10 s timeout), so they
+    land in one frame.
+  - There is no deforming on top of Placemaker's variant: such variants may not survive a reload. Unsquare
+    variants on a Placemaker base in older saves still resolve by name (`PrefabResolver`).
+- Adoption is runtime only (cleared on load); saves only ever hold Unsquare variants and their bases. It ends with
+  the building's next swap (it is then off Placemaker's variant), so after a Reset a house Placemaker bends again
+  asks again.
+- Placemaker updates itself, so the bridge is defensive. The whole contract (members, out-struct fields) is listed in
+  `PlacemakerBridge` and checked at load with `ReflectionContract`. One log line gives the version (`TestedWith`) and
+  the features detect, convert and rows; a missing member or a runtime exception turns off only its feature.
+  Read shapes must be `PlacemakerCage.IsPlausible`, and a base that is an Unsquare variant is refused (that would
+  mean Placemaker no longer skips ours). After a Placemaker update: check that line, run Testing rows 165–177, then
+  raise `TestedWith`.
 
 ## Props: rigid placement, full deformation later
 

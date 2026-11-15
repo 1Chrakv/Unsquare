@@ -15,10 +15,15 @@ namespace Unsquare.UI.Input
         public const string ToggleMode = "UnsquareToggleMode";
         public const string ToggleModeLabel = "Toggle Unsquare mode";
 
+        public const string CycleEditMode = "UnsquareCycleEditMode";
+        public const string LinkBuildingToLot = "UnsquareLinkBuildingToLot";
+        public const string LinkLotToBuilding = "UnsquareLinkLotToBuilding";
+        public const string ToggleBlendMode = "UnsquareToggleBlendMode";
         public const string CyclePickKind = "UnsquareCyclePickKind";
         public const string KindCorner = "UnsquareKindCorner";
         public const string KindEdge = "UnsquareKindEdge";
         public const string KindFace = "UnsquareKindFace";
+        public const string KindCage = "UnsquareKindCage";
         public const string PreviousHandle = "UnsquarePreviousHandle";
         public const string NextHandle = "UnsquareNextHandle";
         public const string MoveNegX = "UnsquareMoveNegX";
@@ -36,10 +41,12 @@ namespace Unsquare.UI.Input
         public const string AlignLeft = "UnsquareAlignLeft";
         public const string AlignBack = "UnsquareAlignBack";
         public const string AlignRight = "UnsquareAlignRight";
+        public const string AlignFront = "UnsquareAlignFront";
         public const string CycleAlignMode = "UnsquareCycleAlignMode";
         public const string AlignGroundLeft = "UnsquareAlignGroundLeft";
         public const string AlignGroundBack = "UnsquareAlignGroundBack";
         public const string AlignGroundRight = "UnsquareAlignGroundRight";
+        public const string AlignGroundFront = "UnsquareAlignGroundFront";
         public const string ResetAll = "UnsquareResetAll";
         public const string LogState = "UnsquareLogState";
         public const string Undo = "UnsquareUndo";
@@ -47,14 +54,24 @@ namespace Unsquare.UI.Input
 
         public static readonly IReadOnlyList<HotkeyDefinition> All = new[]
         {
+            new HotkeyDefinition(CycleEditMode, nameof(UnsquareSettings.CycleEditModeBinding),
+                "Cycle edit mode (both, building, lot)", s => s.CycleEditMode()),
+            new HotkeyDefinition(LinkBuildingToLot, nameof(UnsquareSettings.LinkBuildingToLotBinding),
+                "Make the building follow the lot again", s => s.LinkBuildingToLot()),
+            new HotkeyDefinition(LinkLotToBuilding, nameof(UnsquareSettings.LinkLotToBuildingBinding),
+                "Make the lot follow the building again", s => s.LinkLotToBuilding()),
+            new HotkeyDefinition(ToggleBlendMode, nameof(UnsquareSettings.ToggleBlendModeBinding),
+                "Switch whether the ground blends between building and lot", s => s.ToggleBlendMode()),
             new HotkeyDefinition(CyclePickKind, nameof(UnsquareSettings.CyclePickKindBinding),
-                "Cycle pick mode (edges, faces, corners)", s => s.CyclePickKind()),
+                "Cycle pick mode (edges, faces, corners, cage)", s => s.CyclePickKind()),
             new HotkeyDefinition(KindCorner, nameof(UnsquareSettings.KindCornerBinding), "Pick corners",
                 s => s.SelectKind(CageHandleKind.Corner)),
             new HotkeyDefinition(KindEdge, nameof(UnsquareSettings.KindEdgeBinding), "Pick edges",
                 s => s.SelectKind(CageHandleKind.Edge)),
             new HotkeyDefinition(KindFace, nameof(UnsquareSettings.KindFaceBinding), "Pick faces",
                 s => s.SelectKind(CageHandleKind.Face)),
+            new HotkeyDefinition(KindCage, nameof(UnsquareSettings.KindCageBinding), "Pick the whole cage",
+                s => s.SelectKind(CageHandleKind.Cage)),
             new HotkeyDefinition(PreviousHandle, nameof(UnsquareSettings.PreviousHandleBinding),
                 "Select previous handle", s => s.PreviousHandle()),
             new HotkeyDefinition(NextHandle, nameof(UnsquareSettings.NextHandleBinding), "Select next handle",
@@ -89,6 +106,8 @@ namespace Unsquare.UI.Input
                 s => s.AlignToNeighbour(AlignSide.Back)),
             new HotkeyDefinition(AlignRight, nameof(UnsquareSettings.AlignRightBinding),
                 "Align right side to neighbour (seen from the street)", s => s.AlignToNeighbour(AlignSide.Right)),
+            new HotkeyDefinition(AlignFront, nameof(UnsquareSettings.AlignFrontBinding),
+                "Align street side to the road", s => s.AlignToNeighbour(AlignSide.Front)),
             new HotkeyDefinition(CycleAlignMode, nameof(UnsquareSettings.CycleAlignModeBinding),
                 "Cycle align mode (angle, flush, full)", s => s.CycleAlignMode()),
             new HotkeyDefinition(AlignGroundLeft, nameof(UnsquareSettings.AlignGroundLeftBinding),
@@ -98,6 +117,8 @@ namespace Unsquare.UI.Input
             new HotkeyDefinition(AlignGroundRight, nameof(UnsquareSettings.AlignGroundRightBinding),
                 "Level right side with neighbour (seen from the street)",
                 s => s.AlignGroundToNeighbour(AlignSide.Right)),
+            new HotkeyDefinition(AlignGroundFront, nameof(UnsquareSettings.AlignGroundFrontBinding),
+                "Level street side with the road", s => s.AlignGroundToNeighbour(AlignSide.Front)),
             new HotkeyDefinition(ResetAll, nameof(UnsquareSettings.ResetAllBinding), "Reset all buildings",
                 s => s.ResetAll()),
             new HotkeyDefinition(Undo, nameof(UnsquareSettings.UndoBinding), "Undo cage edit", s => s.Undo()),

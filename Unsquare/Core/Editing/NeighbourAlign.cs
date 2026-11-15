@@ -7,7 +7,7 @@ using Unsquare.Core.Terrain;
 namespace Unsquare.Core.Editing
 {
     /// <summary>
-    /// Aligns a side or the back face of a lot cage to the nearest neighbouring edge on the ground (building space xz).
+    /// Aligns a lot cage face (left, back, right or front) to the nearest neighbouring edge on the ground (xz).
     /// Face corners only slide along their adjacent edges (or onto neighbour corners); columns keep heights and tilt.
     /// </summary>
     public static class NeighbourAlign
@@ -16,20 +16,23 @@ namespace Unsquare.Core.Editing
         // street in front, seen from the back face) belong to the other side.
         private const float MaxOverlapDepthShare = 0.5f;
         private const float ParallelEpsilon = 1e-4f;
+        // Paths may sit this far inside the face, so a face already on the path still finds it.
+        private const float PathToleranceMeters = 0.5f;
         private const int TopBit = 2;
 
-        // The face's two ground corners; the first is the back (sides) or the −X one (back face).
+        // The face's two ground corners; the first is the back (sides) or the −X one (back and front faces).
         private static (int First, int Second) FaceCorners(AlignSide side) => side switch
         {
             AlignSide.Left => (1, 5),
             AlignSide.Right => (0, 4),
             AlignSide.Back => (0, 1),
+            AlignSide.Front => (4, 5),
             _ => throw new ArgumentException($"Unknown side {side}.", nameof(side)),
         };
 
         /// <summary>
         /// Finds the edge nearest to the face that is roughly parallel to it and beside it: outside, or inside up to
-        /// half the lot depth when the lot clips into a neighbour. Lot edges must face the face.
+        /// half the lot depth when the lot clips into a neighbour (paths: outside only). Lot edges must face the face.
         /// </summary>
         /// <param name="nearestOutOfReach">Distance of the nearest edge that only failed the reach, for logs;
         /// infinity if there is none.</param>
@@ -65,7 +68,8 @@ namespace Unsquare.Core.Editing
                 float distance = math.dot(mid - face.Mid, face.Outward);
                 if (distance > options.SearchMeters)
                     nearestOutOfReach = math.min(nearestOutOfReach, distance);
-                if (distance < minDistance || distance > options.SearchMeters)
+                if (distance < (edge.IsPath ? -PathToleranceMeters : minDistance) ||
+                    distance > options.SearchMeters)
                     continue;
                 if (math.abs(distance) < best)
                 {
@@ -205,7 +209,7 @@ namespace Unsquare.Core.Editing
             {
                 var points = GroundFit.GroundPoints(box, offsets);
                 var (first, second) = FaceCorners(side);
-                int across = side == AlignSide.Back ? 4 : 1;
+                int across = side is AlignSide.Back or AlignSide.Front ? 4 : 1;
                 return new Face(points[GroundIndex(first)], points[GroundIndex(second)],
                     points[GroundIndex(first ^ across)], points[GroundIndex(second ^ across)]);
             }

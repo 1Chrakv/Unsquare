@@ -11,15 +11,22 @@ namespace Unsquare.UI.Input
     /// </summary>
     [FileLocation(nameof(Unsquare))]
     [SettingsUITabOrder(SettingsTab, KeyBindingsTab)]
-    [SettingsUIGroupOrder(EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
+    [SettingsUIGroupOrder(InterfaceGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
         PerformanceGroup, FlexItGroup, ResetGroup, HotkeyGroup)]
-    [SettingsUIShowGroupName(EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
+    [SettingsUIShowGroupName(InterfaceGroup, EditingGroup, LimitsGroup, AttachmentsGroup, LotSyncGroup, OverlayGroup,
         PerformanceGroup, FlexItGroup, HotkeyGroup)]
     [SettingsUIKeyboardAction(CageHotkeys.ToggleMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.CycleEditMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.LinkBuildingToLot, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.LinkLotToBuilding, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.ToggleBlendMode, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CyclePickKind, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindCorner, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindEdge, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.KindFace, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.KindCage, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.PreviousHandle, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.NextHandle, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.MoveNegX, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
@@ -39,11 +46,14 @@ namespace Unsquare.UI.Input
     [SettingsUIKeyboardAction(CageHotkeys.AlignLeft, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignBack, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignRight, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.AlignFront, ActionType.Button, Usages.kDefaultUsage, Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignGroundLeft, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignGroundBack, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.AlignGroundRight, ActionType.Button, Usages.kDefaultUsage,
+        Usages.kToolUsage)]
+    [SettingsUIKeyboardAction(CageHotkeys.AlignGroundFront, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
     [SettingsUIKeyboardAction(CageHotkeys.CycleAlignMode, ActionType.Button, Usages.kDefaultUsage,
         Usages.kToolUsage)]
@@ -66,6 +76,22 @@ namespace Unsquare.UI.Input
         public ProxyBinding ToggleModeBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.D, CageHotkeys.CycleEditMode, alt: true)]
+        public ProxyBinding CycleEditModeBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.K, CageHotkeys.LinkBuildingToLot, alt: true)]
+        public ProxyBinding LinkBuildingToLotBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.K, CageHotkeys.LinkLotToBuilding, alt: true, shift: true)]
+        public ProxyBinding LinkLotToBuildingBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.B, CageHotkeys.ToggleBlendMode, alt: true)]
+        public ProxyBinding ToggleBlendModeBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.W, CageHotkeys.CyclePickKind, alt: true)]
         public ProxyBinding CyclePickKindBinding { get; set; }
 
@@ -80,6 +106,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Digit3, CageHotkeys.KindFace, alt: true)]
         public ProxyBinding KindFaceBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Digit4, CageHotkeys.KindCage, alt: true)]
+        public ProxyBinding KindCageBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Q, CageHotkeys.PreviousHandle, alt: true)]
@@ -150,6 +180,10 @@ namespace Unsquare.UI.Input
         public ProxyBinding AlignRightBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, CageHotkeys.AlignFront, alt: true, shift: true)]
+        public ProxyBinding AlignFrontBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.A, CageHotkeys.CycleAlignMode, alt: true)]
         public ProxyBinding CycleAlignModeBinding { get; set; }
 
@@ -164,6 +198,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, CageHotkeys.AlignGroundRight, alt: true, ctrl: true)]
         public ProxyBinding AlignGroundRightBinding { get; set; }
+
+        [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, CageHotkeys.AlignGroundFront, alt: true, ctrl: true)]
+        public ProxyBinding AlignGroundFrontBinding { get; set; }
 
         [SettingsUISection(KeyBindingsTab, HotkeyGroup)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Delete, CageHotkeys.ResetAll, alt: true, shift: true)]

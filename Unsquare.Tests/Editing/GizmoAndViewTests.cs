@@ -115,7 +115,8 @@ namespace Unsquare.Tests.Editing
             Assert.That(CageHover.None.HasHandle || CageHover.None.HasAxis, Is.False);
             Assert.That(CageHover.OnAxis(0), Is.Not.EqualTo(CageHover.None));
             Assert.That(CageHover.OnAxis(GizmoAxes.PlaneXZ).HasAxis, Is.True);
-            Assert.Throws<ArgumentOutOfRangeException>(() => CageHover.OnAxis(GizmoAxes.PlaneXZ + 1));
+            Assert.That(CageHover.OnAxis(GizmoAxes.PlaneXZ + 1).ToString(), Is.EqualTo("RingX"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CageHover.OnAxis(GizmoAxes.PartCount));
         }
     }
 }

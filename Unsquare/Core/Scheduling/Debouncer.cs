@@ -38,6 +38,15 @@ namespace Unsquare.Core.Scheduling
             return found;
         }
 
+        /// <summary>Makes the pending value for the key due at once; false when nothing is pending.</summary>
+        public bool Release(TKey key)
+        {
+            if (!_pending.TryGetValue(key, out var entry))
+                return false;
+            _pending[key] = (entry.Value, double.NegativeInfinity);
+            return true;
+        }
+
         public bool Cancel(TKey key) => _pending.Remove(key);
 
         public void Clear() => _pending.Clear();

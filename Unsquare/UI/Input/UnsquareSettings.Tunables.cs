@@ -5,6 +5,7 @@ using Game.SceneFlow;
 using Game.Settings;
 using Game.UI;
 using Unity.Mathematics;
+using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
@@ -18,6 +19,7 @@ namespace Unsquare.UI.Input
     public sealed partial class UnsquareSettings
     {
         public const string SettingsTab = "Settings";
+        public const string InterfaceGroup = "Interface";
         public const string EditingGroup = "Editing";
         public const string LimitsGroup = "Limits";
         public const string AttachmentsGroup = "Attachments";
@@ -29,6 +31,13 @@ namespace Unsquare.UI.Input
 
         private Func<string> _importFlexIt;
         private string _importFlexItStatus = "";
+
+        /// <summary>The last edit mode, so it survives a restart; set from the tool window, not shown here.</summary>
+        [SettingsUIHidden]
+        public CageTarget EditMode { get; set; }
+
+        [SettingsUISection(SettingsTab, InterfaceGroup)]
+        public ButtonPosition ButtonPosition { get; set; }
 
         [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
@@ -97,9 +106,18 @@ namespace Unsquare.UI.Input
         [SettingsUISlider(min = 0f, max = 20f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float FacadeReach { get; set; }
 
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
+        public bool LotPropsFollowGround { get; set; }
+
+        [SettingsUISection(SettingsTab, AttachmentsGroup)]
+        public bool AlignLinearProps { get; set; }
+
         [SettingsUISection(SettingsTab, LotSyncGroup)]
         [SettingsUISlider(min = 0.25f, max = 5f, step = 0.25f, unit = Unit.kFloatTwoFractions)]
         public float AreaMatchDistance { get; set; }
+
+        [SettingsUISection(SettingsTab, LotSyncGroup)]
+        public bool KeepOnLevelUp { get; set; }
 
         [SettingsUISection(SettingsTab, OverlayGroup)]
         [SettingsUISlider(min = 0.02f, max = 0.5f, step = 0.02f, unit = Unit.kFloatTwoFractions)]
@@ -183,11 +201,12 @@ namespace Unsquare.UI.Input
                 Clamped(MinLocalVolume, nameof(MinLocalVolume)) / 100f);
             var attachments = new AttachmentOptions(DeformProps, DeformAreas, DeformLanes, DeformNets,
                 Defined(AttachedProps, AttachmentOptions.Default.AttachedPropMode),
-                Clamped(FacadeReach, nameof(FacadeReach)));
+                Clamped(FacadeReach, nameof(FacadeReach)), LotPropsFollowGround,
+                AlignLinearProps);
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
                 (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
                 Clamped(AreaMatchDistance, nameof(AreaMatchDistance)),
-                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)));
+                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)), KeepOnLevelUp);
         }
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),
@@ -198,6 +217,10 @@ namespace Unsquare.UI.Input
             new NeighbourAlignOptions(Clamped(AlignReach, nameof(AlignReach)),
                 Clamped(AlignMaxAngle, nameof(AlignMaxAngle))));
 
+        public CageTarget ToEditMode() => Defined(EditMode, CageTarget.Both);
+
+        public ButtonPosition ToButtonPosition() => Defined(ButtonPosition, ButtonPosition.Bottom);
+
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
             Clamped(AxisLength, nameof(AxisLength)), Clamped(GizmoSize, nameof(GizmoSize)) / 100f);
@@ -205,6 +228,8 @@ namespace Unsquare.UI.Input
         private void SetSettingsDefaults()
         {
             var edit = CageEditOptions.Default;
+            EditMode = CageTarget.Both;
+            ButtonPosition = ButtonPosition.Bottom;
             SmallStep = edit.SmallStep;
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;
@@ -225,7 +250,10 @@ namespace Unsquare.UI.Input
             DeformNets = pipeline.Attachments.DeformNets;
             AttachedProps = pipeline.Attachments.AttachedPropMode;
             FacadeReach = pipeline.Attachments.FacadeReachMeters;
+            LotPropsFollowGround = pipeline.Attachments.LotPropsFollowGround;
+            AlignLinearProps = pipeline.Attachments.AlignLinearProps;
             AreaMatchDistance = pipeline.AreaMatchMeters;
+            KeepOnLevelUp = pipeline.KeepOnLevelUp;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;
             CoarseLodTwist = pipeline.CoarseLodTwistMeters;
             PruneUnused = pipeline.PruneUnused;

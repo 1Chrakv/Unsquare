@@ -3,8 +3,11 @@
     <PropertyGroup>
         <Configurations>Debug;Release</Configurations>
 
+        <!--VertexDeformJob reads and writes raw vertex streams through pointers-->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
         <!--Mod version; keep ModVersion in PublishConfiguration.xml equal (checked on build)-->
-        <Version>1.0.1</Version>
+        <Version>1.1.0</Version>
 
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
@@ -61,6 +64,9 @@
             <Private>false</Private>
         </Reference>
         <Reference Include="UnityEngine.CoreModule">
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="Unity.InputSystem">
             <Private>false</Private>
         </Reference>
         <Reference Include="Unity.Burst">

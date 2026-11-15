@@ -26,6 +26,7 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionTabLocaleID(UnsquareSettings.SettingsTab), "Settings" },
                 { _settings.GetOptionTabLocaleID(UnsquareSettings.KeyBindingsTab), "Key bindings" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.HotkeyGroup), "Cage editing hotkeys" },
+                { _settings.GetOptionGroupLocaleID(UnsquareSettings.InterfaceGroup), "Interface" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.EditingGroup), "Editing" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.LimitsGroup), "Cage limits" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.AttachmentsGroup), "Props and lot" },
@@ -36,6 +37,52 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.FlexItGroup), "Coming from FlexIt" },
                 { _settings.GetBindingMapLocaleID(), "Unsquare" },
                 { "Unsquare.ModeButton.Tooltip", "Unsquare: deform buildings (Alt+U)" },
+                { "Unsquare.ToolWindow.Section.Deform", "Deform" },
+                { "Unsquare.ToolWindow.EditModeBuilding",
+                    "Building: edits move the building and what hangs on it; the lot stays (Alt+D)" },
+                { "Unsquare.ToolWindow.EditModeLot",
+                    "Lot: edits move the ground, paths and ground props; the building stays (Alt+D)" },
+                { "Unsquare.ToolWindow.EditModeBoth",
+                    "Both: edits move building and lot together; the building keeps its own shape (Alt+D)" },
+                { "Unsquare.ToolWindow.Link", "Building follows the lot again (Alt+K)" },
+                { "Unsquare.ToolWindow.LinkLot", "Lot follows the building again (Alt+Shift+K)" },
+                { "Unsquare.ToolWindow.BlendModeNone",
+                    "No blend: ground uses the lot's footprint. Paths may break! (Alt+B)" },
+                { "Unsquare.ToolWindow.BlendModeAll",
+                    "Blend: ground follows the building within, outside it blends into the lot (Alt+B)" },
+                { "Unsquare.ToolWindow.OffGround",
+                    "The building is not on its ground: use Fit to ground in Building mode" },
+                { "Unsquare.ToolWindow.TerrainOfLot", "The terrain belongs to the lot: switch to Lot or Both" },
+                // Keys end in the EditProblem names (plus BakeFailed), shown under the tool window.
+                { "Unsquare.Problem.CageFolds", "Refused: the cage would fold the building inside out" },
+                { "Unsquare.Problem.BlendFolds",
+                    "Blend refused: the ground would fold over. Bring lot and building closer together" },
+                { "Unsquare.Problem.NoNeighbour", "No road or lot found near that side" },
+                { "Unsquare.Problem.TerrainUnavailable", "Could not read the terrain: try again" },
+                { "Unsquare.Problem.AlreadyLinked", "Building and lot already move together" },
+                { "Unsquare.Problem.LotUndeformed", "Deform the lot first: its terrain has nothing to follow" },
+                { "Unsquare.Problem.TerrainOfLot", "The terrain belongs to the lot: switch to Lot or Both" },
+                { "Unsquare.Problem.GroundFitOfLot", "The fit mode belongs to the lot: switch to Lot or Both" },
+                { "Unsquare.Problem.NoHandle", "Select a corner, edge or face first" },
+                { "Unsquare.Problem.NothingToUndo", "Nothing to undo" },
+                { "Unsquare.Problem.NothingToRedo", "Nothing to redo" },
+                { "Unsquare.Problem.NotDeformable", "This building cannot be deformed" },
+                { "Unsquare.Problem.BakeFailed", "Deforming failed: see Unsquare.Mod.log" },
+                { "Unsquare.ConvertDialog.Title", "Building shaped by Placemaker" },
+                { "Unsquare.ConvertDialog.Message",
+                    "Placemaker has bent this building to fit its row. Convert it to an Unsquare cage of the same " +
+                    "shape? Placemaker then leaves it alone; Reset gives the plain building back." },
+                { "Unsquare.ConvertDialog.Convert", "Convert only this building" },
+                { "Unsquare.ConvertDialog.ConvertRow", "Convert whole row ({COUNT} houses)" },
+                { "Unsquare.ConvertDialog.Cancel", "Cancel" },
+                { "Unsquare.ConvertDialog.Problem.PlacemakerBusy",
+                    "Placemaker is reshaping this building right now. Try again in a moment." },
+                { "Unsquare.ConvertDialog.Problem.PlacemakerMissing",
+                    "Placemaker could not be read: it is not running or has changed since Unsquare was tested " +
+                    "with it. The building stays as it is; please report this with Unsquare.Mod.log." },
+                { "Unsquare.ConvertDialog.Problem.Failed",
+                    "The building could not be converted. See Unsquare.Mod.log." },
+                { "Unsquare.ToolWindow.SeatBuilding", "Set the building onto its lot's ground (Alt+G)" },
                 { "Unsquare.ToolWindow.Section.Pick", "Pick" },
                 { "Unsquare.ToolWindow.Section.Terrain", "Terrain" },
                 { "Unsquare.ToolWindow.Section.Align", "Align to neighbour" },
@@ -43,8 +90,14 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ToolWindow.Corner", "Pick corners (Alt+1)" },
                 { "Unsquare.ToolWindow.Edge", "Pick edges (Alt+2)" },
                 { "Unsquare.ToolWindow.Face", "Pick faces (Alt+3)" },
+                { "Unsquare.ToolWindow.Cage", "Pick the whole cage: move or turn the building at once (Alt+4)" },
+                { "Unsquare.ToolWindow.GizmoModeMove", "Gizmo: arrows move the selection (tap Ctrl to switch)" },
+                { "Unsquare.ToolWindow.GizmoModeRotate",
+                    "Gizmo: rings turn the selection around its centre (tap Ctrl to switch)" },
                 { "Unsquare.ToolWindow.ResetHandle", "Reset the selected corner, edge or face (Alt+R)" },
                 { "Unsquare.ToolWindow.ResetBuilding", "Reset the whole building (Alt+Backspace)" },
+                { "Unsquare.ToolWindow.Undo", "Undo the last cage edit (Ctrl+Z)" },
+                { "Unsquare.ToolWindow.Redo", "Redo the cage edit (Ctrl+Y)" },
                 { "Unsquare.ToolWindow.TerrainLift", "Terrain follows the building (Alt+T)" },
                 { "Unsquare.ToolWindow.TerrainFlat", "Keep a flat pad under the building (Alt+T)" },
                 { "Unsquare.ToolWindow.FitToGround", "Fit the bottom corners to the original ground (Alt+G)" },
@@ -58,11 +111,19 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ToolWindow.AlignBack", "Align the back to the nearest road or lot (Alt+Shift+Up)" },
                 { "Unsquare.ToolWindow.AlignRight",
                     "Align the right side (seen from the street) to the nearest road or lot (Alt+Shift+Right)" },
+                { "Unsquare.ToolWindow.AlignFront",
+                    "Align the street side to the nearest road or lot (Alt+Shift+Down)" },
                 { "Unsquare.ToolWindow.AlignGroundLeft",
                     "Level the left side (seen from the street) with the neighbour's ground (Ctrl+Alt+Left)" },
                 { "Unsquare.ToolWindow.AlignGroundBack", "Level the back with the neighbour's ground (Ctrl+Alt+Up)" },
                 { "Unsquare.ToolWindow.AlignGroundRight",
                     "Level the right side (seen from the street) with the neighbour's ground (Ctrl+Alt+Right)" },
+                { "Unsquare.ToolWindow.AlignGroundFront",
+                    "Level the street side with the road's ground (Ctrl+Alt+Down)" },
+                { "Unsquare.ToolWindow.AlignKindPosition",
+                    "The side buttons move the face onto the neighbour's edge" },
+                { "Unsquare.ToolWindow.AlignKindHeight",
+                    "The side buttons level the face with the neighbour's ground" },
                 { "Unsquare.ToolWindow.AlignModeAngle",
                     "Align mode: angle. The corner nearer the neighbour stays, the face turns parallel (Alt+A)" },
                 { "Unsquare.ToolWindow.AlignModeFlush",
@@ -71,6 +132,9 @@ namespace Unsquare.UI.Input
                     "Align mode: full. The face takes the neighbour's edge and its corners (Alt+A)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
+                { _settings.GetEnumValueLocaleID(ButtonPosition.Bottom), "Bottom toolbar" },
+                { _settings.GetEnumValueLocaleID(ButtonPosition.TopLeft), "Top left" },
+                { _settings.GetEnumValueLocaleID(ButtonPosition.TopRight), "Top right" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetSettings)),
                     "Reset all settings to their defaults? Key bindings are kept." },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ImportFlexIt)),
@@ -92,6 +156,9 @@ namespace Unsquare.UI.Input
                 entries[_settings.GetBindingKeyLocaleID(hotkey.ActionName)] = hotkey.Label;
             }
 
+            Option(entries, nameof(UnsquareSettings.ButtonPosition), "Unsquare button position",
+                "Where the button that turns Unsquare mode on sits: in the bottom toolbar next to the photo mode " +
+                "button, or among the mod buttons at the top left or top right.");
             Option(entries, nameof(UnsquareSettings.SmallStep), "Small nudge step (m)",
                 "Smallest step of the step-size hotkey. Snapped to 0.1 m.");
             Option(entries, nameof(UnsquareSettings.MediumStep), "Medium nudge step (m)",
@@ -138,9 +205,19 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.FacadeReach), "Facade alignment reach (m)",
                 "Props this close to a facade turn exactly with it instead of with the average deformation. " +
                 "0 turns facade alignment off." + NewDeformations);
+            Option(entries, nameof(UnsquareSettings.LotPropsFollowGround), "Lot props follow the ground",
+                "Fences, hedges and other props that an asset attaches to the building but that stand on the lot " +
+                "outside it, or run along the lot edge, follow the lot like ground props. The same goes for the " +
+                "ends of fences drawn as lanes." + NewDeformations);
+            Option(entries, nameof(UnsquareSettings.AlignLinearProps), "Align fences and hedges",
+                "Long, thin props on the ground turn with the line they stand on, so rows of fence or hedge " +
+                "segments stay in line on a skewed lot." + NewDeformations);
 
             Option(entries, nameof(UnsquareSettings.AreaMatchDistance), "Area match distance (m)",
                 "Saved lot areas further from their expected outline count as edited by you and are not moved.");
+            Option(entries, nameof(UnsquareSettings.KeepOnLevelUp), "Keep shape on level-up",
+                "When a deformed building levels up, the new building gets the same shape: the lot outline stays " +
+                "the same, and leans and roof changes scale with the new height. Off: it levels up undeformed.");
 
             Option(entries, nameof(UnsquareSettings.LineRadius), "Line thickness (m)",
                 "Radius of the cage lines.");
@@ -154,7 +231,8 @@ namespace Unsquare.UI.Input
                 "Length of the gizmo arrows as a share of the screen height.");
 
             Option(entries, nameof(UnsquareSettings.RebakeDelay), "Rebake delay (s)",
-                "Quiet time after the last edit before the building is rebuilt. Higher values save work while dragging.");
+                "Quiet time after the last nudge, undo or pause in a drag before the building is rebuilt. Releasing a " +
+                "drag and one-click commands rebuild at once. Higher values save work while dragging.");
             Option(entries, nameof(UnsquareSettings.CoarseLodTwist), "Coarse model twist limit (m)",
                 "Buildings whose cage bends more than this keep their medium-detail model at a distance, because " +
                 "the coarsest one can't follow the bend. Lower: cleaner distant views, more triangles to draw." +

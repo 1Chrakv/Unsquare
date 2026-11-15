@@ -1,4 +1,5 @@
 using Colossal.Mathematics;
+using Unity.Mathematics;
 using Unsquare.Core.Deformation;
 
 namespace Unsquare.Integration.Prefabs.Attachments
@@ -10,11 +11,31 @@ namespace Unsquare.Integration.Prefabs.Attachments
 
         public static Bezier4x3 ToGame(CubicCurve curve) => new(curve.A, curve.B, curve.C, curve.D);
 
-        /// <summary>Deforms a curve; ground curves keep their heights since the game fits them to the terrain.</summary>
-        public static Bezier4x3 Deform(AttachmentContext context, Bezier4x3 curve, bool onGround)
+        /// <summary>
+        /// Deforms a lot curve the way paths follow the cages; ends on a mesh follow the building when
+        /// <paramref name="attachedEndsFollowBuilding"/>. Ground curves keep their heights (the game fits them).
+        /// </summary>
+        public static Bezier4x3 Deform(AttachmentContext context, Bezier4x3 curve, int2 parentMesh,
+            bool attachedEndsFollowBuilding)
         {
-            var deformed = ToGame(CurveDeformer.Deform(context.Deformation, ToCore(curve)));
-            if (onGround)
+            bool onGround = parentMesh.x < 0 && parentMesh.y < 0;
+            return attachedEndsFollowBuilding
+                ? Deform(context, curve, parentMesh.x >= 0, parentMesh.y >= 0, onGround)
+                : Deform(context, curve, false, false, onGround);
+        }
+
+        /// <summary>
+        /// Deforms a lot curve with explicitly attached ends (following the building); the rest follows the ground.
+        /// <paramref name="keepHeights"/> restores the original heights of curves the game fits to the terrain.
+        /// </summary>
+        public static Bezier4x3 Deform(AttachmentContext context, Bezier4x3 curve, bool startAttached,
+            bool endAttached, bool keepHeights)
+        {
+            var core = ToCore(curve);
+            var deformed = ToGame(startAttached || endAttached
+                ? CurveDeformer.Deform(context.Ground, context.Building, core, startAttached, endAttached)
+                : CurveDeformer.Deform(context.Ground, core));
+            if (keepHeights)
             {
                 deformed.a.y = curve.a.y;
                 deformed.b.y = curve.b.y;

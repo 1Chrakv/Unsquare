@@ -19,6 +19,12 @@ angled streets and slopes.
 
 - **Cage deformation of the lot box.** The cage spans the whole lot (lot rectangle from the ground to the roof), with
   8 corners, 12 edges and 6 faces as handles. All LODs of the building are deformed.
+- **Building, lot or both.** Each building has two cages: one for the building and what hangs on it, one for its lot
+  (ground, paths, ground props, terrain). Edit the building alone (its cage hugs the building), the lot alone, or both
+  together, which is the default and works as before. With blending on, the ground next to the building follows the
+  wall beside it and fades out towards the lot edge, so paths stay connected, and trees, benches and other props move
+  along with the paths and gardens around them. Blending is off by default (paths into the building may break) and
+  can be switched on per building.
 - **The lot follows.** Props, sub-buildings, ground areas (paving, grass), lanes and paths on the lot move with the
   cage. Props stay rigid but follow position and rotation, and turn with the nearest facade; ground props stay upright.
   Path ends at the road slide along it and stay connected.
@@ -26,13 +32,15 @@ angled streets and slopes.
   switched off per building to keep a flat pad.
 - **Fit to ground.** Moves the bottom corners onto the original terrain: the back follows the slope and the street
   side goes to road level, or (toggle) all four corners follow the terrain.
-- **Align to neighbour.** Turns the left, back or right side of the lot (seen from the street) to the nearest road
-  or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
+- **Align to neighbour.** Turns the left, back, right or street side of the lot to the nearest road,
+  footpath or neighbouring lot within 200 m: only the angle, flush onto its edge, or fully onto the neighbour's edge and
   corners. A side that already overlaps a neighbouring lot is pulled back onto that lot's edge.
 - **Level with neighbour.** Moves the bottom of the left, back or right side up or down to the ground of the same
-  neighbour: the neighbouring lot's ground or the road surface. The building keeps its height.
+  neighbour: the neighbouring lot's ground or the road or path surface. The building keeps its height.
 - **Upgrades.** Deformed buildings keep their upgrades and accept new ones. On-lot upgrades (e.g. an extra car park
   storey) are reshaped with the building under one cage; upgrade buildings such as school wings have their own cage.
+- **Level-ups keep the shape.** When a deformed growable levels up, the new building gets the same lot outline;
+  leans and roof changes scale with its height (option *Keep shape on level-up*).
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
   Identical deformations share their baked assets.
@@ -66,24 +74,60 @@ Highly recommended, but not required; Unsquare works without them:
 - **Find It**: find and place buildings quickly.
 - **Anarchy**: place buildings and props where the game would otherwise block them.
 
+## Compatibility
+
+**Placemaker** works alongside Unsquare, with a few things to know:
+
+- **Buildings bent by Placemaker can be converted to Unsquare.** Placemaker bends row houses to fit their row.
+  Picking such a building in Unsquare mode asks first:
+  - **Convert whole row** gives the building and every house Placemaker joined to it an Unsquare cage of the same
+    shape, all at once.
+  - **Convert only this building** does the same for this house alone. Placemaker straightens the neighbours of a
+    house it no longer shapes, so converting a single house of a row detaches its neighbours.
+  - **Cancel** leaves the building to Placemaker; Unsquare won't edit it.
+
+  Placemaker leaves converted buildings alone. Reset returns the plain building, which Placemaker may bend again;
+  picking it then asks again.
+- **Short pauses while reshaping.** Each time Unsquare adds a reshaped model, Placemaker rescans its asset catalog,
+  which freezes the game for about 2 seconds. Placemaker does this at most about every 10 seconds, so when you
+  reshape a lot, roughly every tenth change pauses briefly. It comes from Placemaker and doesn't happen without it.
+- **Fences.** Placemaker may meddle with fence and prop placement, especially for row houses. A test showed that it
+  hides fences between neighbouring lots and hides them again whenever they move, so the fences of a reshaped row
+  house stayed hidden while a building on its own was fine.
+- **Placemaker updates.** When a city loads, Unsquare checks that Placemaker still works the way it expects and turns
+  off only what changed. `Unsquare.Mod.log` names it; please report it.
+
 ## Usage
 
-1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**.
+1. Turn on **Unsquare mode** with the button next to the underground toggle, or press **Alt+U**. The options can
+   move the button to the top left or top right, next to other mods' buttons.
 2. Click a building. It becomes the edit target and its cage appears. Hovering other buildings previews their cage.
-3. Click a corner, edge or face (depending on the pick mode) to select it. A gizmo appears on the selection:
+3. Click a corner, edge or face, or anywhere on the cage in the **cage** pick mode (moves or turns the whole building
+   at once), to select it. A gizmo appears on the selection:
    - drag an arrow (X red, Y green, Z blue) to move along that axis,
-   - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept).
+   - drag the yellow square, or press on a handle and drag, to move horizontally (heights are kept),
+   - tap **Ctrl** (on its own) or use the Move/Rotate toggle in the tool window to swap the arrows for rotation rings:
+     drag a ring (X red, Y green, Z blue) to turn the edge or face around its centre, e.g. twist the top face or
+     slope the roof. Corners have no rings and keep their arrows.
 4. Right-click steps back: it cancels a drag, then clears the handle, then the building. Alt+U or the button leave
    the mode; Esc does what it does in the game's own tools.
 
 While a handle is selected the building is locked; clicks on other buildings do nothing until you step back.
 
+The edit mode (Deform section of the tool window, Alt+D) picks what an edit moves: **Building**, **Lot** or **Both**.
+Both carries the building along with the lot and keeps any shape you gave the building on its own. The two **Link**
+buttons make the cages equal again: the building follows the lot (Alt+K), or the lot follows the building
+(Alt+Shift+K). Lot edits never move the building, so after lifting the ground it can end
+up buried or floating: the tool window then shows a hint, and Fit to ground in Building mode sets it back onto its
+ground. The mode is remembered.
+
 ### Tool window
 
 While a building is selected, a small window floats above its roof, in labelled sections with toggles in the top
-row and buttons below: the pick mode (corners, edges, faces); terrain lift (follow or flat) and fit to ground with its
-mode (back only or all corners); align the sides to their neighbours or level them with their ground (a toggle picks
-the align mode: angle, flush or full); and reset the selected handle or the whole building.
+row and buttons below: the edit mode (building, lot, both) and Link; the pick mode (corners, edges, faces) with the
+move/rotate gizmo toggle under it; terrain lift (follow or flat) and fit to ground with its mode (back only or all
+corners); four side buttons that align the sides to their neighbours or level them with their ground (toggles pick
+which, and the align mode: angle, flush or full); reset the selected handle or the whole building, and undo/redo.
 
 ### Hotkeys
 
@@ -92,8 +136,11 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
-| Cycle pick mode (edges → faces → corners) | Alt+W |
-| Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
+| Cycle edit mode (both → building → lot) | Alt+D |
+| Building follows the lot again / lot follows the building again (Link) | Alt+K / Alt+Shift+K |
+| Switch blending on or off | Alt+B |
+| Cycle pick mode (edges → faces → corners → cage) | Alt+W |
+| Pick corners / edges / faces / the whole cage | Alt+1 / Alt+2 / Alt+3 / Alt+4 |
 | Select previous / next handle | Alt+Q / Alt+E |
 | Move along X (width) | Alt+← / Alt+→ |
 | Move along Z (+Z = street side) | Alt+↑ / Alt+↓ |
@@ -103,15 +150,16 @@ Defaults; all can be rebound in Options → Unsquare → Key bindings. Except Al
 | Reset building / reset all buildings | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off | Alt+T |
 | Fit to ground / toggle the fit mode (back only or all corners) | Alt+G / Alt+F |
-| Align left / back / right side to its neighbour | Alt+Shift+← / Alt+Shift+↑ / Alt+Shift+→ |
+| Align left / back / right / street side to its neighbour | Alt+Shift+← / ↑ / → / ↓ |
 | Cycle align mode (angle → flush → full) | Alt+A |
-| Level left / back / right side with its neighbour | Ctrl+Alt+← / Ctrl+Alt+↑ / Ctrl+Alt+→ |
+| Level left / back / right / street side with its neighbour | Ctrl+Alt+← / ↑ / → / ↓ |
 | Undo / redo | Ctrl+Z / Ctrl+Y |
 | Write the cage state to the log | Alt+L |
 
 ### Overlay
 
-Dashed lines show the original box. The cage colour shows its state: white undeformed, yellow pending, green applied,
+Dashed lines show the original box; a faint violet dashed cage is the other cage (lot or building) while the two
+differ. The cage colour shows its state: white undeformed, yellow pending, green applied,
 red failed, magenta when the lot outline leaves its plot (the edit still applies). The selected handle is orange,
 the hovered one cyan.
 

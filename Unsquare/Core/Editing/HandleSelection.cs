@@ -32,11 +32,12 @@ namespace Unsquare.Core.Editing
 
         public HandleSelection WithPickKind(CageHandleKind kind) => new(kind, HasHandle, Handle);
 
-        /// <summary>Edge → Face → Corner → Edge.</summary>
+        /// <summary>Edge → Face → Corner → Cage → Edge.</summary>
         public HandleSelection CyclePickKind() => WithPickKind(PickKind switch
         {
             CageHandleKind.Edge => CageHandleKind.Face,
             CageHandleKind.Face => CageHandleKind.Corner,
+            CageHandleKind.Corner => CageHandleKind.Cage,
             _ => CageHandleKind.Edge,
         });
 

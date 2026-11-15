@@ -47,7 +47,7 @@ An upgrade is its own entity: `Owner` = main building, `Game.Buildings.ServiceUp
   `DeformService` converts to the lot cage.
 - **Upgrade buildings** (school wings) have their own cage and can be picked in Unsquare mode
   (`RaycastFlags.SubBuildings`, 5.3).
-- **Crash fix:** variant prefabs get the base's upgrade buffers in their instance archetype (`UpgradeArchetype`,
+- **Crash fix:** variant prefabs get the base's upgrade buffers in their instance archetype (now the general `VariantArchetype`,
   section 3).
 - **Info panel and menus** (5.7):
   - upgrade variants keep a group-less `UIObject` and drop their unlock requirements;
@@ -75,7 +75,7 @@ deforming a building with an upgrade.
 | Paused: add the wing, deform the school, Alt+T (flat terrain) at once | crash **while still paused** |
 | Paused, after deforming: stay in Unsquare mode, leave it looking away, then hover the school, then click | no crash until the mouse **hovers the school** with the game's default tool |
 | Only the top face moved up (ground paths unchanged), then hover | crash: the path junction is not the cause |
-| With `UpgradeArchetype` (school with wing, car park with storey), hover and click | no crash |
+| With the archetype fix (school with wing, car park with storey), hover and click | no crash |
 
 **Cause (found 2026-10-31 from the game code, confirmed in game):**
 1. A building prefab's instance archetype (`ObjectData.m_Archetype`) gets `InstalledUpgrade`, `Game.Net.SubNet` and
@@ -94,7 +94,7 @@ deforming a building with an upgrade.
 This fits every test: no upgrade → no temporary upgrade → no crash; crash only on hover, paused or not; terrain, nets
 and lanes don't matter.
 
-**Fix (`UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; confirmed in game 2026-10-31):**
+**Fix (first `UpgradeArchetype.AddUpgradeBuffers`, called after prefab init and on swap; confirmed in game 2026-10-31):**
 - After a variant prefab is initialized (next to `SimDataCopier`), if its base has a `BuildingUpgradeElement`
   buffer, rebuild the variant's `ObjectData.m_Archetype` with `InstalledUpgrade`, `Game.Net.SubNet` and `SubRoute`
   added (the same types `RefreshArchetype` adds).
@@ -102,7 +102,16 @@ and lanes don't matter.
   upgrade menu. That belongs to 5.4 and needs `ServiceUpgradeBuilding` too.
 - `EntityManager.CreateArchetype` is called by reflection: a direct call also binds its `ReadOnlySpan` overload,
   which the game's mscorlib doesn't provide (CS0518).
-- The log line `Copied sim data to N variants (M given upgrade buffers)` shows how many variants got them.
+- The log line `Copied sim data to N variants (M archetypes completed)` shows how many variants got them.
+
+**Generalised 2026-11-14 (`VariantArchetype.TryComplete`):** copies of deformed zoned buildings (eyedropper, Find It)
+crashed the same way on click. A copy is created from the variant's archetype, which also lacked what the removed
+`SpawnableBuilding` adds (`BuildingCondition`, `RandomLocalizationIndex`, the zone's property components), while
+`SimDataCopier` makes the prefab look zoned. Buildings deformed in place keep the base's archetype, so only copies
+crashed. Now the variant's archetype gets every type of the base's archetype, upgrade buffers included, and
+`VariantInstanceRepair` adds the gained types to buildings already created from the variant (copies in saves; log
+`Repaired N copies of variants …`). Only the difference base − variant is added: prefab archetypes carry
+`Created`/`Updated`, which must never be re-added to live buildings.
 
 **Disproved on the way** (kept so they aren't retried):
 - **Path syncing and road-end sliding:** it crashed with nets off and without any road-end slide.
@@ -141,7 +150,10 @@ and lanes don't matter.
 - `BuildingDescription.EditBox` = the lot box with its top raised (`ExtendedCage.RaiseTop`) to the highest deformed
   on-lot extension: its mesh box top (`CageBoxMeasurer.TryMeasureMeshes`) plus `m_Position.y`, cached per extension
   prefab (`VariantSystem.DeformedExtensionsTop`).
-- **Scope: only the top is raised.** x/z stay the lot's, like the rule that the cage is the lot rectangle (overhangs
+- In Building mode (split cages) the building box instead grows over the extensions baked with the building cage
+  (`ExtendedCage.Enclose`): storeys and wings beside the building, such as the hospital's wards
+  (`ExtensionCage.FollowsBuilding`). Flat pieces beside it follow the lot cage and don't enlarge it.
+- **Scope (lot edit box): only the top is raised.** x/z stay the lot's, like the rule that the cage is the lot rectangle (overhangs
   aren't enclosed). The bottom corners equal the lot's, so ground fit, align, the "leaves its plot" warning and
   neighbours' lot outlines are unchanged.
 - `DeformService` works in edit space:

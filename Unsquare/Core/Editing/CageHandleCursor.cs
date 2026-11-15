@@ -21,6 +21,7 @@ namespace Unsquare.Core.Editing
         {
             CageHandleKind.Edge => CageHandle.Edge(Index),
             CageHandleKind.Face => CageHandle.Face(Index),
+            CageHandleKind.Cage => CageHandle.Cage(),
             _ => CageHandle.Corner(Index),
         };
 

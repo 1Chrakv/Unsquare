@@ -12,6 +12,7 @@ using Unsquare.UI.Bindings;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
 using Unsquare.UI.Overlay;
+using Unsquare.UI.PlacemakerCompatibility;
 using Unsquare.UI.Tool;
 
 namespace Unsquare
@@ -44,14 +45,18 @@ namespace Unsquare
             updateSystem.UpdateAfter<CondemnGuardSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             // New extensions still carry Created here; their deformation is baked in the next prefab update.
             updateSystem.UpdateAfter<ExtensionInstallSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
+            // Level-ups are queued and finished at EndFrameBarrier, so every frame in between sees both prefabs.
+            updateSystem.UpdateAfter<LevelUpCarrySystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<BaseTerrainSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageHotkeySystem, UnsquareToolSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<UnsquareUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<PlacemakerUISystem>(SystemUpdatePhase.UIUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
+            world.GetOrCreateSystemManaged<UnsquareUISystem>().Bind(_settings);
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
             _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
             _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world), session,

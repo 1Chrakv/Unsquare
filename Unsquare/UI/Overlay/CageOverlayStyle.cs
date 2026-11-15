@@ -24,6 +24,9 @@ namespace Unsquare.UI.Overlay
 
         public Color RestBox { get; } = new(1f, 1f, 1f, 0.35f);
 
+        /// <summary>The other cage (lot or building) while the two differ; dashed, without handles.</summary>
+        public Color Ghost { get; } = new(0.75f, 0.6f, 1f, 0.45f);
+
         /// <summary>Cage of the building under the mouse that a click would select.</summary>
         public Color Preview { get; } = new(1f, 1f, 1f, 0.45f);
 
@@ -65,6 +68,9 @@ namespace Unsquare.UI.Overlay
         /// <summary>Arrow thickness relative to its length, so the gizmo keeps its look at any zoom.</summary>
         public float GizmoRadiusRatio { get; } = 0.03f;
         public float ActiveAxisRadiusFactor { get; } = 1.8f;
+
+        /// <summary>Rotation rings are drawn thinner than arrows: they are longer and cross each other.</summary>
+        public float RingRadiusFactor { get; } = 0.7f;
 
         public float GizmoLength(float cameraDistance, ViewScale scale) =>
             GizmoAxes.AxisLength(cameraDistance, scale.AngularSizeOfViewFraction(GizmoScreenSize), AxisLength);

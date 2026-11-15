@@ -90,7 +90,7 @@ namespace Unsquare.Integration.Import
 
             CageOffsets offsets = null;
             if (action == FlexItImportAction.Convert &&
-                !TryConvert(basePrefab, baseEntity, applied.Offsets, variant, shear, out offsets))
+                !TryConvert(basePrefab, baseEntity, applied.LotOffsets, variant, shear, out offsets))
             {
                 batch.FailedCount++;
                 Mod.Log.Warn($"FlexIt import: {basePrefab.name} has no lot, cannot convert {source}.");
@@ -98,7 +98,7 @@ namespace Unsquare.Integration.Import
             }
             if (action == FlexItImportAction.Approximate)
             {
-                if (TryApproximate(basePrefab, baseEntity, applied.Offsets, variant.Value, shear, out offsets,
+                if (TryApproximate(basePrefab, baseEntity, applied.LotOffsets, variant.Value, shear, out offsets,
                         out float error))
                     Mod.Log.Info($"FlexIt import: building {building} approximated corner fit {source} " +
                                  $"(max deviation {error:0.0} m).");
@@ -125,7 +125,7 @@ namespace Unsquare.Integration.Import
             else
             {
                 bool approximated = action == FlexItImportAction.Approximate;
-                batch.Conversions.Add((building, applied.WithOffsets(offsets), source, approximated));
+                batch.Conversions.Add((building, new DeformSpec(offsets, applied.FlatTerrain), source, approximated));
             }
         }
 

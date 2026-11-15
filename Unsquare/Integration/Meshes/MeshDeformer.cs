@@ -54,6 +54,16 @@ namespace Unsquare.Integration.Meshes
             if (!HasFloatChannel(source, VertexAttribute.Position, 3))
                 throw new InvalidOperationException($"Mesh {source.name} has packed positions.");
 
+            // Plain cages on the game's packed layout go through the vertex job; anything else stays managed.
+            if (CageKernel.TryFrom(deformation, out var cage) && VertexBufferDeformer.Supports(source))
+                return VertexBufferDeformer.DeformCopy(source, transform, cage, out bounds);
+            return DeformCopyManaged(source, transform, deformation, out bounds);
+        }
+
+        /// <summary>The managed path: any deformation and float or packed normals, on the main thread.</summary>
+        private static Mesh DeformCopyManaged(Mesh source, in SubmeshTransform transform, IDeformation deformation,
+            out MinMaxBounds bounds)
+        {
             Mesh mesh = Object.Instantiate(source);
             mesh.name = source.name;
             Vector3[] vertices = mesh.vertices;

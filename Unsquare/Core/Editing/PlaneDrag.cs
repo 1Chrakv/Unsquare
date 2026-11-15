@@ -43,6 +43,13 @@ namespace Unsquare.Core.Editing
             return true;
         }
 
+        public bool TryMotion(CageRay ray, out HandleMotion motion)
+        {
+            bool ok = TryDelta(ray, out var delta);
+            motion = HandleMotion.Translate(delta);
+            return ok;
+        }
+
         private static bool TryHit(float height, CageRay ray, out float3 hit)
         {
             hit = float3.zero;

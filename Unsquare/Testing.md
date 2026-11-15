@@ -18,8 +18,8 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
    `Mods\Unsquare` must also contain `Unsquare.mjs`, `Unsquare.css` and `images\` (toolbar button, tool window).
 4. Load a city, turn on Unsquare mode (button next to the Underground toggle, or Alt+U) and click a building: it
    becomes the edit target. A building selected in the info panel before entering the mode is taken over.
-5. After an update that bumps the manifest format (e.g. to 0.6.0), start a new city: older deformed buildings
-   are discarded (log `Variant manifest has an old format …`).
+5. After an update that bumps the manifest format, load an older save: its deformed buildings are migrated and
+   keep their shapes (rows 105, 126). Only pre-release manifests are discarded (log `Variant manifest has an old format …`).
 
 ## Mouse (in Unsquare mode)
 
@@ -27,8 +27,9 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
 |---|---|
 | Preview | Hovering a building shows its cage dimmed (while no handle is selected) |
 | 1. Select a building | Click it (outside the current cage); no handle is selected yet |
-| 2. Select a handle | Click an edge, face or corner, depending on the pick mode (default edges; Alt+W cycles) |
+| 2. Select a handle | Click an edge, face or corner, or anywhere on the cage in cage mode, depending on the pick mode (default edges; Alt+W cycles) |
 | Move the selection | Drag an arrow of the gizmo (X red, Y green, Z blue), or the yellow square to move it horizontally |
+| Rotate the selection | Tap Ctrl alone (or the Move/Rotate toggle in the tool window), then drag a ring (around X red, Y green, Z blue); edges get the two rings they can turn around, faces all three, corners keep the arrows |
 | Move a handle sideways | Press on an edge, face or corner and drag: it is selected and moves horizontally (height kept); a click without moving only selects |
 | Step back | Right-click: cancels a drag, else clears the handle, else the building; never leaves the mode |
 
@@ -39,24 +40,32 @@ mode; Esc is left to the game (its Back: default tool, then the pause menu).
 
 ## Tool window (in Unsquare mode)
 
-While a building is selected, a small window floats above its roof, in four sections with a header each; the top
+While a building is selected, a small window floats above its roof, in five sections with a header each; the top
 row holds only toggles, the bottom row only buttons:
-- **Pick:** 3-way toggle for corners / edges / faces (a highlight slides to the active one; Alt+1/2/3).
+- **Deform:** top: 3-way toggle Both / Building / Lot (Alt+D cycles), then the blend toggle None / All (Alt+B, None
+  by default); bottom: Link, building follows lot (link, arrow to a lot, Alt+K) and lot follows building (link, arrow
+  to a house, Alt+Shift+K). Link is disabled while the cages are equal; blend can be chosen before splitting. A hint
+  line under the window says when the building is not on its lot's ground.
+- **Pick:** top: 4-way toggle for corners / edges / faces / the whole cage (a highlight slides to the active one;
+  Alt+1/2/3/4); bottom: gizmo toggle move / rotate (tap Ctrl).
 - **Terrain:** top: 2-way toggle terrain follows the building / flat pad (dimmed while undeformed; Alt+T) and 2-way
   toggle for fitting back only / all corners (Alt+F); bottom: fit the bottom corners to the original ground (Alt+G).
-- **Align to neighbour:** top: align mode toggle (angle / flush / full; clicking selects directly, Alt+A cycles);
-  bottom: align left, back, right (as seen from the street; Alt+Shift+arrows), then level the left, back or right
-  side with its neighbour's ground (Ctrl+Alt+arrows).
-- **Reset:** bottom: the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
-  (Alt+Backspace).
+- **Align to neighbour:** top: align mode toggle (angle / flush / full; clicking selects directly, Alt+A cycles;
+  dimmed while levelling) and the position / height toggle; bottom: left, back, right and street side (as seen from
+  the street), which align (Alt+Shift+arrows) or level with the neighbour's ground (Ctrl+Alt+arrows).
+- **Reset:** top: the selected corner, edge or face (disabled without a selection; Alt+R) and the whole building
+  (Alt+Backspace); bottom: undo and redo (disabled when there is nothing to undo or redo).
 
 ## Hotkeys (defaults; all except Alt+U only work in Unsquare mode)
 
 | Action | Key |
 |---|---|
 | Unsquare mode on / off | Alt+U |
-| Cycle pick mode edges → faces → corners | Alt+W |
-| Pick corners / edges / faces | Alt+1 / Alt+2 / Alt+3 |
+| Cycle edit mode both → building → lot | Alt+D |
+| Link: the building follows the lot / the lot follows the building | Alt+K / Alt+Shift+K |
+| Switch blending off / on | Alt+B |
+| Cycle pick mode edges → faces → corners → cage | Alt+W |
+| Pick corners / edges / faces / the whole cage | Alt+1 / Alt+2 / Alt+3 / Alt+4 |
 | Select previous / next handle of the pick mode | Alt+Q / Alt+E |
 | Move −X / +X (width) | Alt+← / Alt+→ |
 | Move +Z / −Z (+Z = street side) | Alt+↑ / Alt+↓ |
@@ -66,16 +75,17 @@ row holds only toggles, the bottom row only buttons:
 | Reset selected / reset all | Alt+Backspace / Alt+Shift+Delete |
 | Terrain lift on / off for the selected building | Alt+T |
 | Fit to the original ground / toggle back only (street side to road level) or all corners | Alt+G / Alt+F |
-| Align left / back / right side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → |
+| Align left / back / right / street side (seen from the street) to its neighbour | Alt+Shift+← / ↑ / → / ↓ |
 | Cycle align mode (angle → flush → full) | Alt+A |
-| Level left / back / right side with its neighbour's ground | Ctrl+Alt+← / ↑ / → |
+| Level left / back / right / street side with its neighbour's ground | Ctrl+Alt+← / ↑ / → / ↓ |
 | Undo / redo cage edit (nudge, whole drag, reset; all buildings) | Ctrl+Z / Ctrl+Y |
 | Write cage state to the log | Alt+L |
 
 Overlay: dashed = original box; solid cage colour = status (white undeformed, yellow pending/applying, green
 applied, red failed, magenta = lot outline leaves its plot); orange = selected handle (thick edge, face outline and
 dot, or corner dot), cyan = hovered handle of the pick mode; gizmo (only with a selected handle) on it with arrows along the building axes X (red),
-Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; the hovered or dragged part is brighter and thicker.
+Y (green), Z (blue) and a yellow square between X and Z for horizontal moves, or in Rotate mode rings around those axes
+through the handle's centre; the hovered or dragged part is brighter and thicker.
 
 ## Checklist
 
@@ -83,7 +93,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 |---|---|---|
 | 1 | Select a zoned building, rotate the camera | Box and cage line up with the building at any building rotation |
 | 2 | Alt+1/2/3, Alt+Q/E | The selection visits every corner, edge and face; gizmo arrows match the move keys |
-| 3 | Alt+3, select the top face (Face 3), Alt+PageUp ×4 | Cage turns yellow; ~0.4 s after the last press the building rises and the cage turns green; one `Bake …` log line |
+| 3 | Alt+3, select the top face (Face 3), Alt+PageUp ×4 | Cage turns yellow; ~0.2 s after the last press the building rises and the cage turns green; one `Bake …` log line |
 | 4 | Zoom far out | Shape stays deformed (LODs deformed too) |
 | 5 | Move single corners and edges | Taper, skew and twist look smooth; lighting/normals look right |
 | 6 | Push a face through the opposite face | Log `-> Rejected`, shape unchanged |
@@ -114,7 +124,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 31 | Mode on: click a house, then another house, then empty ground | Cage moves to the second house; empty ground changes nothing; log `[Edit] Target …` per switch |
 | 32 | Hover the cage in each pick mode (Alt+W) | Edge mode: edges turn cyan near the mouse; face mode: faces; corner mode: corners; log `[Edit] Pick mode …` |
 | 33 | Click an edge, then a face (Alt+W), then a corner | First click of a house selects nothing; each later click moves the orange selection and gizmo; log `[Edit] Selected …` |
-| 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake after release; one `Drag of Face3 ended -> …` line |
+| 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake right at release; one `Drag of Face3 ended -> …` line |
 | 35 | Select a front edge, drag the red and blue arrows | Both corners of the edge move together along X / Z |
 | 36 | Start a drag, right-click while holding the mouse | Shape snaps back to before the drag; log `Drag … cancelled` |
 | 37 | With a handle selected, click a neighbour next to the cage; then right-click and click the neighbour | Locked: nothing changes; after the right-click (log `Selection cleared`) the neighbour becomes the target |
@@ -192,7 +202,7 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 109 | Elementary school with the classroom extension wing (an upgrade building): deform the school, let the game run a few minutes, then Reset | No crash; the wing stays undeformed and its paths stay connected |
 | 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash, also when hovering the wing and the school; the wing's paths stay connected to the school's |
 | 111 | Repeat 106 and 107 (car park storey) | Still no crash |
-| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N given upgrade buffers)` with N ≥ 1 |
+| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N archetypes completed)` with N ≥ 1 |
 | 113 | Car park with the extra storey: select it in Unsquare mode | Green cage and dashed rest box reach the storey's top, not the base roof; the tool window sits above it |
 | 114 | After 113, drag a top corner, with the 0.1 m step nudge it up and sideways a few times (Alt+PageUp, Alt+arrows), then Ctrl+Z and Ctrl+Y | The storey's roof follows the cage corner; every nudge moves the corner; undo and redo restore each step; Reset brings back the plain building and storey |
 | 115 | A building without upgrades, and the car park before the storey is added | Cage ends at the roof as before |
@@ -206,6 +216,64 @@ Y (green), Z (blue) and a yellow square between X and Z for horizontal moves; th
 | 123 | Add another storey to a deformed car park | The new storey is deformed with the car park's cage right away (log `New upgrade on deformed building …`, then `Bake for building …`); hovering doesn't crash |
 | 124 | Add a wing to the deformed school | The wing is placed as usual and stays undeformed with its own cage |
 | 125 | Switch the game language in the options and back | Deformed buildings keep their normal names |
+| 126 | Load a save with buildings deformed before split cages | Same shapes; the log lists the same variant names as before (`Restored … variants`); the manifest is rewritten as version 3 |
+| 127 | Select a deformed building in Both mode; drag and nudge as before | Behaves exactly as before: lot box (raised over storeys), no violet cage, Link disabled |
+| 128 | Switch to Building (Alt+D or the toggle) on a house with a garden | The cage hugs the building; dragging a top corner leans only the building; garden props, paths, grass and the terrain stay; a violet dashed lot cage appears |
+| 129 | After 128, widen the building 3 m over its garden (face drag) | Paths and lanes into the doors stay connected and bend smoothly in a ring around the building; steps and bins at the walls move with them; trees further out stay |
+| 130 | Switch to Lot on a deformed building and drag a lot corner | Ground, paths, ground props and terrain follow; the building stays as it is; a violet building cage appears |
+| 131 | After 130, raise the back of the lot | The hint `The building is not on its ground` appears; in Building mode Fit to ground (Alt+G) sets the building onto the lifted ground and the hint goes away; the terrain toggle and fit mode are greyed in Building mode |
+| 132 | Split a building (130), then Both mode and drag a lot corner | The building is carried along and keeps its own lean; Link (Alt+K) makes it follow the lot exactly and the violet cage disappears |
+| 133 | In each mode press Reset building, then Ctrl+Z | Building mode resets only the building, Lot only the lot, Both everything; undo restores each step |
+| 134 | Nudge the building cage up and back down with the 0.1 m step (Building mode), then Ctrl+Z several times | The building returns exactly; no violet cage remains; undo steps through every nudge |
+| 135 | Row houses: Building mode, align the left side (Alt+Shift+←) to the neighbour house | The wall moves onto the neighbour's wall (its building cage), the gardens stay; a park next door falls back to its lot edge |
+| 136 | Lot only: deform a lot but not the building, save, reload; then run the orphan sweep (restart with pruning on) | The variant has no `UQ_` assets in its manifest entry; nothing is refused or deleted wrongly (`Orphan sweep` log line) |
+| 137 | Car park with a storey and a separate ground-level extension: Building mode, lean the building | The storey leans with the building; the ground-level extension follows the lot (stays unless the lot changes) |
+| 138 | Switch modes, restart the game | The last chosen mode is active again |
+| 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Blend toggle shows None: everything on the ground stays, paths may end at the old wall |
+| 140 | After 139, blend mode All (Alt+B) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot; benches and trees move with the paths and hedges around them |
+| 141 | After 140, Ctrl+Z; save and reload | Undo goes back to None; after reload the mode and shapes are kept |
+| 142 | Split a building (lean it in Building mode), then press "lot follows the building" (Alt+Shift+K) | The lot, paths and gardens take the building's shape, the violet cage disappears, both Link buttons grey out; Ctrl+Z restores the split |
+| 143 | Hospital with a ward wing beside the main block: Building mode, then move the wing's side face and a top corner | The cage encloses the wing; the wing bends with the building; the violet lot cage and paths stay; Lot mode shows the larger building box as ghost; save and reload keep the shape |
+| 144 | Car park with the extra storey and a hospital helipad in Building mode | The storey is enclosed as before; a flat helipad beside the building doesn't enlarge the cage and follows the lot cage |
+| 145 | Select the top face, tap Ctrl | Arrows and square give way to three rings; tool window shows Rotate; log `[Edit] Gizmo mode Rotate`; another tap brings the arrows back |
+| 146 | In Rotate mode press Ctrl+Z, Ctrl+Y and Ctrl+Alt+arrows | Undo/redo/level work as before; the gizmo mode does not change |
+| 147 | Top face, drag the green ring | The top twists around its centre and follows the mouse; one `Drag of Face3 ended` line; one Ctrl+Z undoes the whole turn |
+| 148 | Top face, look steeply down, drag the red and blue rings | The roof slopes around its centre without jumps (edge-on rings slide along the mouse) |
+| 149 | Select a horizontal edge, then a vertical edge in Rotate mode | Each shows only the two rings it can turn around (no ring around its own direction) |
+| 150 | Select a corner in Rotate mode | The move arrows and square are shown; dragging them moves the corner |
+| 151 | Right-click during a ring drag; turn a face until the cage folds | Right-click snaps back; a folding turn shows the fold problem and is not applied |
+| 152 | Switch Move/Rotate with the tool-window toggle, then tap Ctrl | Toggle and Ctrl stay in sync; switching during a drag does nothing |
+| 153 | Alt+4 (or the cage button), hover the building, click it | Hovering anywhere on or inside the cage turns all edges cyan; the click selects them all (orange) with the gizmo at the cage centre; log `Selected Cage0` |
+| 154 | Cage selected: drag the red arrow, the yellow square, then press on the cage and drag | The whole building, its lot, paths and props shift together; one Ctrl+Z per drag |
+| 155 | Cage selected, tap Ctrl, drag the green ring | The building turns in place around its centre; the red/blue rings tilt it |
+| 156 | Cage selected: Alt+arrows, then Alt+R | Each nudge moves the whole cage one step; Alt+R puts every corner back |
+| 157 | Repeat 154 in Building, Lot and Both edit mode | Building: only the building moves (lot stays); Lot: only ground items; Both: everything |
+| 158 | Drag the whole cage far away | Stops at the max corner offset (clamped, cage yellow), never relocates beyond it |
+| 159 | Deform a level-1 growable (taper the plan, lean the top), let it level up | Right after the level-up the new building takes the shape: same lot outline, lean scaled to the new height, paths on the deformed lot; log `levelled up: carrying its cage over` |
+| 160 | After 159 save, reload; then turn off Keep shape on level-up and let another deformed building level up | The carried shape is kept after reload; with the option off the next level-up comes back undeformed |
+| 161 | Deform a zoned house, pick it with the eyedropper (or Find It's picker) and place the copy; wait, then hover and click the copy with the normal tool. Repeat with an office | No crash; the copy has the deformed shape and its info panel opens |
+| 162 | Load a save holding copies placed before this fix, then click them | Log `Repaired N copies of variants missing instance components` with N ≥ 1; no crash |
+| 163 | Copy a deformed service building that has an upgrade; hover and click the copy | No crash |
+| 164 | Let the game run with the copies of 161 | Residents or companies move in; no condemnation; Reset in Unsquare mode gives the plain building |
+| 165 | With Placemaker (row joining on), hover a row house it bent, then click it | Hover: preview cage in the bent shape, as for any building. Click: dialog "Building shaped by Placemaker"; no cage, tool window hidden; clicking other buildings does nothing |
+| 166 | In 165 press Cancel (or right-click); then use hotkeys and Ctrl+Z | Nothing selected; the building can't be edited or picked as an undo target; clicking it again asks again |
+| 167 | In 165 press Convert only this building | Cage in the bent shape at once; after the bake the house looks the same; log `adopting … exact` or `fitted (max deviation X m)`; Placemaker's log counts it under "on a model another mod made" |
+| 168 | After 167 edit the house, save, reload | Restored as an Unsquare variant on the plain model, no missing prefab; clicking it opens no dialog |
+| 169 | After 167 press Reset | Plain building; Placemaker may bend it again on its next plan |
+| 170 | In 165 look at the dialog's buttons | Convert only this building and Cancel; in a joined row also Convert whole row (N houses) first. No Deform on top |
+| 171 | Without Placemaker, click any building | No dialog; selection as usual |
+| 172 | In a row of 3+ houses Placemaker joined, click one | Dialog offers "Convert whole row (N houses)" with N = the joined houses; a house on its own shows only Convert only this building |
+| 173 | In 172 press Convert whole row | All N houses swap in the same frame and keep their shape; neighbours stay joined; log `Row conversion of building …: N of N converted`; Placemaker's next plan moves none of them |
+| 174 | In 172 press Convert only this building (one house only) | That house converts; Placemaker straightens its neighbours (known; the row button avoids it) |
+| 175 | After 173 press Reset on one house | Only that house turns plain; the other converted houses keep their shape |
+| 176 | Load a save with Placemaker | Log `Placemaker <version> (tested with <TestedWith>): detect ok, convert ok, rows ok.` once per load; any "missing …" means Placemaker changed |
+| 177 | After 173 press Reset on every house; wait until Placemaker bends them again, then click one | Dialog "Building shaped by Placemaker" opens again (row button included) |
+| 178 | Tool window: Pick section | Gizmo move/rotate toggle sits under the pick toggle and switches like tapping Ctrl |
+| 179 | Pull the street side of a lot back from the road, then Alt+Shift+↓ (or the street-side align button), flush | The street side moves back onto the road edge; log `Aligning Front of building … to road …` |
+| 180 | Street at a slope: Ctrl+Alt+↓ | Both front bottom corners go to the road surface height next to them; the back stays |
+| 181 | Align section: switch the toggle to height | The four side buttons show the level icons and level (log `Levelling …`); the align mode toggle is dimmed; switch back and they align again |
+| 182 | Nudge a handle, then the window's undo and redo buttons | Undo takes the nudge back, redo repeats it; each button is greyed out when there is nothing to undo or redo |
+| 183 | Options → Interface: set the Unsquare button position to Top left, Top right, then Bottom toolbar | The button moves at once to the top left, top right and back next to the photo mode toggle; it is never shown twice, highlights while the mode is on and toggles it in every place |
 
 ## Reporting problems
 
@@ -214,3 +282,6 @@ Note the checklist number, press Alt+L on the affected building and attach the l
 
 Known risks to watch: Alt+arrow keys may also pan the camera (rebind if so); baking fails with "not CPU readable" if
 render meshes cannot be read; if buildings come back undeformed after reload, variant restore at preload did not run.
+| 184 | Building beside a free-standing footpath, align that side (angle, then flush) | The side turns parallel to the path and moves onto its near edge; log `Aligning … to path …` |
+| 185 | Same side, Ctrl+Alt+arrow toward the path | That side's bottom corners go to the path surface height next to them |
+| 186 | Draw a footpath through the lot parallel to a side, a road beyond it; align that side | The path inside the lot is ignored, the side goes to the road; the lot's own paths and neighbours' lot paths never count |

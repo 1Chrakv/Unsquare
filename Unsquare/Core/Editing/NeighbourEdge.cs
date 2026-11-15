@@ -13,8 +13,9 @@ namespace Unsquare.Core.Editing
         // Ground points come in GroundFit.GroundPoints order (corners 0, 1, 4, 5); this walks them around the lot.
         private static readonly int[] OutlineOrder = { 0, 1, 3, 2 };
 
-        private NeighbourEdge(float3 a, float3 b, float2 outward)
+        private NeighbourEdge(float3 a, float3 b, float2 outward, bool isPath = false)
         {
+            IsPath = isPath;
             A = a.xz;
             B = b.xz;
             HeightA = a.y;
@@ -24,6 +25,9 @@ namespace Unsquare.Core.Editing
 
         /// <summary>A piece of a road edge; its side is unknown, so it may face either way.</summary>
         public static NeighbourEdge Road(float3 a, float3 b) => new(a, b, float2.zero);
+
+        /// <summary>A piece of a path edge (footpath, cycle path); like a road, but only found outside a face.</summary>
+        public static NeighbourEdge Path(float3 a, float3 b) => new(a, b, float2.zero, true);
 
         /// <param name="outward">Unit normal pointing away from the neighbour lot.</param>
         public static NeighbourEdge LotSide(float3 a, float3 b, float2 outward) => new(a, b, outward);
@@ -58,8 +62,11 @@ namespace Unsquare.Core.Editing
         /// <summary>Which way the edge faces, away from its lot; zero for roads.</summary>
         public float2 Outward { get; }
 
-        /// <summary>Road edges are sampled pieces of a curve, so their end points are no corners to snap to.</summary>
+        /// <summary>Road and path edges are sampled pieces of a curve, so their end points are no corners to snap to.</summary>
         public bool IsRoad => math.all(Outward == float2.zero);
+
+        /// <summary>A free path may run through the lot itself, so it never counts inside a face.</summary>
+        public bool IsPath { get; }
 
         /// <summary>Ground height at the point of the edge nearest to <paramref name="point"/> (xz).</summary>
         public float HeightNear(float2 point)
@@ -70,6 +77,6 @@ namespace Unsquare.Core.Editing
             return math.lerp(HeightA, HeightB, t);
         }
 
-        public override string ToString() => $"{(IsRoad ? "road" : "lot")} {A} -> {B}";
+        public override string ToString() => $"{(IsPath ? "path" : IsRoad ? "road" : "lot")} {A} -> {B}";
     }
 }

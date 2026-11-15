@@ -134,5 +134,76 @@ namespace Unsquare.Tests.Deformation
             var expected = math.mul(plain.Rotation, turned);
             Assert.That(math.abs(math.dot(composed.Rotation.value, expected.value)), Is.EqualTo(1f).Within(1e-4f));
         }
+
+        // Front corners (+z) slid 4 m along +x: the side edges lean by 0.4 m per metre of depth.
+        private static TrilinearCageDeformation ShearedLot()
+        {
+            var meters = new float3[CageTopology.CornerCount];
+            for (int c = 0; c < meters.Length; c++)
+                meters[c] = Box.Corner(c).z > 0f ? new float3(4, 0, 0) : float3.zero;
+            return new TrilinearCageDeformation(Box, CageOffsets.FromMeters(meters));
+        }
+
+        private static LinearFootprint Fence(float3 min, float3 max)
+        {
+            Assert.That(LinearFootprint.TryCreate(new MinMaxBounds(min, max), out var footprint), Is.True);
+            return footprint;
+        }
+
+        private static float Parallel(float3 a, float3 b) => math.abs(math.dot(math.normalize(a), math.normalize(b)));
+
+        [Test]
+        public void PlaceLinear_SegmentOnShearedLotEdge_YawMatchesEdge()
+        {
+            var deformation = ShearedLot();
+            var pose = new RigidPose(new float3(-5, 0, 0), quaternion.identity);
+            var fence = Fence(new float3(-0.1f, 0, -2), new float3(0.1f, 2, 2));
+            var edge = new float3(0.4f, 0, 1);
+
+            var linear = RigidDeformer.PlaceLinear(deformation, pose, fence);
+            var polar = RigidDeformer.Place(deformation, null, 0f, pose, PlacementMode.Upright);
+
+            Assert.That(Parallel(math.rotate(linear.Rotation, fence.Axis), edge), Is.EqualTo(1f).Within(1e-5f));
+            Assert.That(Parallel(math.rotate(polar.Rotation, fence.Axis), edge), Is.LessThan(0.99f));
+            Assert.That(Near(math.rotate(linear.Rotation, Up), Up), Is.True);
+        }
+
+        [Test]
+        public void PlaceLinear_PivotAtEnd_CentreFollowsCage()
+        {
+            var deformation = ShearedLot();
+            var pose = new RigidPose(new float3(-4, 0, -3), quaternion.identity);
+            var fence = Fence(new float3(0, 0, -0.1f), new float3(8, 2, 0.1f));
+
+            var placed = RigidDeformer.PlaceLinear(deformation, pose, fence);
+
+            var expected = deformation.Apply(pose.Position + fence.Centre, out _);
+            Assert.That(Near(placed.Position + math.rotate(placed.Rotation, fence.Centre), expected), Is.True);
+        }
+
+        [Test]
+        public void PlaceLinear_Identity_KeepsPose()
+        {
+            var pose = new RigidPose(new float3(2, 0, -4), quaternion.RotateY(0.6f));
+            var fence = Fence(new float3(0, 0, -0.1f), new float3(8, 2, 0.1f));
+
+            var placed = RigidDeformer.PlaceLinear(new TrilinearCageDeformation(Box, CageOffsets.Identity), pose, fence);
+
+            Assert.That(Near(placed.Position, pose.Position), Is.True);
+            Assert.That(math.abs(math.dot(placed.Rotation.value, pose.Rotation.value)), Is.EqualTo(1f).Within(1e-4f));
+        }
+
+        [Test]
+        public void PlaceLinear_RotatedProp_UsesWorldLongAxis()
+        {
+            // Long along local x, turned 90° so it runs along the left edge (world z).
+            var pose = new RigidPose(new float3(-5, 0, 0), quaternion.RotateY(math.PI / 2));
+            var fence = Fence(new float3(-2, 0, -0.1f), new float3(2, 2, 0.1f));
+
+            var placed = RigidDeformer.PlaceLinear(ShearedLot(), pose, fence);
+
+            Assert.That(Parallel(math.rotate(placed.Rotation, fence.Axis), new float3(0.4f, 0, 1)),
+                Is.EqualTo(1f).Within(1e-5f));
+        }
     }
 }

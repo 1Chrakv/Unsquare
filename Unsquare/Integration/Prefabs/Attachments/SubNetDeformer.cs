@@ -26,8 +26,9 @@ namespace Unsquare.Integration.Prefabs.Attachments
                 if (original == null)
                     continue;
                 var info = PrefabCloning.ShallowCopy(original);
-                bool onGround = info.m_ParentMesh.x < 0 && info.m_ParentMesh.y < 0;
-                info.m_BezierCurve = CurveConversions.Deform(context, info.m_BezierCurve, onGround);
+                // Purely positional: placed net instances are later remapped point by point with the same blend.
+                info.m_BezierCurve = CurveConversions.Deform(context, info.m_BezierCurve, info.m_ParentMesh,
+                    attachedEndsFollowBuilding: false);
                 result[i] = info;
                 deformedCount++;
             }

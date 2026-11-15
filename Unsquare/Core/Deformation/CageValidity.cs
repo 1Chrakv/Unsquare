@@ -9,5 +9,8 @@ namespace Unsquare.Core.Deformation
 
         /// <summary>The cage folds over or collapses somewhere (Jacobian determinant too small).</summary>
         Inverted,
+
+        /// <summary>Both cages are fine, but the ground blending between them folds over.</summary>
+        BlendInverted,
     }
 }

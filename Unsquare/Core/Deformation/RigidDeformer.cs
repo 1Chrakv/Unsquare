@@ -10,6 +10,8 @@ namespace Unsquare.Core.Deformation
     /// </summary>
     public static class RigidDeformer
     {
+        private const float MinPlanLengthSq = 1e-8f;
+
         /// <summary>Full local rotation (polar part of the Jacobian) at the anchor.</summary>
         public static RigidPose Deform(IDeformation deformation, RigidPose pose) =>
             Place(deformation, null, 0f, pose, PlacementMode.Follow);
@@ -40,6 +42,26 @@ namespace Unsquare.Core.Deformation
                 rotation = math.slerp(rotation, face, weight);
             }
             return new RigidPose(position, math.normalize(math.mul(rotation, pose.Rotation)));
+        }
+
+        /// <summary>
+        /// Places an upright linear prop so its long axis follows the deformed line through it, and centres it on its
+        /// deformed span (pivots often sit at one end, which would put a stretched line's whole gap on one side).
+        /// </summary>
+        public static RigidPose PlaceLinear(IDeformation deformation, RigidPose pose, LinearFootprint footprint)
+        {
+            if (deformation == null)
+                throw new ArgumentNullException(nameof(deformation));
+            float3 restCentre = pose.Position + math.rotate(pose.Rotation, footprint.Centre);
+            float3 centre = deformation.Apply(restCentre, out float3x3 jacobian);
+            float3 axis = math.rotate(pose.Rotation, footprint.Axis);
+            float3 deformedAxis = math.mul(jacobian, axis);
+            if (math.lengthsq(axis.xz) < MinPlanLengthSq || math.lengthsq(deformedAxis.xz) < MinPlanLengthSq)
+                return Place(deformation, null, 0f, pose, PlacementMode.Upright);
+
+            var turn = quaternion.RotateY(FaceAlignment.YawBetween(axis, deformedAxis));
+            var rotation = math.normalize(math.mul(turn, pose.Rotation));
+            return new RigidPose(centre - math.rotate(rotation, footprint.Centre), rotation);
         }
     }
 }
