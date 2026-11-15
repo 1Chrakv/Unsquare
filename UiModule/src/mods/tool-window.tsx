@@ -1,13 +1,17 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import alignAngleIcon from "images/align-angle.svg";
 import alignBackIcon from "images/align-back.svg";
 import alignFlushIcon from "images/align-flush.svg";
+import alignFrontIcon from "images/align-front.svg";
 import alignFullIcon from "images/align-full.svg";
 import alignGroundBackIcon from "images/align-ground-back.svg";
+import alignGroundFrontIcon from "images/align-ground-front.svg";
 import alignGroundLeftIcon from "images/align-ground-left.svg";
 import alignGroundRightIcon from "images/align-ground-right.svg";
+import alignKindHeightIcon from "images/align-kind-height.svg";
+import alignKindPositionIcon from "images/align-kind-position.svg";
 import alignLeftIcon from "images/align-left.svg";
 import alignRightIcon from "images/align-right.svg";
 import blendAllIcon from "images/blend-all.svg";
@@ -27,12 +31,14 @@ import faceIcon from "images/pick-face.svg";
 import cageIcon from "images/pick-cage.svg";
 import groundFitAllIcon from "images/ground-fit-all.svg";
 import groundFitBackIcon from "images/ground-fit-back.svg";
+import redoIcon from "images/redo.svg";
 import resetBuildingIcon from "images/reset-building.svg";
 import resetHandleIcon from "images/reset-handle.svg";
 import terrainFlatIcon from "images/terrain-flat.svg";
 import terrainLiftIcon from "images/terrain-lift.svg";
+import undoIcon from "images/undo.svg";
 import { Guard } from "mods/guard";
-import { SegmentedToggle, SegmentOption } from "mods/segmented-toggle";
+import { ButtonGroup, SegmentedToggle, SegmentOption } from "mods/segmented-toggle";
 import { focusDisabled, ToolButton } from "mods/vanilla";
 import styles from "./tool-window.module.scss";
 
@@ -60,6 +66,8 @@ const terrainLift$ = bindValue<boolean>(group, "terrainLift", false);
 const canLiftTerrain$ = bindValue<boolean>(group, "canLiftTerrain", false);
 const alignMode$ = bindValue<string>(group, "alignMode", "Angle");
 const groundFitMode$ = bindValue<string>(group, "groundFitMode", "BackOnly");
+const canUndo$ = bindValue<boolean>(group, "canUndo", false);
+const canRedo$ = bindValue<boolean>(group, "canRedo", false);
 
 // Values are the C# CageTarget names: which cage edits move.
 const editModes: ToggleEntry[] = [
@@ -93,12 +101,20 @@ const alignSides = [
     { side: "Left", icon: alignLeftIcon, fallback: "Align the left side to its neighbour (Alt+Shift+Left)" },
     { side: "Back", icon: alignBackIcon, fallback: "Align the back to its neighbour (Alt+Shift+Up)" },
     { side: "Right", icon: alignRightIcon, fallback: "Align the right side to its neighbour (Alt+Shift+Right)" },
+    { side: "Front", icon: alignFrontIcon, fallback: "Align the street side to the road (Alt+Shift+Down)" },
 ];
 
 const groundSides = [
     { side: "Left", icon: alignGroundLeftIcon, fallback: "Level the left side with its neighbour (Ctrl+Alt+Left)" },
     { side: "Back", icon: alignGroundBackIcon, fallback: "Level the back with its neighbour (Ctrl+Alt+Up)" },
     { side: "Right", icon: alignGroundRightIcon, fallback: "Level the right side with its neighbour (Ctrl+Alt+Right)" },
+    { side: "Front", icon: alignGroundFrontIcon, fallback: "Level the street side with the road (Ctrl+Alt+Down)" },
+];
+
+// Which command the side buttons run: view state only, the hotkeys keep both.
+const alignKinds: ToggleEntry[] = [
+    { value: "Position", icon: alignKindPositionIcon, fallback: "Side buttons move the face onto the neighbour" },
+    { value: "Height", icon: alignKindHeightIcon, fallback: "Side buttons level the face with the neighbour" },
 ];
 
 const alignModes: ToggleEntry[] = [
@@ -179,6 +195,9 @@ const ToolWindow = () => {
     const offGround = useValue(offGround$);
     const problem = useValue(problem$);
     const canSelectGroundFitMode = useValue(canSelectGroundFitMode$);
+    const canUndo = useValue(canUndo$);
+    const canRedo = useValue(canRedo$);
+    const [alignKind, setAlignKind] = useState("Position");
     const { translate } = useLocalization();
     if (!ToolButton || !anchor.visible)
         return null;
@@ -191,6 +210,8 @@ const ToolWindow = () => {
             tooltip: translate("Unsquare.ToolWindow.TerrainOfLot", terrainOfLot) ?? terrainOfLot,
         }))
         : toOptions(terrainModes, "Unsquare.ToolWindow.Terrain", translate);
+    const levelling = alignKind === "Height";
+    const sideButtons = levelling ? groundSides : alignSides;
     return (
         <div className={styles.anchor} style={{ left: `${anchor.x * 100}vw`, top: `${anchor.y * 100}vh` }}>
             <div className={styles.window}>
@@ -209,7 +230,7 @@ const ToolWindow = () => {
                             onSelect={mode => trigger(group, "selectBlendMode", mode)}
                         />
                     </>}
-                    buttons={<>
+                    buttons={<ButtonGroup>
                         <ActionButton
                             icon={linkToLotIcon}
                             tooltip={translate("Unsquare.ToolWindow.Link", "Building follows the lot again")}
@@ -222,24 +243,21 @@ const ToolWindow = () => {
                             disabled={!isSplit}
                             onSelect={() => trigger(group, "linkLot")}
                         />
-                    </>}
+                    </ButtonGroup>}
                 />
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Pick", "Pick")}
-                    toggles={<>
-                        <SegmentedToggle
-                            options={toOptions(pickKinds, "Unsquare.ToolWindow.", translate)}
-                            value={pickKind}
-                            onSelect={kind => trigger(group, "selectPickKind", kind)}
-                        />
-                        <div className={styles.spacer} />
-                        <SegmentedToggle
-                            options={toOptions(gizmoModes, "Unsquare.ToolWindow.GizmoMode", translate)}
-                            value={gizmoMode}
-                            onSelect={mode => trigger(group, "selectGizmoMode", mode)}
-                        />
-                    </>}
+                    toggles={<SegmentedToggle
+                        options={toOptions(pickKinds, "Unsquare.ToolWindow.", translate)}
+                        value={pickKind}
+                        onSelect={kind => trigger(group, "selectPickKind", kind)}
+                    />}
+                    buttons={<SegmentedToggle
+                        options={toOptions(gizmoModes, "Unsquare.ToolWindow.GizmoMode", translate)}
+                        value={gizmoMode}
+                        onSelect={mode => trigger(group, "selectGizmoMode", mode)}
+                    />}
                 />
                 <div className={styles.divider} />
                 <Section
@@ -259,47 +277,52 @@ const ToolWindow = () => {
                             onSelect={mode => trigger(group, "selectGroundFitMode", mode)}
                         />
                     </>}
-                    buttons={<ActionButton
-                        icon={fitGroundIcon}
-                        tooltip={buildingMode
-                            ? translate("Unsquare.ToolWindow.SeatBuilding", "Set the building onto its lot's ground")
-                            : translate("Unsquare.ToolWindow.FitToGround",
-                                "Fit the bottom corners to the original ground")}
-                        onSelect={() => trigger(group, "fitToGround")}
-                    />}
+                    buttons={<ButtonGroup>
+                        <ActionButton
+                            icon={fitGroundIcon}
+                            tooltip={buildingMode
+                                ? translate("Unsquare.ToolWindow.SeatBuilding",
+                                    "Set the building onto its lot's ground")
+                                : translate("Unsquare.ToolWindow.FitToGround",
+                                    "Fit the bottom corners to the original ground")}
+                            onSelect={() => trigger(group, "fitToGround")}
+                        />
+                    </ButtonGroup>}
                 />
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Align", "Align to neighbour")}
-                    toggles={<SegmentedToggle
-                        options={toOptions(alignModes, "Unsquare.ToolWindow.AlignMode", translate)}
-                        value={alignMode}
-                        onSelect={mode => trigger(group, "selectAlignMode", mode)}
-                    />}
-                    buttons={<>
-                        {alignSides.map(({ side, icon, fallback }) => (
-                            <ActionButton
-                                key={side}
-                                icon={icon}
-                                tooltip={translate(`Unsquare.ToolWindow.Align${side}`, fallback)}
-                                onSelect={() => trigger(group, "alignToNeighbour", side)}
-                            />
-                        ))}
+                    toggles={<>
+                        <SegmentedToggle
+                            options={toOptions(alignModes, "Unsquare.ToolWindow.AlignMode", translate)}
+                            value={alignMode}
+                            disabled={levelling}
+                            onSelect={mode => trigger(group, "selectAlignMode", mode)}
+                        />
                         <div className={styles.spacer} />
-                        {groundSides.map(({ side, icon, fallback }) => (
+                        <SegmentedToggle
+                            options={toOptions(alignKinds, "Unsquare.ToolWindow.AlignKind", translate)}
+                            value={alignKind}
+                            onSelect={setAlignKind}
+                        />
+                    </>}
+                    buttons={<ButtonGroup>
+                        {sideButtons.map(({ side, icon, fallback }) => (
                             <ActionButton
                                 key={side}
                                 icon={icon}
-                                tooltip={translate(`Unsquare.ToolWindow.AlignGround${side}`, fallback)}
-                                onSelect={() => trigger(group, "alignGroundToNeighbour", side)}
+                                tooltip={translate(`Unsquare.ToolWindow.Align${levelling ? "Ground" : ""}${side}`,
+                                    fallback)}
+                                onSelect={() => trigger(group,
+                                    levelling ? "alignGroundToNeighbour" : "alignToNeighbour", side)}
                             />
                         ))}
-                    </>}
+                    </ButtonGroup>}
                 />
                 <div className={styles.divider} />
                 <Section
                     title={translate("Unsquare.ToolWindow.Section.Reset", "Reset")}
-                    buttons={<>
+                    toggles={<ButtonGroup>
                         <ActionButton
                             icon={resetHandleIcon}
                             tooltip={translate("Unsquare.ToolWindow.ResetHandle",
@@ -312,7 +335,21 @@ const ToolWindow = () => {
                             tooltip={translate("Unsquare.ToolWindow.ResetBuilding", "Reset the whole building")}
                             onSelect={() => trigger(group, "resetBuilding")}
                         />
-                    </>}
+                    </ButtonGroup>}
+                    buttons={<ButtonGroup>
+                        <ActionButton
+                            icon={undoIcon}
+                            tooltip={translate("Unsquare.ToolWindow.Undo", "Undo the last cage edit")}
+                            disabled={!canUndo}
+                            onSelect={() => trigger(group, "undo")}
+                        />
+                        <ActionButton
+                            icon={redoIcon}
+                            tooltip={translate("Unsquare.ToolWindow.Redo", "Redo the cage edit")}
+                            disabled={!canRedo}
+                            onSelect={() => trigger(group, "redo")}
+                        />
+                    </ButtonGroup>}
                 />
             </div>
             {offGround && (

@@ -38,6 +38,15 @@ namespace Unsquare.Tests.Editing
             Assert.That(Find(AlignSide.Left, LotEdge(10, -12, 10, 12)), Is.True);
             Assert.That(Find(AlignSide.Right, LotEdge(-10, -12, -10, 12)), Is.True);
             Assert.That(Find(AlignSide.Back, LotEdge(-8, -14, 8, -14)), Is.True);
+            Assert.That(Find(AlignSide.Front, LotEdge(-8, 14, 8, 14)), Is.True);
+        }
+
+        [Test]
+        public void TryFindNeighbour_StreetInFront_IsFoundForFrontOnly()
+        {
+            var street = NeighbourEdge.Road(new float3(-20, 0, 16), new float3(20, 0, 16));
+            Assert.That(Find(AlignSide.Front, street), Is.True);
+            Assert.That(Find(AlignSide.Back, street), Is.False);
         }
 
         [Test]
@@ -187,6 +196,17 @@ namespace Unsquare.Tests.Editing
         }
 
         [Test]
+        public void Align_Front_MovesFrontCornersAlongSides()
+        {
+            var aligned = NeighbourAlign.Align(Lot, CageOffsets.Identity, AlignSide.Front, LotEdge(-20, 15, 20, 15),
+                AlignMode.Flush);
+            AssertXz(aligned, 4, 0f, 3f);
+            AssertXz(aligned, 5, 0f, 3f);
+            AssertXz(aligned, 6, 0f, 3f);
+            AssertXz(aligned, 0, 0f, 0f);
+        }
+
+        [Test]
         public void Align_KeepsHeights()
         {
             var raised = CageOffsets.Identity.Move(CageHandle.Corner(5), new float3(0f, 1.5f, 0f))
@@ -272,6 +292,16 @@ namespace Unsquare.Tests.Editing
             Assert.That(fitted.Meters(0).y, Is.EqualTo(-1.5f).Within(1e-4f));
             Assert.That(fitted.Meters(1).y, Is.EqualTo(-1.5f).Within(1e-4f));
             Assert.That(fitted.Meters(4).y, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void FitHeight_Front_MovesFrontColumns()
+        {
+            var road = NeighbourEdge.Road(new float3(-20, 1f, 14), new float3(20, 1f, 14));
+            var fitted = NeighbourAlign.FitHeight(Lot, CageOffsets.Identity, AlignSide.Front, road);
+            Assert.That(fitted.Meters(4).y, Is.EqualTo(1f).Within(1e-4f));
+            Assert.That(fitted.Meters(5).y, Is.EqualTo(1f).Within(1e-4f));
+            Assert.That(fitted.Meters(0).y, Is.EqualTo(0f));
         }
     }
 }

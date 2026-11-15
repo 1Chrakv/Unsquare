@@ -7,7 +7,7 @@ using Unsquare.Core.Terrain;
 namespace Unsquare.Core.Editing
 {
     /// <summary>
-    /// Aligns a side or the back face of a lot cage to the nearest neighbouring edge on the ground (building space xz).
+    /// Aligns a lot cage face (left, back, right or front) to the nearest neighbouring edge on the ground (xz).
     /// Face corners only slide along their adjacent edges (or onto neighbour corners); columns keep heights and tilt.
     /// </summary>
     public static class NeighbourAlign
@@ -18,12 +18,13 @@ namespace Unsquare.Core.Editing
         private const float ParallelEpsilon = 1e-4f;
         private const int TopBit = 2;
 
-        // The face's two ground corners; the first is the back (sides) or the −X one (back face).
+        // The face's two ground corners; the first is the back (sides) or the −X one (back and front faces).
         private static (int First, int Second) FaceCorners(AlignSide side) => side switch
         {
             AlignSide.Left => (1, 5),
             AlignSide.Right => (0, 4),
             AlignSide.Back => (0, 1),
+            AlignSide.Front => (4, 5),
             _ => throw new ArgumentException($"Unknown side {side}.", nameof(side)),
         };
 
@@ -205,7 +206,7 @@ namespace Unsquare.Core.Editing
             {
                 var points = GroundFit.GroundPoints(box, offsets);
                 var (first, second) = FaceCorners(side);
-                int across = side == AlignSide.Back ? 4 : 1;
+                int across = side is AlignSide.Back or AlignSide.Front ? 4 : 1;
                 return new Face(points[GroundIndex(first)], points[GroundIndex(second)],
                     points[GroundIndex(first ^ across)], points[GroundIndex(second ^ across)]);
             }

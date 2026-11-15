@@ -424,7 +424,7 @@ namespace Unsquare.UI.Editing
             return RecordOneShot($"Terrain lift {(lift ? "on" : "off")}", result);
         }
 
-        /// <summary>Aligns the target's left, back or right lot face to its nearest neighbour (<see cref="AlignMode"/>).</summary>
+        /// <summary>Aligns one of the target's lot faces to its nearest neighbour (<see cref="AlignMode"/>).</summary>
         public DeformRequestResult AlignToNeighbour(AlignSide side)
         {
             string command = $"Align {side} to neighbour ({AlignMode}, {EditMode})";
@@ -435,7 +435,7 @@ namespace Unsquare.UI.Editing
             return RecordOneShot(command, result);
         }
 
-        /// <summary>Moves the bottom of the target's left, back or right side to its neighbour's ground height.</summary>
+        /// <summary>Moves the bottom of one of the target's sides to its neighbour's ground height.</summary>
         public DeformRequestResult AlignGroundToNeighbour(AlignSide side)
         {
             string command = $"Level {side} with neighbour ({EditMode})";
@@ -502,6 +502,10 @@ namespace Unsquare.UI.Editing
         }
 
         /// <summary>Reverts the newest cage edit on any building; that building becomes the target.</summary>
+        public bool CanUndo => _history.CanUndo;
+
+        public bool CanRedo => _history.CanRedo;
+
         public void Undo() => Revisit(true);
 
         /// <summary>Repeats the newest undone cage edit; that building becomes the target.</summary>
