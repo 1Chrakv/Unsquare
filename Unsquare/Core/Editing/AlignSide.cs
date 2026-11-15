@@ -6,5 +6,8 @@ namespace Unsquare.Core.Editing
         Left,
         Back,
         Right,
+
+        /// <summary>The street side (+Z).</summary>
+        Front,
     }
 }
