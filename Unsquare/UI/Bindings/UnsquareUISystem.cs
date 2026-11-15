@@ -7,6 +7,7 @@ using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Terrain;
 using Unsquare.UI.Editing;
+using Unsquare.UI.Input;
 using Unsquare.UI.Tool;
 
 namespace Unsquare.UI.Bindings
@@ -28,6 +29,7 @@ namespace Unsquare.UI.Bindings
         private readonly float3[] _cornerViewports = new float3[CageTopology.CornerCount];
         private UnsquareToolSystem _tool;
         private CageEditorSystem _editor;
+        private UnsquareSettings _settings;
         private bool _loggedAnchorFailure;
         private int _shownProblemCount;
         private float _problemShownAt = float.NegativeInfinity;
@@ -39,6 +41,8 @@ namespace Unsquare.UI.Bindings
             _editor = World.GetOrCreateSystemManaged<CageEditorSystem>();
             AddUpdateBinding(new GetterValueBinding<bool>(Group, "modeActive", () => _tool.IsActive));
             AddBinding(new TriggerBinding(Group, "toggleMode", () => _tool.Toggle()));
+            AddUpdateBinding(new GetterValueBinding<string>(Group, "buttonPosition",
+                () => (_settings?.ToButtonPosition() ?? ButtonPosition.Bottom).ToString()));
 
             AddUpdateBinding(new GetterValueBinding<ToolWindowAnchor>(Group, "toolWindow", GetToolWindowAnchor,
                 new ValueWriter<ToolWindowAnchor>()));
@@ -95,6 +99,9 @@ namespace Unsquare.UI.Bindings
                     _editor.Session.AlignGroundToNeighbour(parsed);
             }));
         }
+
+        /// <summary>Hooks up the options read by the UI module (button position).</summary>
+        internal void Bind(UnsquareSettings settings) => _settings = settings;
 
         // The latest failure for a few seconds (as long as a drag keeps pushing into it), else a failed bake.
         private string GetProblem()

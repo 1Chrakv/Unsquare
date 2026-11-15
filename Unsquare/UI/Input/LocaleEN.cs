@@ -26,6 +26,7 @@ namespace Unsquare.UI.Input
                 { _settings.GetOptionTabLocaleID(UnsquareSettings.SettingsTab), "Settings" },
                 { _settings.GetOptionTabLocaleID(UnsquareSettings.KeyBindingsTab), "Key bindings" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.HotkeyGroup), "Cage editing hotkeys" },
+                { _settings.GetOptionGroupLocaleID(UnsquareSettings.InterfaceGroup), "Interface" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.EditingGroup), "Editing" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.LimitsGroup), "Cage limits" },
                 { _settings.GetOptionGroupLocaleID(UnsquareSettings.AttachmentsGroup), "Props and lot" },
@@ -131,6 +132,9 @@ namespace Unsquare.UI.Input
                     "Align mode: full. The face takes the neighbour's edge and its corners (Alt+A)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Follow), "Follow (tilt with the building)" },
                 { _settings.GetEnumValueLocaleID(PlacementMode.Upright), "Upright (turn only)" },
+                { _settings.GetEnumValueLocaleID(ButtonPosition.Bottom), "Bottom toolbar" },
+                { _settings.GetEnumValueLocaleID(ButtonPosition.TopLeft), "Top left" },
+                { _settings.GetEnumValueLocaleID(ButtonPosition.TopRight), "Top right" },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ResetSettings)),
                     "Reset all settings to their defaults? Key bindings are kept." },
                 { _settings.GetOptionWarningLocaleID(nameof(UnsquareSettings.ImportFlexIt)),
@@ -152,6 +156,9 @@ namespace Unsquare.UI.Input
                 entries[_settings.GetBindingKeyLocaleID(hotkey.ActionName)] = hotkey.Label;
             }
 
+            Option(entries, nameof(UnsquareSettings.ButtonPosition), "Unsquare button position",
+                "Where the button that turns Unsquare mode on sits: in the bottom toolbar next to the photo mode " +
+                "button, or among the mod buttons at the top left or top right.");
             Option(entries, nameof(UnsquareSettings.SmallStep), "Small nudge step (m)",
                 "Smallest step of the step-size hotkey. Snapped to 0.1 m.");
             Option(entries, nameof(UnsquareSettings.MediumStep), "Medium nudge step (m)",

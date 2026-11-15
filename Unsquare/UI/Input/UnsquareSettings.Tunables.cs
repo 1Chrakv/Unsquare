@@ -19,6 +19,7 @@ namespace Unsquare.UI.Input
     public sealed partial class UnsquareSettings
     {
         public const string SettingsTab = "Settings";
+        public const string InterfaceGroup = "Interface";
         public const string EditingGroup = "Editing";
         public const string LimitsGroup = "Limits";
         public const string AttachmentsGroup = "Attachments";
@@ -34,6 +35,9 @@ namespace Unsquare.UI.Input
         /// <summary>The last edit mode, so it survives a restart; set from the tool window, not shown here.</summary>
         [SettingsUIHidden]
         public CageTarget EditMode { get; set; }
+
+        [SettingsUISection(SettingsTab, InterfaceGroup)]
+        public ButtonPosition ButtonPosition { get; set; }
 
         [SettingsUISection(SettingsTab, EditingGroup)]
         [SettingsUISlider(min = 0.1f, max = 10f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
@@ -215,6 +219,8 @@ namespace Unsquare.UI.Input
 
         public CageTarget ToEditMode() => Defined(EditMode, CageTarget.Both);
 
+        public ButtonPosition ToButtonPosition() => Defined(ButtonPosition, ButtonPosition.Bottom);
+
         public CageOverlayStyle ToOverlayStyle() => new(Clamped(LineRadius, nameof(LineRadius)),
             Clamped(HandleSize, nameof(HandleSize)), Clamped(SelectedHandleSize, nameof(SelectedHandleSize)),
             Clamped(AxisLength, nameof(AxisLength)), Clamped(GizmoSize, nameof(GizmoSize)) / 100f);
@@ -223,6 +229,7 @@ namespace Unsquare.UI.Input
         {
             var edit = CageEditOptions.Default;
             EditMode = CageTarget.Both;
+            ButtonPosition = ButtonPosition.Bottom;
             SmallStep = edit.SmallStep;
             MediumStep = edit.MediumStep;
             LargeStep = edit.LargeStep;
