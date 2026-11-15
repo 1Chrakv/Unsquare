@@ -12,6 +12,7 @@ using Unsquare.UI.Bindings;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
 using Unsquare.UI.Overlay;
+using Unsquare.UI.PlacemakerCompatibility;
 using Unsquare.UI.Tool;
 
 namespace Unsquare
@@ -52,6 +53,7 @@ namespace Unsquare
             updateSystem.UpdateAfter<CageHotkeySystem, UnsquareToolSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<UnsquareUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<PlacemakerUISystem>(SystemUpdatePhase.UIUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;

@@ -22,6 +22,12 @@ namespace Unsquare.Api
         bool TryGetCage(Entity building, CageTarget target, out CageState state);
 
         /// <summary>
+        /// Like <see cref="TryGetCage"/>, but also for buildings on another mod's variant not taken over yet (e.g.
+        /// Placemaker's): their cage as converting would give it. For hover previews only; they can't be edited.
+        /// </summary>
+        bool TryGetPreviewCage(Entity building, CageTarget target, out CageState state);
+
+        /// <summary>
         /// Moves the start state's cage to <paramref name="view"/> (offsets on <see cref="CageState.Box"/>); bakes after
         /// the rebake delay unless <see cref="BakeNow"/> follows. Drags pass the state from drag start, so rounding never
         /// drifts; other edits pass the current state.

@@ -15,19 +15,28 @@ namespace Unsquare.UI.Editing
     public sealed class CageEditSession
     {
         private readonly IBuildingDeformService _service;
+        private readonly IPickGate _gate;
         private readonly EditHistory<Entity> _history;
         private bool _warnedLeavingLot;
         private CageState _dragStart;
 
-        public CageEditSession(IBuildingDeformService service)
+        /// <param name="gate">Optional: claims picked buildings that need a decision first.</param>
+        public CageEditSession(IBuildingDeformService service, IPickGate gate = null)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _gate = gate;
             _history = new EditHistory<Entity>(Options.HistoryDepth);
             _service.CageChanged += building =>
             {
                 if (building == Target)
                     Changed?.Invoke();
             };
+            if (_gate != null)
+                _gate.Released += building =>
+                {
+                    if (IsEnabled)
+                        SetTarget(building);
+                };
         }
 
         /// <summary>
@@ -83,6 +92,9 @@ namespace Unsquare.UI.Editing
 
         public DeformRequestResult? LastResult { get; private set; }
 
+        /// <summary>A picked building waits for a decision (<see cref="IPickGate"/>); nothing else can be picked.</summary>
+        public bool IsDecisionOpen => _gate != null && _gate.IsOpen;
+
         /// <summary>Why the latest command failed; cleared by the next one that succeeds and by a new target.</summary>
         public EditProblem? Problem { get; private set; }
 
@@ -98,7 +110,7 @@ namespace Unsquare.UI.Editing
         public bool TryGetPreviewCage(out CageState state)
         {
             state = default;
-            return PreviewBuilding != Entity.Null && _service.TryGetCage(PreviewBuilding, EditMode, out state);
+            return PreviewBuilding != Entity.Null && _service.TryGetPreviewCage(PreviewBuilding, EditMode, out state);
         }
 
         /// <summary>Switches which cage edits move; a drag in progress is cancelled, the selection stays.</summary>
@@ -180,6 +192,7 @@ namespace Unsquare.UI.Editing
             {
                 CancelDrag();
                 ClearTarget();
+                _gate?.Close();
                 Selection = HandleSelection.Default;
                 PreviewBuilding = Entity.Null;
             }
@@ -188,11 +201,20 @@ namespace Unsquare.UI.Editing
             Changed?.Invoke();
         }
 
-        /// <summary>Makes a clicked building the target; refused while a handle is selected.</summary>
+        /// <summary>
+        /// Makes a clicked building the target; refused while a handle is selected or a decision is open. A building
+        /// the gate claims opens its decision instead and leaves no target.
+        /// </summary>
         public bool SelectBuilding(Entity building)
         {
-            if (!IsEnabled || IsLocked || building == Entity.Null)
+            if (!IsEnabled || IsLocked || IsDecisionOpen || building == Entity.Null)
                 return false;
+            if (_gate != null && _gate.TryIntercept(building))
+            {
+                SetTarget(Entity.Null);
+                Changed?.Invoke();
+                return true;
+            }
             SetTarget(building);
             return true;
         }
@@ -203,6 +225,12 @@ namespace Unsquare.UI.Editing
         /// <summary>Undoes the innermost state: drag, then selection, then target.</summary>
         public StepBackResult StepBack()
         {
+            if (IsDecisionOpen)
+            {
+                _gate.Close();
+                Changed?.Invoke();
+                return StepBackResult.TargetCleared;
+            }
             if (ActiveDrag != null)
             {
                 CancelDrag();
@@ -513,7 +541,7 @@ namespace Unsquare.UI.Editing
         // Edits of buildings that are gone are dropped and the next one is tried.
         private void Revisit(bool undo)
         {
-            if (!IsEnabled || ActiveDrag != null)
+            if (!IsEnabled || ActiveDrag != null || IsDecisionOpen)
                 return;
             CageEdit<Entity> edit;
             while (undo ? _history.TryUndo(out edit) : _history.TryRedo(out edit))

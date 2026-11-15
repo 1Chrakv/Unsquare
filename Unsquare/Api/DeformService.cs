@@ -56,7 +56,22 @@ namespace Unsquare.Api
             state = default;
             if (!_pipeline.TryDescribe(building, out var description))
                 return false;
+            state = BuildState(building, description, target);
+            return true;
+        }
 
+        public bool TryGetPreviewCage(Entity building, CageTarget target, out CageState state)
+        {
+            if (TryGetCage(building, target, out state))
+                return true;
+            if (!_pipeline.TryDescribeForeign(building, out var description))
+                return false;
+            state = BuildState(building, description, target);
+            return true;
+        }
+
+        private CageState BuildState(Entity building, in BuildingDescription description, CageTarget target)
+        {
             target = EffectiveTarget(description, target);
             var applied = WithLinkedBlend(building, description.Applied);
             var requested = _pipeline.TryGetRequested(building, out var pending)
@@ -69,11 +84,10 @@ namespace Unsquare.Api
 
             var ghostBox = target == CageTarget.Building ? description.LotBox : description.BuildingEditBox;
             var ghost = requested.IsLinked ? null : View(building, description, OtherOf(target), requested);
-            state = new CageState(building, target, BoxOf(description, target),
+            return new CageState(building, target, BoxOf(description, target),
                 View(building, description, target, applied), View(building, description, target, requested),
                 applied, requested, status, description.LotBox, ghostBox, ghost, description.HasOwnBuildingBox,
                 BuildingSeat.IsOffGround(description.LotBox, description.BuildingBox, requested));
-            return true;
         }
 
         // Flat or meshless lots (parks) have no building of their own: their only cage is the lot's.

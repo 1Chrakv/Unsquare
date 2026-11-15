@@ -13,6 +13,7 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
 | `UiModule/` | React UI module (game template): mode button next to the underground toggle and the tool window above the edited building (pick mode, resets); talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
+| `*/PlacemakerCompatibility/` | Everything for buildings the Placemaker mod has bent, per layer (see Placemaker compatibility) | as its layer |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
@@ -225,6 +226,50 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - The taper and shear are relative to FlexIt's own measures (`FlexItFootprint`: mesh half extents, geometry bounds
   `max.z`), not to the lot box. Shear is read and removed through FlexIt's public `SkewRegistrySystem` by reflection
   (`FlexItBridge`); if FlexIt changes, the bridge must fail softly and the import reports FlexIt as missing.
+
+## Placemaker compatibility
+
+All Placemaker code lives in `PlacemakerCompatibility/` folders, one per layer (namespace
+`Unsquare.<Layer>.PlacemakerCompatibility`); generic code only knows the hooks `IForeignPrefabs` and `IPickGate`.
+
+| Layer | Types |
+|---|---|
+| Core | `PlacemakerCage` (its shape), `PlacemakerCageConverter` (shape → lot cage), `PlacemakerVariantName` |
+| Integration | `PlacemakerBridge` (reflection), `PlacemakerAdoptions` (implements `IForeignPrefabs` for `VariantSystem`) |
+| Api | `IPlacemakerService` / `PlacemakerService` (`UnsquareApi.GetPlacemakerService`), `PlacemakerConversionResult` |
+| UI | `PlacemakerDecision` (implements `IPickGate` for `CageEditSession`), `PlacemakerUISystem` (dialog bindings) |
+| UiModule | `mods/placemaker-compatibility/placemaker-dialog.tsx` |
+
+- Placemaker bends row houses into runtime variants (`Placemaker Shape <base> <hash> <key>`, `PlacemakerVariantName`):
+  a plan-only bilinear map of 4 corner shifts over a span (depth clamped outside it, `PlacemakerCage`). It skips
+  prefabs without an asset, i.e. every Unsquare variant, and rebuilds its own variants only after loading.
+  Since its build 20 most are bone-skinned light copies: prefab entities with the plain prefab's `PrefabData`, so
+  `PrefabSystem` returns the plain prefab for them. Detect by entity (`PlacemakerBridge.IsVariant`), never by name alone.
+- Picking one asks first: `CageEditSession.SelectBuilding` hands it to the gate (`PlacemakerDecision`), which keeps
+  it pending until Convert or Cancel. Until then `VariantSystem.TryDescribe` refuses it (`IForeignPrefabs`), so
+  nothing edits it; the hover preview reads it through `TryDescribeForeign` (`IBuildingDeformService.TryGetPreviewCage`),
+  on the plain base with the converted cage.
+  - Convert: `PlacemakerBridge` (reflection on its public `ShapeSystem`) gives base and shape;
+    `PlacemakerCageConverter` maps the lot corners (exact within the span) or fits when that folds. The building is
+    adopted (described on the plain base) and `PlacemakerService` requests the cage through
+    `IBuildingDeformService.Apply`, so it swaps straight from Placemaker's variant to ours. Refused while Placemaker
+    is still reshaping it (`IsRequested`). Not undoable; Reset hands the plain building back to Placemaker.
+  - Convert whole row: a converted house leaves Placemaker's plan, so its next plan drops the joints and
+    straightens the neighbours. `PlacemakerService.ConvertRow` takes every undecided house joined to it
+    (`TryGetPlanned` → `RowCollector`) at once, all or nothing while Placemaker is busy, and
+    `IVariantPipeline.SwapTogether` (`SwapGroups`) holds their swaps until all are baked (10 s timeout), so they
+    land in one frame.
+  - There is no deforming on top of Placemaker's variant: such variants may not survive a reload. Unsquare
+    variants on a Placemaker base in older saves still resolve by name (`PrefabResolver`).
+- Adoption is runtime only (cleared on load); saves only ever hold Unsquare variants and their bases. It ends with
+  the building's next swap (it is then off Placemaker's variant), so after a Reset a house Placemaker bends again
+  asks again.
+- Placemaker updates itself, so the bridge is defensive. The whole contract (members, out-struct fields) is listed in
+  `PlacemakerBridge` and checked at load with `ReflectionContract`. One log line gives the version (`TestedWith`) and
+  the features detect, convert and rows; a missing member or a runtime exception turns off only its feature.
+  Read shapes must be `PlacemakerCage.IsPlausible`, and a base that is an Unsquare variant is refused (that would
+  mean Placemaker no longer skips ours). After a Placemaker update: check that line, run Testing rows 165–177, then
+  raise `TestedWith`.
 
 ## Props: rigid placement, full deformation later
 

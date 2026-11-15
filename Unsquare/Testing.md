@@ -254,6 +254,19 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 162 | Load a save holding copies placed before this fix, then click them | Log `Repaired N copies of variants missing instance components` with N ≥ 1; no crash |
 | 163 | Copy a deformed service building that has an upgrade; hover and click the copy | No crash |
 | 164 | Let the game run with the copies of 161 | Residents or companies move in; no condemnation; Reset in Unsquare mode gives the plain building |
+| 165 | With Placemaker (row joining on), hover a row house it bent, then click it | Hover: preview cage in the bent shape, as for any building. Click: dialog "Building shaped by Placemaker"; no cage, tool window hidden; clicking other buildings does nothing |
+| 166 | In 165 press Cancel (or right-click); then use hotkeys and Ctrl+Z | Nothing selected; the building can't be edited or picked as an undo target; clicking it again asks again |
+| 167 | In 165 press Convert only this building | Cage in the bent shape at once; after the bake the house looks the same; log `adopting … exact` or `fitted (max deviation X m)`; Placemaker's log counts it under "on a model another mod made" |
+| 168 | After 167 edit the house, save, reload | Restored as an Unsquare variant on the plain model, no missing prefab; clicking it opens no dialog |
+| 169 | After 167 press Reset | Plain building; Placemaker may bend it again on its next plan |
+| 170 | In 165 look at the dialog's buttons | Convert only this building and Cancel; in a joined row also Convert whole row (N houses) first. No Deform on top |
+| 171 | Without Placemaker, click any building | No dialog; selection as usual |
+| 172 | In a row of 3+ houses Placemaker joined, click one | Dialog offers "Convert whole row (N houses)" with N = the joined houses; a house on its own shows only Convert only this building |
+| 173 | In 172 press Convert whole row | All N houses swap in the same frame and keep their shape; neighbours stay joined; log `Row conversion of building …: N of N converted`; Placemaker's next plan moves none of them |
+| 174 | In 172 press Convert only this building (one house only) | That house converts; Placemaker straightens its neighbours (known; the row button avoids it) |
+| 175 | After 173 press Reset on one house | Only that house turns plain; the other converted houses keep their shape |
+| 176 | Load a save with Placemaker | Log `Placemaker <version> (tested with <TestedWith>): detect ok, convert ok, rows ok.` once per load; any "missing …" means Placemaker changed |
+| 177 | After 173 press Reset on every house; wait until Placemaker bends them again, then click one | Dialog "Building shaped by Placemaker" opens again (row button included) |
 
 ## Reporting problems
 

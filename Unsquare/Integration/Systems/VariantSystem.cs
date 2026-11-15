@@ -23,6 +23,7 @@ using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;
 using Unsquare.Integration.Entities;
 using Unsquare.Integration.Import;
+using Unsquare.Integration.PlacemakerCompatibility;
 using Unsquare.Integration.Prefabs;
 using Unsquare.Integration.Prefabs.Attachments;
 
@@ -52,6 +53,12 @@ namespace Unsquare.Integration.Systems
         private readonly Dictionary<Entity, PendingLevelUp> _levelUps = new();
         private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
+        private readonly SwapGroups<Entity> _swapGroups = new();
+        private Func<Entity, SwapMemberState> _swapState;
+        private IForeignPrefabs _foreign;
+
+        // How long the swaps of a group (e.g. a converted row) wait for the slowest bake before going alone.
+        private const double SwapGroupTimeoutSeconds = 10;
 
         private PrefabSystem _prefabSystem;
         private CityConfigurationSystem _citySystem;
@@ -74,6 +81,9 @@ namespace Unsquare.Integration.Systems
         }
 
         internal IVariantPipeline Pipeline => this;
+
+        /// <summary>Placemaker's bent buildings and their takeover; see <see cref="PlacemakerAdoptions"/>.</summary>
+        internal PlacemakerAdoptions Placemaker { get; private set; }
 
         PipelineOptions IVariantPipeline.Options
         {
@@ -99,6 +109,9 @@ namespace Unsquare.Integration.Systems
                     new SubObjectDeformer(), new SubAreaDeformer(), new SubLaneDeformer(), new SubNetDeformer(),
                 });
             _localization = new VariantLocalization(GameManager.instance?.localizationManager);
+            _swapState = SwapState;
+            Placemaker = new PlacemakerAdoptions(World, _prefabSystem, TryGetBoxes, () => _options.Limits);
+            _foreign = Placemaker;
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
@@ -139,6 +152,8 @@ namespace Unsquare.Integration.Systems
             _extensionRefreshes.Clear();
             _levelUps.Clear();
             _upgradesLogged.Clear();
+            _foreign.Clear();
+            _swapGroups.Clear();
             _simulationReady = false;
 
             // First preload of the session: nothing is registered yet, so pruning cannot strand a live prefab.
@@ -162,6 +177,8 @@ namespace Unsquare.Integration.Systems
             RepairCopies();
             if (_simDataPending.Count > 0)
                 Enabled = true;
+            if (_simulationReady)
+                _foreign.OnLoaded();
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
             {
                 _manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
@@ -194,6 +211,8 @@ namespace Unsquare.Integration.Systems
             if (spec.Equals(description.Applied))
             {
                 _debouncer.Cancel(building);
+                // Taken over, then reset before the swap: still foreign, so the next pick asks again.
+                _foreign.Release(building);
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
@@ -222,6 +241,8 @@ namespace Unsquare.Integration.Systems
             _debouncer.Clear();
             _swaps.Clear();
             _statuses.Clear();
+            _swapGroups.Clear();
+            _foreign.ReleaseAll(); // every takeover in flight is cancelled
 
             int count = 0;
             using var buildings = _buildingQuery.ToEntityArray(Allocator.Temp);
@@ -316,13 +337,50 @@ namespace Unsquare.Integration.Systems
             description = default;
             if (!EntityManager.HasComponent<Building>(building) ||
                 !_resolver.TryGetPrefab(EntityManager, building, out var current) ||
-                !_resolver.TryResolveBase(current, out var basePrefab, out var applied) ||
-                !TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
+                !TryResolveBase(building, current, out var basePrefab, out var applied))
+                return false;
+            return TryDescribe(building, basePrefab, applied, out description);
+        }
+
+        private bool TryDescribe(Entity building, ObjectGeometryPrefab basePrefab, DeformSpec applied,
+            out BuildingDescription description)
+        {
+            description = default;
+            if (!TryGetBoxes(basePrefab, out var lotBox, out var buildingBox))
                 return false;
             DescribeExtensions(building, buildingBox, out float extensionsTop, out var buildingEditBox);
             description = new BuildingDescription(basePrefab, lotBox, ExtendedCage.RaiseTop(lotBox, extensionsTop),
                 buildingBox, buildingEditBox, !buildingBox.Equals(lotBox), applied);
             return true;
+        }
+
+        // Buildings on another mod's variants (Placemaker's) are only described once taken over, on the plain base;
+        // undecided ones are not described, so nothing edits them. Unsquare variants resolve by name as always.
+        private bool TryResolveBase(Entity building, PrefabBase current, out ObjectGeometryPrefab basePrefab,
+            out DeformSpec applied)
+        {
+            if (_foreign.IsForeignPrefab(building, current))
+            {
+                applied = DeformSpec.Identity;
+                return _foreign.TryGetTakenOverBase(building, out basePrefab);
+            }
+            return _resolver.TryResolveBase(current, out basePrefab, out applied);
+        }
+
+        void IVariantPipeline.SwapTogether(IReadOnlyCollection<Entity> buildings)
+        {
+            if (buildings.Count < 2)
+                return;
+            _swapGroups.Add(buildings, UnityEngine.Time.realtimeSinceStartupAsDouble + SwapGroupTimeoutSeconds);
+            Enabled = true;
+        }
+
+        // Hover preview only: the cage taking the building over would give, without taking it over.
+        bool IVariantPipeline.TryDescribeForeign(Entity building, out BuildingDescription description)
+        {
+            description = default;
+            return _foreign.TryGetPreview(building, out var basePrefab, out var spec) &&
+                   TryDescribe(building, basePrefab, spec, out description);
         }
 
         // Over the on-lot extensions the owner's cage deforms (PlanExtensionTargets), in building space: the top of
@@ -772,6 +830,9 @@ namespace Unsquare.Integration.Systems
         private void ProcessSwaps()
         {
             _finished.Clear();
+            if (_swapGroups.Count > 0 &&
+                _swapGroups.Update(_swapState, UnityEngine.Time.realtimeSinceStartupAsDouble) > 0)
+                Mod.Log.Warn($"Swapping a group after {SwapGroupTimeoutSeconds} s without all of its bakes.");
             foreach (var pair in _swaps)
             {
                 Entity building = pair.Key;
@@ -781,6 +842,8 @@ namespace Unsquare.Integration.Systems
                     _finished.Add((building, true));
                     continue;
                 }
+                if (_swapGroups.IsHeld(building))
+                    continue;
                 // A new prefab entity keeps Created until PrefabInitializeSystem has filled its data.
                 if (!_simulationReady || !IsInitialized(swap))
                     continue;
@@ -790,8 +853,22 @@ namespace Unsquare.Integration.Systems
             foreach (var (building, succeeded) in _finished)
             {
                 _swaps.Remove(building);
+                // Off the foreign variant now: if the other mod bends it again later, picking it asks again.
+                if (succeeded)
+                    _foreign.Release(building);
                 SetStatus(building, succeeded ? VariantStatus.Idle : VariantStatus.Failed);
             }
+        }
+
+        // Swaps held together: a member is ready once its swap could run, done once nothing is in flight for it.
+        private SwapMemberState SwapState(Entity building)
+        {
+            if (_swaps.TryGetValue(building, out var swap))
+                return !EntityManager.Exists(building) || EntityManager.HasComponent<Deleted>(building) ||
+                       (_simulationReady && IsInitialized(swap))
+                    ? SwapMemberState.Ready
+                    : SwapMemberState.Waiting;
+            return _debouncer.TryPeek(building, out _) ? SwapMemberState.Waiting : SwapMemberState.Done;
         }
 
         private bool IsInitialized(PendingSwap swap)

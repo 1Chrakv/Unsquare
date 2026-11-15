@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Game.Prefabs;
 using Unity.Entities;
 using Unsquare.Core.Cage;
@@ -40,5 +41,17 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>Rebases all FlexIt buildings and clears their shear; see <see cref="FlexItImporter"/>.</summary>
         FlexItImportBatch PrepareFlexItImport();
+
+        /// <summary>
+        /// Read-only description of a building on another mod's variant that was not taken over yet (see
+        /// <see cref="IForeignPrefabs"/>), for the hover preview: on its plain base with the takeover's cage applied.
+        /// </summary>
+        bool TryDescribeForeign(Entity building, out BuildingDescription description);
+
+        /// <summary>
+        /// Holds the swaps of these buildings' requests until all are baked, so they land in the same frame. Members
+        /// that fail or are cancelled stop being waited for; after a timeout the rest swap anyway.
+        /// </summary>
+        void SwapTogether(IReadOnlyCollection<Entity> buildings);
     }
 }
