@@ -266,6 +266,8 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 174 | In 172 press Convert to Unsquare (one house only) | That house converts; Placemaker straightens its neighbours (known; the row button avoids it) |
 | 175 | After 173 press Reset on one house | Only that house turns plain; the other converted houses keep their shape |
 | 176 | Load a save with Placemaker | Log `Placemaker <version> (tested with <TestedWith>): detect ok, convert ok, rows ok.` once per load; any "missing …" means Placemaker changed |
+| 177 | After 173 press Reset on every house; wait until Placemaker bends them again, then click one | Dialog "Building shaped by Placemaker" opens again (row button included) |
+| 178 | Deform a bent house on top of Placemaker, Reset it, click it | No dialog (same Placemaker shape); once Placemaker gives it a new shape, clicking it asks again |
 
 ## Reporting problems
 

@@ -54,7 +54,8 @@ namespace Unsquare.Integration.Systems
         private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
         private readonly Dictionary<Entity, ObjectGeometryPrefab> _adopted = new();
-        private readonly HashSet<Entity> _stacked = new();
+        // Building -> the Placemaker variant prefab the player chose to deform on top of.
+        private readonly Dictionary<Entity, Entity> _stacked = new();
         private readonly Dictionary<Entity, (ObjectGeometryPrefab Base, PlacemakerAdoption Shape)> _placemakerShapes =
             new();
         private PlacemakerBridge _placemaker;
@@ -216,6 +217,8 @@ namespace Unsquare.Integration.Systems
             if (spec.Equals(description.Applied))
             {
                 _debouncer.Cancel(building);
+                // Converted, then reset before the swap: still Placemaker's, so the next pick asks again.
+                _adopted.Remove(building);
                 SetStatus(building, VariantStatus.Idle);
                 return;
             }
@@ -245,6 +248,7 @@ namespace Unsquare.Integration.Systems
             _swaps.Clear();
             _statuses.Clear();
             _swapGroups.Clear();
+            _adopted.Clear(); // every conversion in flight is cancelled
 
             int count = 0;
             using var buildings = _buildingQuery.ToEntityArray(Allocator.Temp);
@@ -361,7 +365,7 @@ namespace Unsquare.Integration.Systems
         private bool TryResolveBase(Entity building, PrefabBase current, out ObjectGeometryPrefab basePrefab,
             out DeformSpec applied)
         {
-            if (!_stacked.Contains(building) && IsPlacemakerBuilding(building, current))
+            if (!IsStackedOnCurrent(building) && IsPlacemakerBuilding(building, current))
             {
                 applied = DeformSpec.Identity;
                 return _adopted.TryGetValue(building, out basePrefab);
@@ -370,9 +374,14 @@ namespace Unsquare.Integration.Systems
         }
 
         bool IVariantPipeline.IsForeign(Entity building) =>
-            !_stacked.Contains(building) && !_adopted.ContainsKey(building) &&
+            !IsStackedOnCurrent(building) && !_adopted.ContainsKey(building) &&
             _resolver.TryGetPrefab(EntityManager, building, out var current) &&
             IsPlacemakerBuilding(building, current);
+
+        // A choice to deform on top holds for the Placemaker shape it was made for; a new shape asks again.
+        private bool IsStackedOnCurrent(Entity building) =>
+            _stacked.TryGetValue(building, out var stackedOn) &&
+            EntityManager.TryGetComponent(building, out PrefabRef prefabRef) && prefabRef.m_Prefab == stackedOn;
 
         // Placemaker's light copies share the plain prefab's PrefabData (and so its name): ask Placemaker by entity.
         private bool IsPlacemakerBuilding(Entity building, PrefabBase current)
@@ -423,7 +432,8 @@ namespace Unsquare.Integration.Systems
 
         void IVariantPipeline.AllowStacking(Entity building)
         {
-            _stacked.Add(building);
+            if (EntityManager.TryGetComponent(building, out PrefabRef prefabRef))
+                _stacked[building] = prefabRef.m_Prefab;
             _adopted.Remove(building);
             Mod.Log.Info($"Building {building}: Unsquare deforms it on top of Placemaker's shape.");
             _buildingChanged?.Invoke(building);
@@ -442,7 +452,7 @@ namespace Unsquare.Integration.Systems
             if (!EntityManager.HasComponent<Building>(building) ||
                 !EntityManager.TryGetComponent(building, out PrefabRef prefabRef) ||
                 !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase current) || current == null ||
-                _stacked.Contains(building) || _adopted.ContainsKey(building) ||
+                IsStackedOnCurrent(building) || _adopted.ContainsKey(building) ||
                 !IsPlacemakerBuilding(building, current))
                 return false;
             var shape = GetPlacemakerShape(prefabRef.m_Prefab, current.name, out var basePrefab);
@@ -1016,6 +1026,9 @@ namespace Unsquare.Integration.Systems
             foreach (var (building, succeeded) in _finished)
             {
                 _swaps.Remove(building);
+                // Off Placemaker's variant now: if Placemaker bends it again later, picking it asks again.
+                if (succeeded)
+                    _adopted.Remove(building);
                 SetStatus(building, succeeded ? VariantStatus.Idle : VariantStatus.Failed);
             }
         }
