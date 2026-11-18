@@ -154,3 +154,67 @@ the cause is in `Placemaker.log` (same run, from log timing only, not yet confir
 Unsquare must register its variants as prefabs, so it can't avoid triggering the rescan. The fix belongs in
 Placemaker: skip variant prefabs (names containing `__uq`), update its catalog incrementally, or scan off the main
 thread. To confirm, deform 20–30 times with Placemaker disabled.
+
+## Replacing the bake with bones: downsides
+
+Analysis of 17 Nov 2026, from Placemaker's build 20 decompile, the game's `PreCullingSystem`,
+`ProceduralSkeletonSystem`, `RaycastJobs` and bone types, and the local `ModsData/Unsquare` folder. No code was
+changed; nothing below was profiled.
+
+### How the bone path works in detail
+
+- Per base model, grid size (1, 2, 3, 4 or 6) and cage span, every mesh and LOD is cut along a plan grid (two
+  triangles per cell, plus one piece in front of and one behind the span) and given a bone-weight stream (20 bytes
+  per vertex, one bone per vertex). The cut model is cached on disk. The grid follows the cage's twist, so a larger
+  twist needs a new cut model, built over several frames.
+- Each piece is one affine map in plan, written as two bones (parent: position, rotation, scale; child: rotation).
+- The affine of the whole cage goes into the instance matrix, the residual per piece into the bones. Both are written
+  by jobs only for objects that passed culling (`PreCullingFlags.NearCamera`), on change and every 64 frames.
+- The shape lives on the variant prefab entity, which is an instantiated copy of a template with the base's
+  `PrefabData`.
+
+### Is the assumption right?
+
+Half. The graphics card does slightly more work, not less: every visible bent building is skinned per vertex, every
+frame, in every pass including shadows. The gain is in assets:
+
+- Today every shape has its own geometry: the local folder holds 1,960 `.Geometry` files, 684 MB, for 1,120 manifest
+  entries of only 150 bases (`FR_Hospital` alone has 95 variants of about 5 MB).
+- With bones, geometry is stored per base and grid size; a shape is a few dozen bone poses. Disk, memory, load time
+  and edit time then grow with the number of bases, not of shapes.
+
+### Downsides
+
+1. **Approximates Unsquare's cage.** Pieces are flat, so curved (twisted) walls become facets with creases at the grid
+   lines; Placemaker accepts 4–15 cm error. It only works because its shapes are plan-only: heights, tapers and
+   turned tops would need cuts in height too, and the 255-bone limit keeps a 3D grid at about 3×3×2 cells. Cutting
+   adds vertices to every LOD. Today's bake is smooth with exact normals.
+2. **Only the picture bends.** Props, lanes, areas and nets still need prefab data per shape, so a prefab entity per
+   shape remains (only `AddPrefab` is skipped). `ObjectGeometryData` bounds stay unbent (search tree, overlaps);
+   Placemaker patches culling bounds every 64 frames. Precise raycasts follow bones, but not the instance matrix.
+3. **Saves and prefab identity, the largest cost.** A light variant carries the base's `PrefabData`, so saves store
+   the base; Placemaker swaps back before saving and rebuilds after load. Unsquare would need a new persistence, and
+   the bake pipeline must stay to load and migrate saves since 1.0.0. Everything that goes through `PrefabBase`
+   lands on the base and drops the shape: upgrades, level-ups, eyedropper, Move It, info panel. Unsquare solved these
+   for named variants (`UpgradeOwnership`, `LevelUpCarrySystem`, `VariantArchetype`); they would need solving again.
+4. **Cost per building.** `Bone` (40 B) and `BoneHistory` (64 B) per bone, outside the chunk and not saved: a 6×6
+   grid has 148 bones, about 15 KB per mesh, so over 100 MB for 10,000 buildings. GPU bone memory (64 B per bone,
+   twice with motion vectors) is only allocated for visible objects. Placemaker never removes the buffers.
+5. **Fallback still needed.** Meshes with their own bones (animated), not upright sub-meshes and meshes with bone
+   weights are refused and need the bake, so two pipelines.
+6. **Fragile.** It writes into undocumented render structures (culling flags, `NativeBatchInstances`, `SubMesh`
+   flags) and rewrites them every 64 frames. A game update can break it silently; the bake uses asset and prefab APIs.
+7. **Shading, unverified.** If the shader transforms normals with the bone matrix, pieces with non-uniform scale get
+   slightly wrong lighting. The shader code was not checked.
+
+### A partial replacement to evaluate
+
+- Keep the named variant prefabs (names, saves, attachments, upgrades unchanged). Point their meshes at one shared
+  bone-weighted mesh per base and keep the cage on the variant prefab, from which a job writes the bones.
+- Removes the per-shape geometry; keeps `AddPrefab` per shape, and with it Placemaker's rescan. The manifest no
+  longer lists assets per variant: a format change, which needs confirmation and a `FormatVersion` bump.
+- Instead of grid cuts, the cage could be exact for positions with 8 bones (two per plan corner, the second carrying
+  the height-linear shear) and 4 bilinear weights per vertex. Needs 4 bone influences in the game's shader
+  (unverified); normals would then be approximate, since blended bones miss the weight gradients.
+- For edit latency alone the bake still has cheaper fixes: after the vertex job, asset save and the full manifest
+  rewrite (33–45 ms) are the largest costs.
