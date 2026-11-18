@@ -91,9 +91,11 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   lines as `CustomMeshType.Cylinder` via `DrawCustomMesh` (see `SegmentPose`).
 - Custom meshes are only rendered in frames whose overlay buffer also holds a regular primitive (circle, line);
   `CageOverlaySystem` draws a near-invisible keep-alive circle every frame.
-- Prefab names, deform keys, asset names, GUID seeds and the manifest format are what saves depend on. Since the
-  public 1.0.0 release they must stay compatible: a format change bumps `VariantManifest.FormatVersion` and migrates
-  older entries (never drops them). Any change to them needs the user's confirmation first.
+- Prefab names, deform keys, asset names, GUID seeds, the manifest format, the `SavedCage` component (type and
+  namespace name) and `SavedCageCodec`'s value format are what saves depend on. Since the public 1.0.0 release they
+  must stay compatible: a manifest change bumps `VariantManifest.FormatVersion` and migrates older entries (never
+  drops them); a codec change bumps `SavedCageCodec.FormatVersion` and keeps decoding older formats. Any change to
+  them needs the user's confirmation first.
 
 ## Options (settings tab)
 
@@ -170,6 +172,18 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   until the building's `Updated` is cleaned up: the new areas and nets only appear in Modification1 of the frame after
   the prefab change, and swapping earlier leaves them plain. A cage the new building can't take leaves it plain.
   Option `PipelineOptions.KeepOnLevelUp`.
+- **Saves** (`Unsquare/AssetFootprint.md`): a deformed building is saved as its base prefab plus a `SavedCage`
+  component (its `DeformSpec`, `SavedCageCodec`). In the save frame `SavedCageWriteSystem` (before
+  `BeginPrefabSerializationSystem`) writes the cage and points the building and its extension variants at their
+  bases; `SavedCageRestoreSystem` (after `SerializerSystem`) points them back. No `Updated`, no lot sync: the lot
+  keeps its deformed layout in the save. Bases that don't exist at load (Placemaker's runtime prefabs,
+  `IForeignPrefabs.IsRuntimePrefab`) stay on their variant. On load each saved (base, spec) is created once
+  (`VariantOrigin.Load`, never refused) in `VariantSystem`'s first update after `OnGameLoaded`, never in
+  `OnGameLoaded` itself: prefabs added there lose `Created` before `PrefabInitializeSystem` runs, stay without an
+  instance archetype and crash the game natively once buildings use them (`TrySwap` refuses such targets). They are
+  swapped in without lot sync; a building that left its base meanwhile (level-up) is handed to the level-up carry.
+  Without the mod, buildings load plain with the deformed lot. Saves from before 1.2 still need the manifest
+  restore at preload (`VariantOrigin.Legacy`) and convert at their next save.
 - Effects (`EffectSource`) are not deformed yet.
 - **Zoning and condemnation:**
   - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot

@@ -42,8 +42,9 @@ angled streets and slopes.
 - **Level-ups keep the shape.** When a deformed growable levels up, the new building gets the same lot outline;
   leans and roof changes scale with its height (option *Keep shape on level-up*).
 - **Undo / redo** of every cage edit, across all buildings.
-- **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
-  Identical deformations share their baked assets.
+- **Saved with the city.** A save stores each deformed building as its normal building plus its cage; the deformed
+  geometry is rebuilt (or taken from the cache) when the save is loaded. Identical deformations share their baked
+  assets. Saves from older versions keep their shapes and switch to this format the next time they are saved.
 
 ## Limitations
 
@@ -63,8 +64,9 @@ angled streets and slopes.
 - **Strong twists** drop the coarsest LOD, which can't follow the bend; very distant buildings may pop.
 - **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme
   moves are clamped.
-- **Saves depend on the mod.** Deformed buildings are variant prefabs; without Unsquare they can't be restored.
-  Updates keep existing deformations.
+- **Shapes need the mod.** Without Unsquare a save still loads, but deformed buildings come back undeformed while
+  their paths and areas keep the deformed layout. A save made with this version and opened with Unsquare 1.1.0 or
+  older loses its shapes the same way. Updates keep existing deformations.
 
 ## Recommended mods
 
@@ -184,8 +186,8 @@ button, details are in the Unsquare log.
 
 ### Before uninstalling
 
-Saves with deformed buildings need the mod to restore them. Reset deformed buildings (Alt+Shift+Delete resets all)
-and save before removing the mod.
+Without the mod, deformed buildings load undeformed while their paths and areas stay as they were deformed. For a
+clean lot, reset deformed buildings (Alt+Shift+Delete resets all) and save before removing the mod.
 
 ## Building from source
 

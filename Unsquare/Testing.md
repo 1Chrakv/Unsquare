@@ -286,3 +286,14 @@ render meshes cannot be read; if buildings come back undeformed after reload, va
 | 185 | Same side, Ctrl+Alt+arrow toward the path | That side's bottom corners go to the path surface height next to them |
 | 186 | Draw a footpath through the lot parallel to a side, a road beyond it; align that side | The path inside the lot is ignored, the side goes to the road; the lot's own paths and neighbours' lot paths never count |
 | 187 | Building with a lifted lot (log `Terrain slope … pad` > 5 m): load, save, load again without restarting, then restart and load | The terrain looks the same all three times (no high flat plateau over the lot); each load logs the same pad |
+| 188 | Deform a few buildings (linked, split with blend, flat terrain), save, reload | Same shapes, paths and areas; log `Save: N deformed buildings as base + cage …`, `Save: N buildings back on their variants`, then on load `Saved cages: N buildings on M variants …, 0 failed`; no `Unknown prefab ID` for `__uq` names |
+| 189 | After 188, save and reload five times | Paths, areas and lot props don't drift or move |
+| 190 | Wait for an autosave while dragging a cage corner | No flicker or hitch at the autosave; the drag continues; the autosave loads with the shape at the moment of saving |
+| 191 | Save a city with deformed buildings, remove Unsquare, load | The save loads; buildings are undeformed, paths and areas keep their deformed layout; game log `Not serializable type …SavedCage`, no errors |
+| 192 | Load a save made with 1.1.0 (deformed buildings), save it, delete `ModsData/Unsquare/variants.json`, restart and load it | Shapes kept both times; the second load builds them from the save (`Saved cages: …`) |
+| 193 | Deformed growable under construction (levelling up): save, reload, let the level-up finish | The new level keeps the shape (log `levelled up before its saved shape was restored` if it finished first); no reset to plain |
+| 194 | Car park with a deformed extra storey and the school with a deformed wing: save, reload | Storey and wing keep their shapes; the wing keeps its own cage; no crash when hovering both |
+| 195 | Move It copy (and an eyedropper copy) of a deformed building: save, reload | Copies keep the shape |
+| 196 | Placemaker row: convert one house, convert a whole row, save at once, reload | Converted houses keep their Unsquare shapes, undecided ones are bent by Placemaker again; no house switching shape after the load |
+| 197 | Save, raise `<Version>` locally (no publish), rebuild, load that save | Shapes restored: the `SavedCage` type still resolves |
+| 198 | After 188, close the game, delete `ModsData/Unsquare/variants.json` and `variants.json.bak`, start, wait in the menu until mods are loaded, load the save | No crash; `Restored 0 variants`, then `Saved cages: N buildings on M variants …, 0 failed`; no `has no instance archetype` or `Not swapping to …` lines; all shapes back |
