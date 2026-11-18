@@ -17,8 +17,9 @@ namespace Unsquare.Integration.Entities
             float areaMatchMeters, LotRemap netRemap) =>
             Swap(entityManager, building, targetPrefab, Array.Empty<ExtensionSwap>(), areaMatchMeters, netRemap);
 
+        /// <param name="syncLot">False when the saved areas and nets already have the target's layout (a load).</param>
         public static bool Swap(EntityManager entityManager, Entity building, Entity targetPrefab,
-            IReadOnlyList<ExtensionSwap> extensions, float areaMatchMeters, LotRemap netRemap)
+            IReadOnlyList<ExtensionSwap> extensions, float areaMatchMeters, LotRemap netRemap, bool syncLot = true)
         {
             var current = entityManager.GetComponentData<PrefabRef>(building);
             bool buildingChanged = current.m_Prefab != targetPrefab;
@@ -38,8 +39,9 @@ namespace Unsquare.Integration.Entities
                 entityManager.SetComponentData(building, new PrefabRef(targetPrefab));
             foreach (var (swap, _) in changed)
                 entityManager.SetComponentData(swap.Extension, new PrefabRef(swap.TargetPrefab));
-            LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab, changed, areaMatchMeters,
-                buildingChanged ? netRemap : null);
+            if (syncLot)
+                LotInstanceSync.Sync(entityManager, building, current.m_Prefab, targetPrefab, changed, areaMatchMeters,
+                    buildingChanged ? netRemap : null);
 
             if (buildingChanged)
                 MarkUpdated(entityManager, building);

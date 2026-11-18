@@ -41,7 +41,7 @@ namespace Unsquare.Integration.Systems
                 {
                     Entity from = prefabRefs[i].m_Prefab;
                     Entity target = constructions[i].m_NewPrefab;
-                    if (target == Entity.Null || target == from || !SameLot(from, target) ||
+                    if (target == Entity.Null || target == from || !SameLot(EntityManager, from, target) ||
                         _variants.TryGetVariantCage(target, out _, out _) ||
                         !_variants.TryGetVariantCage(from, out var lotBox, out var spec))
                         continue;
@@ -55,9 +55,9 @@ namespace Unsquare.Integration.Systems
         }
 
         // The game only levels up within a lot size; anything else is not a level-up we understand.
-        private bool SameLot(Entity from, Entity target) =>
-            EntityManager.TryGetComponent(from, out BuildingData fromData) &&
-            EntityManager.TryGetComponent(target, out BuildingData targetData) &&
+        internal static bool SameLot(EntityManager entityManager, Entity from, Entity target) =>
+            entityManager.TryGetComponent(from, out BuildingData fromData) &&
+            entityManager.TryGetComponent(target, out BuildingData targetData) &&
             fromData.m_LotSize.Equals(targetData.m_LotSize);
     }
 }

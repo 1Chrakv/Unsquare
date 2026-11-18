@@ -26,6 +26,7 @@ using Unsquare.Integration.Import;
 using Unsquare.Integration.PlacemakerCompatibility;
 using Unsquare.Integration.Prefabs;
 using Unsquare.Integration.Prefabs.Attachments;
+using Unsquare.Integration.Saves;
 
 namespace Unsquare.Integration.Systems
 {
@@ -54,6 +55,9 @@ namespace Unsquare.Integration.Systems
         private readonly List<Entity> _levelUpsDone = new();
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
         private readonly SwapGroups<Entity> _swapGroups = new();
+        private readonly HashSet<Entity> _variantPrefabs = new();
+        private readonly HashSet<Entity> _unsavableLogged = new();
+        private readonly List<int> _savedScratch = new();
         private Func<Entity, SwapMemberState> _swapState;
         private IForeignPrefabs _foreign;
 
@@ -70,8 +74,10 @@ namespace Unsquare.Integration.Systems
         private VariantManifest _manifest = new();
         private PipelineOptions _options = PipelineOptions.Default;
         private EntityQuery _buildingQuery;
+        private EntityQuery _savedCageQuery;
         private bool _stateLoaded;
         private bool _simulationReady;
+        private bool _savedCagesPending;
         private Action<Entity> _buildingChanged;
 
         event Action<Entity> IVariantPipeline.BuildingChanged
@@ -81,6 +87,12 @@ namespace Unsquare.Integration.Systems
         }
 
         internal IVariantPipeline Pipeline => this;
+
+        /// <summary>Buildings on their base for the save in progress; see <see cref="SavedCageWriteSystem"/>.</summary>
+        internal SaveSwapLedger SaveSwaps { get; } = new();
+
+        /// <summary>Prefab entities of every variant created or reused this session.</summary>
+        internal IReadOnlyCollection<Entity> VariantPrefabs => _variantPrefabs;
 
         /// <summary>Placemaker's bent buildings and their takeover; see <see cref="PlacemakerAdoptions"/>.</summary>
         internal PlacemakerAdoptions Placemaker { get; private set; }
@@ -115,6 +127,9 @@ namespace Unsquare.Integration.Systems
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(), ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
+            _savedCageQuery = GetEntityQuery(
+                ComponentType.ReadOnly<SavedCage>(), ComponentType.ReadOnly<Building>(),
+                ComponentType.ReadOnly<PrefabRef>(), ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
             Enabled = false; // woken by Request
         }
 
@@ -126,6 +141,14 @@ namespace Unsquare.Integration.Systems
 
         protected override void OnUpdate()
         {
+            // A save that threw between moving buildings to their base and restoring them.
+            if (SaveSwaps.Count > 0)
+                Mod.Log.Warn($"Restored {SaveSwaps.RestoreAll(EntityManager)} buildings left on their base by a save.");
+            if (_savedCagesPending)
+            {
+                _savedCagesPending = false;
+                RestoreSavedCagesSafely();
+            }
             _due.Clear();
             _debouncer.CollectDue(UnityEngine.Time.realtimeSinceStartupAsDouble, _due);
             foreach (var request in _due)
@@ -154,6 +177,9 @@ namespace Unsquare.Integration.Systems
             _upgradesLogged.Clear();
             _foreign.Clear();
             _swapGroups.Clear();
+            _unsavableLogged.Clear();
+            SaveSwaps.Clear();
+            _savedCagesPending = false;
             _simulationReady = false;
 
             // First preload of the session: nothing is registered yet, so pruning cannot strand a live prefab.
@@ -166,6 +192,27 @@ namespace Unsquare.Integration.Systems
             }
             RestoreVariants();
             SaveIfDirty();
+        }
+
+        // Prefabs added here lose Created before PrefabInitializeSystem sees them and stay uninitialized (no instance
+        // archetype; swapping to them crashes natively), so the variants are created in the next prefab update.
+        protected override void OnGameLoaded(Context serializationContext)
+        {
+            base.OnGameLoaded(serializationContext);
+            _savedCagesPending = true;
+            Enabled = true;
+        }
+
+        private void RestoreSavedCagesSafely()
+        {
+            try
+            {
+                RestoreSavedCages();
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, "Restoring deformed buildings from the save failed.");
+            }
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -444,7 +491,7 @@ namespace Unsquare.Integration.Systems
             }
             var stopwatch = Stopwatch.StartNew();
             int createdBefore = _renderBuilder.CreatedAssetCount;
-            bool created = TryGetOrCreateVariant(description.BasePrefab, spec, isRestore: false, out var variant);
+            bool created = TryGetOrCreateVariant(description.BasePrefab, spec, VariantOrigin.Edit, out var variant);
             stopwatch.Stop();
             // 0 new assets means everything was reused (existing prefab or cached geometry).
             Mod.Log.Info($"Bake for building {building}: {(created ? variant.name : "failed")}, " +
@@ -457,7 +504,7 @@ namespace Unsquare.Integration.Systems
                 SetStatus(building, VariantStatus.Failed);
         }
 
-        private bool TryGetOrCreateVariant(ObjectGeometryPrefab basePrefab, DeformSpec spec, bool isRestore,
+        private bool TryGetOrCreateVariant(ObjectGeometryPrefab basePrefab, DeformSpec spec, VariantOrigin origin,
             out ObjectGeometryPrefab variant)
         {
             variant = null;
@@ -470,6 +517,8 @@ namespace Unsquare.Integration.Systems
                 {
                     _resolver.RememberVariant(variantName, new VariantInfo(basePrefab, spec));
                     _localization.Register(variantName, basePrefab.name);
+                    if (_prefabSystem.TryGetEntity(variant, out var existingEntity))
+                        _variantPrefabs.Add(existingEntity);
                 }
                 return variant != null;
             }
@@ -479,8 +528,8 @@ namespace Unsquare.Integration.Systems
                 return false;
             }
 
-            // Restores skip validation: a save already references the variant, refusing it breaks the building.
-            if (!isRestore && CageValidator.ValidateSplit(box, buildingBox, spec, _options.Limits) != CageValidity.Valid)
+            // Restores skip validation: a save already holds the shape, refusing it breaks the building.
+            if (origin == VariantOrigin.Edit && CageValidator.ValidateSplit(box, buildingBox, spec, _options.Limits) != CageValidity.Valid)
             {
                 Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {spec}");
                 return false;
@@ -494,10 +543,13 @@ namespace Unsquare.Integration.Systems
             _localization.Register(variantName, basePrefab.name);
             // Restored variants are never swapped to, so the copy cannot wait for TrySwap.
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
+            {
                 _simDataPending[variantEntity] = basePrefab;
+                _variantPrefabs.Add(variantEntity);
+            }
 
             string key = ManifestEntry.MakeKey(typeName, variantName);
-            if (isRestore)
+            if (origin == VariantOrigin.Legacy)
             {
                 _manifest.MergeAssets(key, assets);
                 return true;
@@ -510,6 +562,7 @@ namespace Unsquare.Integration.Systems
                 Assets = new List<string>(assets),
             };
             entry.SetSpec(spec);
+            // Load registers too until the manifest is frozen: the orphan sweep deletes unclaimed assets.
             _manifest.Register(entry, _citySystem.cityName, DateTime.UtcNow);
             return true;
         }
@@ -633,7 +686,7 @@ namespace Unsquare.Integration.Systems
                 var carried = LevelUpCarry.Rescale(levelUp.Spec, levelUp.FromLot, toLot).ForVariant();
                 if (carried.IsIdentity)
                     return;
-                if (TryGetOrCreateVariant(target, carried, isRestore: false, out var variant) &&
+                if (TryGetOrCreateVariant(target, carried, VariantOrigin.Edit, out var variant) &&
                     _prefabSystem.TryGetEntity(variant, out var variantEntity))
                     levelUp.SetVariant(target, carried, variantEntity, variant.name);
                 else
@@ -754,9 +807,9 @@ namespace Unsquare.Integration.Systems
         }
 
         private void QueueSwap(Entity building, Entity targetPrefab, ObjectGeometryPrefab basePrefab, DeformSpec spec,
-            List<(Entity Extension, Entity Target)> extensions)
+            List<(Entity Extension, Entity Target)> extensions, bool syncLot = true, Entity expectedCurrent = default)
         {
-            _swaps[building] = new PendingSwap(targetPrefab, basePrefab, spec, extensions);
+            _swaps[building] = new PendingSwap(targetPrefab, basePrefab, spec, extensions, syncLot, expectedCurrent);
             SetStatus(building, VariantStatus.WaitingForPrefab);
         }
 
@@ -887,15 +940,20 @@ namespace Unsquare.Integration.Systems
         {
             try
             {
+                if (swap.ExpectedCurrent != Entity.Null &&
+                    EntityManager.TryGetComponent(building, out PrefabRef now) && now.m_Prefab != swap.ExpectedCurrent)
+                    return HandOverLoadSwap(building, swap, now.m_Prefab);
+                if (!HasInstanceArchetype(swap))
+                    return false;
                 if (_prefabSystem.TryGetEntity(swap.BasePrefab, out var donor) && donor != swap.TargetPrefab)
                     PrepareVariantPrefab(donor, swap.TargetPrefab);
-                var netRemap = _resolver.TryGetPrefab(EntityManager, building, out var currentPrefab)
+                var netRemap = swap.SyncLot && _resolver.TryGetPrefab(EntityManager, building, out var currentPrefab)
                     ? BuildNetRemap(currentPrefab, swap.BasePrefab, swap.Spec)
                     : null;
                 LogUpgradesOnce(building);
                 var extensions = BuildExtensionSwaps(swap.Extensions, netRemap, swap.BasePrefab, swap.Spec);
                 PrefabSwapper.Swap(EntityManager, building, swap.TargetPrefab, extensions, _options.AreaMatchMeters,
-                    netRemap);
+                    netRemap, swap.SyncLot);
                 return true;
             }
             catch (Exception e)
@@ -903,6 +961,37 @@ namespace Unsquare.Integration.Systems
                 Mod.Log.Error(e, $"Swapping prefab of building {building} failed.");
                 return false;
             }
+        }
+
+        // A prefab the game never initialized has no instance archetype; buildings on it crash the game natively.
+        private bool HasInstanceArchetype(PendingSwap swap)
+        {
+            bool Valid(Entity prefab) =>
+                EntityManager.TryGetComponent(prefab, out ObjectData data) && data.m_Archetype.Valid;
+
+            bool valid = Valid(swap.TargetPrefab);
+            foreach (var (_, target) in swap.Extensions)
+                valid &= Valid(target);
+            if (!valid)
+                Mod.Log.Error($"Not swapping to {swap.TargetPrefab} ({swap.BasePrefab.name}): the game did not initialize it.");
+            return valid;
+        }
+
+        // The save's base was replaced before its shape came back: a finished level-up carries the cage over, anything
+        // else leaves the building as it is (swapping would undo the change).
+        private bool HandOverLoadSwap(Entity building, PendingSwap swap, Entity current)
+        {
+            if (_prefabSystem.TryGetPrefab(current, out PrefabBase prefab) && prefab is ObjectGeometryPrefab &&
+                !VariantNaming.IsVariantName(prefab.name) &&
+                LevelUpCarrySystem.SameLot(EntityManager, swap.ExpectedCurrent, current) &&
+                TryGetBoxes(swap.BasePrefab, out var fromLot, out _))
+            {
+                Mod.Log.Info($"Building {building} levelled up before its saved shape was restored: carrying it over.");
+                PrepareLevelUp(building, swap.ExpectedCurrent, current, fromLot, swap.Spec);
+                return true;
+            }
+            Mod.Log.Warn($"Building {building} changed prefab before its saved shape was restored; it stays as it is.");
+            return true;
         }
 
         private void LogUpgradesOnce(Entity building)
@@ -972,7 +1061,7 @@ namespace Unsquare.Integration.Systems
                     var spec = entry.ToSpec();
                     if (_resolver.TryFind(entry.BaseType, entry.BaseName, out var found) &&
                         found is ObjectGeometryPrefab basePrefab &&
-                        TryGetOrCreateVariant(basePrefab, spec, isRestore: true, out var variant))
+                        TryGetOrCreateVariant(basePrefab, spec, VariantOrigin.Legacy, out var variant))
                     {
                         restored++;
                         extensions += RestoreExtensions(entry, basePrefab, spec, variant.name);
@@ -1006,6 +1095,87 @@ namespace Unsquare.Integration.Systems
             return restored;
         }
 
+        // Buildings the save holds as base + cage: create each variant once and swap them without moving their lot
+        // items, which the save already has in the variant's layout.
+        private void RestoreSavedCages()
+        {
+            if (_savedCageQuery.IsEmptyIgnoreFilter)
+                return;
+            var stopwatch = Stopwatch.StartNew();
+            int createdBefore = _renderBuilder.CreatedAssetCount;
+            var variants = new Dictionary<(ObjectGeometryPrefab, DeformSpec), (Entity Entity, string Name)>();
+            int queued = 0, unreadable = 0, failed = 0;
+            using var buildings = _savedCageQuery.ToEntityArray(Allocator.Temp);
+            foreach (var building in buildings)
+            {
+                if (!SavedCageLoader.TryRead(EntityManager, _prefabSystem, building, _savedScratch, out var basePrefab,
+                        out var baseEntity, out var spec))
+                {
+                    unreadable++;
+                    continue;
+                }
+                if (!variants.TryGetValue((basePrefab, spec), out var variant))
+                {
+                    variant = TryGetOrCreateVariant(basePrefab, spec, VariantOrigin.Load, out var created) &&
+                              _prefabSystem.TryGetEntity(created, out var createdEntity)
+                        ? (createdEntity, created.name)
+                        : (Entity.Null, null);
+                    variants[(basePrefab, spec)] = variant;
+                    if (variant.Entity == Entity.Null)
+                        Mod.Log.Warn($"No variant of {basePrefab.name} for the saved cage {spec}; its buildings stay undeformed.");
+                }
+                if (variant.Entity == Entity.Null)
+                {
+                    failed++;
+                    continue;
+                }
+                QueueSwap(building, variant.Entity, basePrefab, spec,
+                    PlanExtensionTargets(building, basePrefab, spec, variant.Name), syncLot: false,
+                    expectedCurrent: baseEntity);
+                queued++;
+            }
+            stopwatch.Stop();
+            Mod.Log.Info($"Saved cages: {queued} buildings on {variants.Count} variants " +
+                         $"({_renderBuilder.CreatedAssetCount - createdBefore} new assets, {stopwatch.ElapsedMilliseconds} ms), " +
+                         $"{failed} failed, {unreadable} not restored (plain, on a variant or unreadable).");
+            if (queued > 0)
+                Enabled = true;
+        }
+
+        /// <summary>
+        /// Base and cage a building on <paramref name="prefab"/> is saved as. False for plain prefabs, and for variants
+        /// whose base would not exist at load (another mod's runtime prefab) or whose cage is unknown.
+        /// </summary>
+        internal bool TryGetSavedSpec(Entity prefab, out bool isVariant, out Entity baseEntity, out DeformSpec spec)
+        {
+            isVariant = false;
+            baseEntity = Entity.Null;
+            spec = null;
+            if (!_prefabSystem.TryGetPrefab(prefab, out PrefabBase current) || current == null ||
+                !VariantNaming.IsVariantName(current.name))
+                return false;
+            isVariant = true;
+            if (!_resolver.TryGetVariant(current.name, out var info) || VariantNaming.IsVariantName(info.BasePrefab.name) ||
+                _foreign.IsRuntimePrefab(info.BasePrefab) || !_prefabSystem.TryGetEntity(info.BasePrefab, out baseEntity))
+            {
+                if (_unsavableLogged.Add(prefab))
+                    Mod.Log.Info($"{current.name} is saved as the variant itself: its base is unknown or not saved by the game.");
+                return false;
+            }
+            spec = info.Spec;
+            return true;
+        }
+
+        /// <summary>The plain extension prefab an extension variant prefab was baked from.</summary>
+        internal bool TryGetSavedExtensionBase(Entity prefab, out Entity baseEntity)
+        {
+            baseEntity = Entity.Null;
+            return _prefabSystem.TryGetPrefab(prefab, out PrefabBase current) && current != null &&
+                   VariantNaming.TryParse(current.name, out string baseName) &&
+                   _resolver.TryFind(current.GetType().Name, baseName, out var found) &&
+                   found is BuildingExtensionPrefab && _prefabSystem.TryGetEntity(found, out baseEntity);
+        }
+
         private HashSet<string> CollectUsedVariantKeys()
         {
             var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -1017,6 +1187,15 @@ namespace Unsquare.Integration.Systems
                     continue;
                 if (VariantNaming.IsVariantName(prefab.name))
                     keys.Add(ManifestEntry.MakeKey(prefab.GetType().Name, prefab.name));
+            }
+            // Saved shapes whose swap has not run yet still use their variant.
+            using var saved = _savedCageQuery.ToEntityArray(Allocator.Temp);
+            foreach (var building in saved)
+            {
+                if (SavedCageLoader.TryRead(EntityManager, _prefabSystem, building, _savedScratch, out var basePrefab,
+                        out _, out var spec))
+                    keys.Add(ManifestEntry.MakeKey(basePrefab.GetType().Name,
+                        VariantNaming.VariantName(basePrefab.name, spec)));
             }
             return keys;
         }
@@ -1053,18 +1232,26 @@ namespace Unsquare.Integration.Systems
         private readonly struct PendingSwap
         {
             public PendingSwap(Entity targetPrefab, ObjectGeometryPrefab basePrefab, DeformSpec spec,
-                List<(Entity Extension, Entity Target)> extensions)
+                List<(Entity Extension, Entity Target)> extensions, bool syncLot, Entity expectedCurrent)
             {
                 TargetPrefab = targetPrefab;
                 BasePrefab = basePrefab;
                 Spec = spec;
                 Extensions = extensions;
+                SyncLot = syncLot;
+                ExpectedCurrent = expectedCurrent;
             }
 
             public Entity TargetPrefab { get; }
             public ObjectGeometryPrefab BasePrefab { get; }
             public DeformSpec Spec { get; }
             public List<(Entity Extension, Entity Target)> Extensions { get; }
+
+            /// <summary>False when the saved areas and nets already have the target's layout (a load).</summary>
+            public bool SyncLot { get; }
+
+            /// <summary>Prefab the building must still be on; Entity.Null to swap from any.</summary>
+            public Entity ExpectedCurrent { get; }
         }
 
         private sealed class PendingLevelUp

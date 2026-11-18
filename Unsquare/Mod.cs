@@ -6,6 +6,7 @@ using Game.Common;
 using Game.Modding;
 using Game.Prefabs;
 using Game.SceneFlow;
+using Game.Serialization;
 using Unsquare.Api;
 using Unsquare.Integration.Systems;
 using Unsquare.UI.Bindings;
@@ -47,6 +48,10 @@ namespace Unsquare
             updateSystem.UpdateAfter<ExtensionInstallSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             // Level-ups are queued and finished at EndFrameBarrier, so every frame in between sees both prefabs.
             updateSystem.UpdateAfter<LevelUpCarrySystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
+            // Saves hold deformed buildings as base + cage: swap before the game picks the prefabs to save, and back
+            // right after the serializer captured the entities (same frame).
+            updateSystem.UpdateBefore<SavedCageWriteSystem, BeginPrefabSerializationSystem>(SystemUpdatePhase.Serialize);
+            updateSystem.UpdateAfter<SavedCageRestoreSystem, SerializerSystem>(SystemUpdatePhase.Serialize);
             updateSystem.UpdateAt<BaseTerrainSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);

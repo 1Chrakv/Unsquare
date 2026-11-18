@@ -23,7 +23,11 @@ namespace Unsquare.Integration.Entities
             added.Clear();
             if (!entityManager.TryGetComponent(basePrefab, out ObjectData baseData) || !baseData.m_Archetype.Valid ||
                 !entityManager.TryGetComponent(variantPrefab, out ObjectData data) || !data.m_Archetype.Valid)
+            {
+                // An uninitialized variant: buildings swapped to it crash the game (VariantSystem refuses such swaps).
+                Mod.Log.Warn($"Variant prefab {variantPrefab} or its base {basePrefab} has no instance archetype.");
                 return false;
+            }
 
             var baseTypes = baseData.m_Archetype.GetComponentTypes(Allocator.Temp);
             var types = data.m_Archetype.GetComponentTypes(Allocator.Temp);

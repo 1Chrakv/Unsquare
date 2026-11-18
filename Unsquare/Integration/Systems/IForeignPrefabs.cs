@@ -19,6 +19,9 @@ namespace Unsquare.Integration.Systems
         /// <summary>For the hover preview of an undecided building: the base and the spec taking it over would give.</summary>
         bool TryGetPreview(Entity building, out ObjectGeometryPrefab basePrefab, out DeformSpec spec);
 
+        /// <summary>True for a prefab the other mod creates at runtime, so it is missing when a save loads.</summary>
+        bool IsRuntimePrefab(PrefabBase prefab);
+
         /// <summary>The building left its foreign prefab (swapped), or its takeover was cancelled before the swap.</summary>
         void Release(Entity building);
 
