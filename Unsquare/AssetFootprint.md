@@ -1,8 +1,11 @@
 # Asset footprint: shapes in saves and a geometry cache
 
-Handover of 17 Nov 2026 for the sessions that implement it. No code was changed. Findings come from reading
-Unsquare, the game's assemblies (decompiled for reading only) and the local `ModsData/Unsquare` folder. Runtime
-memory was never measured.
+Handover of 17 Nov 2026 for the sessions that implement it. Findings come from reading Unsquare, the game's
+assemblies (decompiled for reading only) and the local `ModsData/Unsquare` folder. Runtime memory was never measured.
+
+**Status 18 Nov 2026:**
+- Step 1 (PR A, branch `feature/saved-cages`) is implemented and partly tested in game; see sections 6 and 7.
+- Steps 2–4 (PR B, PR C) are open. Section 8 is the handover for PR B.
 
 **Decision:**
 - **Saves:** they store each deformed building as its base prefab plus a small cage component. Variants are rebuilt
@@ -121,8 +124,9 @@ save failed. The simulation doesn't run in between.
 
 ### Load
 
-- **When:** `OnGameLoaded`. Components are read in the `Deserialize` phase, and `ResolvePrefabsSystem` has already
-  pointed `PrefabRef` at live prefabs.
+- **When:** in `VariantSystem`'s first update after `OnGameLoaded`, never in `OnGameLoaded` itself. By then
+  components are read in the `Deserialize` phase, and `ResolvePrefabsSystem` has already pointed `PrefabRef` at live
+  prefabs. Prefabs added during `OnGameLoaded` crash the game; see 7.1.
 - **Variants:** collect the distinct (base, spec) pairs from buildings with the component on their base, and create
   each with `TryGetOrCreateVariant`.
   - **Cache hit** (asset exists and `BoundsCache` has its bounds): no vertex work.
@@ -146,8 +150,10 @@ save failed. The simulation doesn't run in between.
 - **The legacy manifest shrinks by itself:** `MarkUsage` drops a city from entries it no longer uses, and the
   14-day prune removes those entries. The prune stays for legacy entries only; older saves of a city that is
   already converted then break after 14 days, as today.
-- **Open:** Unsquare variants on a Placemaker base probably already fail to restore, since Placemaker builds its
-  variants after load. Not verified.
+- **Verified 18 Nov:** Unsquare variants on a Placemaker base fail to restore, since Placemaker builds its variants
+  after load. The local manifest has 5 such entries (`Placemaker Shape EU_ResidentialMediumRow01_L3_1x5 …__uq…`);
+  they are counted under `failed` without a log line. The save systems leave such buildings on their variant
+  (`IForeignPrefabs.IsRuntimePrefab`), so they stay legacy.
 
 ### Geometry cache
 
@@ -171,9 +177,10 @@ the implementation.
 
 ## 4. Risks and open questions
 
-Verify while implementing:
-- **Plain buildings after load:** prefabs created in `OnGameLoaded` need at least one `PrefabUpdate` frame to
-  initialise, and swaps wait for `_simulationReady`. Check whether this finishes before the loading screen ends.
+Verify while implementing (results from PR A in 7):
+- **Plain buildings after load:** variants created after load need at least one `PrefabUpdate` frame to
+  initialise, and swaps wait for `_simulationReady`. Verified: swaps run in the first frame after the loading
+  screen. Creating them in `OnGameLoaded` itself crashed the game (7.1).
 - **Frames on the base after load:**
   - `CondemnGuardSystem` only clears `Condemned` on variant buildings.
   - `LevelUpCarrySystem` only carries a level-up from a variant. A building `UnderConstruction` at save time loads
@@ -206,3 +213,133 @@ Verify while implementing:
 - cache eviction over the cap
 - level-up across a save
 - Placemaker row saved
+
+## 6. PR A as implemented (`feature/saved-cages`)
+
+Commits `42e04e5`..`f102779` on top of `develop` (ac9e592). Changes from the design above:
+
+- **Component** `Integration/Saves/SavedCage`. Its namespace and type name are part of the save format.
+  - It holds `int Format` plus `FixedList128Bytes<short> Values`. The game's collections library has no 256-byte
+    list, and shorts fit cage steps up to ±3 km. Values are written to the save as ints, so the memory layout can
+    change freely.
+  - `[FormerlySerializedAs("Unsquare.Integration.Saves.SavedCage, Unsquare")]` sits on the type itself, so a new
+    assembly version still resolves; the game trims the stored name down to that form.
+  - The Core codec `SavedCageCodec` (v1: flags, blend mode, lot cage, and the building cage unless linked) has 12
+    tests.
+- **Save:**
+  - `SavedCageWriteSystem` runs before `BeginPrefabSerializationSystem`, and `SavedCageRestoreSystem` after
+    `SerializerSystem`.
+  - The ledger lives in `VariantSystem.SaveSwaps`. A restore that never ran is redone in `VariantSystem.OnUpdate`.
+  - Structural changes are batched, and stale cages are removed through a `SavedCage` query.
+- **Buildings whose base can't be saved stay on their variant:** an unknown spec, a base that is itself a variant,
+  or a Placemaker runtime prefab (`IForeignPrefabs.IsRuntimePrefab`). This is logged once per prefab.
+- **Load:**
+  - `OnGameLoaded` only sets `_savedCagesPending`. `RestoreSavedCages` runs in the next `OnUpdate` (PrefabUpdate,
+    before `PrefabInitializeSystem`).
+  - It creates each (base, spec) once with `VariantOrigin.Load` and queues the swaps with `syncLot: false` and
+    `ExpectedCurrent` set to the base entity.
+  - A building that is on another prefab by then, because a level-up finished first (same lot size), goes to
+    `PrepareLevelUp`. Any other prefab drops the swap with a warning.
+  - `TrySwap` refuses targets without an instance archetype (`Not swapping to …: the game did not initialize it.`),
+    and `VariantArchetype` warns when it meets one (`… has no instance archetype`).
+- **`VariantOrigin`** replaces `isRestore`: Edit is validated; Load and Legacy are never refused.
+- **Manifest bridge (PR A only):** Load still calls `_manifest.Register`, and `CollectUsedVariantKeys` counts
+  `SavedCage` buildings, so the orphan sweep and `MarkUsage` keep the new-format variants. PR B removes both.
+- **`PrefabSwapper.Swap(..., syncLot)`** skips `LotInstanceSync` on load. `LevelUpCarrySystem.SameLot` is now shared.
+- **Docs:** the CLAUDE.md "Saves" paragraph and compatibility rule, the README (mod removal, downgrade), and
+  Testing.md rows 188–198.
+
+## 7. Findings from in-game testing (18 Nov 2026)
+
+### 7.1 Variants created in `OnGameLoaded` crash the game
+
+- **Symptom:** a native crash ("Got a UNKNOWN while executing native code", no managed stack) in the first frame
+  after loading, right after the load swaps. It only happened when the variants did not exist yet, i.e. without a
+  manifest.
+- **Cause:**
+  - `PrefabInitializeSystem` only initialises prefabs that have `Created` and an enabled `PrefabData`.
+  - Prefabs added in `OnGameLoaded` lose `Created` during the rest of the load, before that system runs, so they
+    stay uninitialised and their `ObjectData.m_Archetype` is invalid.
+  - Archetype completion then does nothing ("0 archetypes completed"), and buildings on those prefabs crash the
+    game's jobs.
+- **Fix:** create the variants in the next `VariantSystem.OnUpdate`, as edits do, and refuse swaps to uninitialised
+  prefabs. Afterwards all archetypes were valid, 32 of 43 were completed, and there was no crash (Testing row 198).
+
+### 7.2 Saves hold no variant prefab records
+
+- **The concern:** the game might still save variant `PrefabID`s for their unlock or budget state
+  (`CheckSavedPrefabsJob`).
+- **The result:** loading a new-format save without Unsquare logged 0 `Unknown prefab ID` lines and one
+  `Not serializable type: Unsquare.Integration.Saves.SavedCage, …` line. Buildings came back plain with the
+  deformed lot, as designed (row 191).
+- **Consequence:** no diagnostic for saved variant records is needed.
+
+### 7.3 Old saves depend on the manifest; never delete it
+
+- **What happened:**
+  - Testing rows 192 and 198 first said to delete `variants.json`. After that was done several times, the manifest
+    held only the entries used since.
+  - An old save ("Testfield 23") then loaded with 159 white boxes (`Unknown prefab ID …__uq…`).
+- **Repair:** the last full manifest (the backup, 1,128 entries) was merged with the current one (268 newer
+  entries) into 1,396 entries. The next load logged `Restored 1388 variants (+73 upgrade extensions), 8 failed` and
+  0 unknown IDs.
+- **The rows now** move the files aside and back. `.bak` must be moved too, because `AtomicJsonFile` falls back to
+  it.
+- **For PR B:** consider a never-rewritten copy of the frozen manifest, and restoring from it when `variants.json`
+  is missing (section 8).
+
+### 7.4 Other observations
+
+- **Load cost of the legacy restore:** 47 s of loading for 1,396 entries, in a city that uses about 160. The
+  new-format load of 40 cached variants took 1.5–2 s.
+- **8 legacy restore failures:**
+  - 3 `FR_Hospital` entries with the retired `BlendMode` 1 (`ArgumentOutOfRangeException` in
+    `VariantNaming.BlendSuffix`). A separate fix has been proposed.
+  - The 5 Placemaker-base entries (section 3).
+- **Orphan sweep refusals:**
+  - With a partial manifest the sweep refused every time ("Would delete 1964 of 1964", "Entry … lists no assets").
+  - Load-registered entries of variants with undeformed meshes (e.g. `CityPark09`) list no assets and block it.
+  - PR B replaces the sweep anyway.
+- **Disk today:** 2,671 `.Geometry` files, 961 MB in `ModsData/Unsquare` (1,960 files and 684 MB on 17 Nov).
+- **Paradox Mods connecting late at boot:**
+  - When it connects after boot (`Defer Mods load`), the packs are enabled about a minute later.
+  - A save loaded before that shows missing-content dialogs and grey boxes.
+  - Wait in the menu. This is unrelated to Unsquare.
+- **Backups belong outside the game's data folder:**
+  - A copy inside it was scanned by the game, which saw a second `Unsquare.coc` and logged errors at shutdown.
+  - The developer backup is in `C:\Users\Tobi\Unsquare-Backup-2026-11-18`.
+
+### 7.5 Testing status (rows in Testing.md)
+
+| Row | Result |
+|---|---|
+| 191 mod removed | passed |
+| 192 1.1.0 save converted, loaded without manifest | passed |
+| 198 no-manifest load (the crash case) | passed after the fix |
+| 188–190, 193–197 | open |
+
+## 8. Handover for PR B (steps 2 and 3)
+
+- **Base:** branch `feature/geometry-cache` off `feature/saved-cages` while PR A is not merged, or off `develop` once
+  it is. Steps 2 and 3 ship together: freezing without replacing the orphan sweep would delete every new asset.
+- **Remove the PR A bridge:**
+  - Load no longer calls `_manifest.Register` (`TryGetOrCreateVariant`), and Edit stops too.
+  - `AddExtension` is called only for `VariantOrigin.Legacy`. Thread the origin through `PlanExtensionTargets` →
+    `TryGetOrCreateExtensionVariant`.
+  - `CollectUsedVariantKeys` drops its `SavedCage` loop.
+- **Decided with the user (17 Nov):**
+  - The cap defaults to 2 GB, with a slider from 0.5 to 20 GB.
+  - `PruneUnused` and `PruneAfterDays` are removed from the settings.
+  - Legacy entries are pruned after a fixed 14 unused days, and the assets of pruned entries are not deleted but
+    fall to the cache.
+- **Design details:** section 3 "Geometry cache", plus the plan in the PR A session:
+  - Last use is stored as a 7th float in `bounds.json`, refreshed at most once an hour.
+  - `CacheEvictionPlanner` lives in Core, with tests.
+  - Sizes come from the `*.Geometry` files in `ModPaths.DataDirectory`.
+  - Eviction runs only on the first preload, and only when the manifest is trusted.
+- **Proposed, needs the user's decision:** a write-once copy of the frozen manifest (e.g.
+  `variants.legacy-backup.json`) that preload restores from when `variants.json` and `.bak` are both missing (7.3).
+- **Test without risk:** move manifest files aside, never delete them. Keep the developer backup until the user
+  confirms that PR B works.
+- **Questions:** the PR A session ("AssetFootprint implementation plan", Claude Desktop) knows the code and the test
+  history. Ask it with `SendMessage` before guessing.
