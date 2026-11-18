@@ -10,6 +10,7 @@ namespace Unsquare.Integration.Entities
     /// Writes a <see cref="TerrainSlope"/> into a variant prefab's terraform data: pad height offset and a flat area
     /// collapsed to the lot centre. Remembers the prefab's own data, so applying twice never adds up.
     /// </summary>
+    /// <remarks>Prefab entities and their changed data survive loads in a session, so the originals must too.</remarks>
     internal sealed class TerrainSlopeApplier
     {
         private readonly Dictionary<Entity, BuildingTerraformData> _originals = new();
@@ -26,7 +27,20 @@ namespace Unsquare.Integration.Entities
             return true;
         }
 
-        public void Clear() => _originals.Clear();
+        /// <summary>Forgets prefabs that no longer exist; a recreated entity has a new version, so nothing is mixed up.</summary>
+        public void ForgetMissing(EntityManager entityManager)
+        {
+            List<Entity> missing = null;
+            foreach (var prefab in _originals.Keys)
+            {
+                if (!entityManager.Exists(prefab))
+                    (missing ??= new List<Entity>()).Add(prefab);
+            }
+            if (missing == null)
+                return;
+            foreach (var prefab in missing)
+                _originals.Remove(prefab);
+        }
 
         private bool TryGetOriginal(EntityManager entityManager, Entity prefab, out BuildingTerraformData original)
         {

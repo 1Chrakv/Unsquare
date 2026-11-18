@@ -40,7 +40,7 @@ namespace Unsquare.Integration.Systems
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
         {
             base.OnGamePreload(purpose, mode);
-            // Prefab entities are created anew while loading.
+            // Variants may be created or dropped while loading; look each prefab up again.
             _isVariant.Clear();
         }
 
