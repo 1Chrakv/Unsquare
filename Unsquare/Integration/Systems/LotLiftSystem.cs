@@ -54,10 +54,11 @@ namespace Unsquare.Integration.Systems
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
         {
             base.OnGamePreload(purpose, mode);
-            // Variant prefab entities are created anew while loading; forget the old ones without reverting.
+            // Prefab entities and their lifted terraform data survive a load in the same session: plan again, but
+            // apply from the kept originals, or the pad offset adds up on every reload.
             _applied.Clear();
             _slopes.Clear();
-            _applier.Clear();
+            _applier.ForgetMissing(EntityManager);
         }
 
         // LotHeightSystem recomputes every lot in its first update after a load; lift them in the same frame.

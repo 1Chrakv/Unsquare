@@ -285,3 +285,4 @@ render meshes cannot be read; if buildings come back undeformed after reload, va
 | 184 | Building beside a free-standing footpath, align that side (angle, then flush) | The side turns parallel to the path and moves onto its near edge; log `Aligning … to path …` |
 | 185 | Same side, Ctrl+Alt+arrow toward the path | That side's bottom corners go to the path surface height next to them |
 | 186 | Draw a footpath through the lot parallel to a side, a road beyond it; align that side | The path inside the lot is ignored, the side goes to the road; the lot's own paths and neighbours' lot paths never count |
+| 187 | Building with a lifted lot (log `Terrain slope … pad` > 5 m): load, save, load again without restarting, then restart and load | The terrain looks the same all three times (no high flat plateau over the lot); each load logs the same pad |
