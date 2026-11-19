@@ -44,7 +44,8 @@ angled streets and slopes.
 - **Undo / redo** of every cage edit, across all buildings.
 - **Saved with the city.** A save stores each deformed building as its normal building plus its cage; the deformed
   geometry is rebuilt (or taken from the cache) when the save is loaded. Identical deformations share their baked
-  assets. Saves from older versions keep their shapes and switch to this format the next time they are saved.
+  assets. Saves from older versions keep their shapes and switch to this format the next time they are saved
+  (over the same file). Baked geometry is a cache with a size limit (option, 2 GB by default).
 
 ## Limitations
 
@@ -168,7 +169,18 @@ the hovered one cyan.
 ### Options
 
 Options → Unsquare → Settings holds the tunables: cage limits, which attachments follow the cage, facade alignment,
-nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
+nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, overlay style, and the geometry cache
+size.
+
+### Saves from before version 1.2
+
+Older saves reference deformed buildings that Unsquare must rebuild at every start, which slows loading. Open each
+old save you want to keep and save it over the same file: it then stores the buildings in the new format.
+
+- Once all are converted, press Options → Unsquare → Settings → **I've converted all my old saves**. From the next
+  start they are no longer rebuilt.
+- Old variants no save has used for 14 days are no longer rebuilt either. If an old save then shows plain or
+  missing buildings, press **Restore shapes for old saves** and open it again; it loads slower once.
 
 ### Coming from FlexIt
 

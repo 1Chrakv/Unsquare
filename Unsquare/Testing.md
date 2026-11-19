@@ -104,7 +104,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 11 | Look into `…\Cities Skylines II\ModsData\Unsquare\` | `variants.json`, `bounds.json`, `UQ_*.Geometry` files |
 | 12 | Alt+Backspace, then Alt+Shift+Delete | Original shape, white cage; reset-all logs a count |
 | 13 | Zone a large area with the base building's zone | No deformed variant ever spawns |
-| 14 | Reset a building, save, set its `LastUsedUtc` in `variants.json` > 14 days back, restart | Housekeeping log: entry pruned, its assets deleted, shared assets kept |
+| 14 | With a 1.1 manifest: set an entry's `LastUsedUtc` in `variants.json` > 14 days back and clear its `Cities`, restart | Housekeeping log: 1 legacy variant pruned; its assets are still on disk (cache) and the entry is still in `variants.archive.json` |
 | 15 | Delete `variants.json`, load a save with deformed buildings | Document what breaks (see `HowTo.md` §13.7) |
 | 16 | On a building with roof props and a storefront: raise the top face, lean it sideways, pull a bottom front corner out | Roof props rise, move and tilt with the roof; the storefront follows its corner and stays on the ground; reset puts all props back |
 | 17 | House with garden (shed, trees, paving, fences): skew/taper the lot inside its plot | Cage spans the fence rectangle; `Attachments of …` log lists props/areas/lanes/nets; paving, grass, fences, paths, shed and trees follow; trees stay upright; `Lot sync …` log shows moved areas/net edges |
@@ -226,7 +226,7 @@ through the handle's centre; the hovered or dragged part is brighter and thicker
 | 133 | In each mode press Reset building, then Ctrl+Z | Building mode resets only the building, Lot only the lot, Both everything; undo restores each step |
 | 134 | Nudge the building cage up and back down with the 0.1 m step (Building mode), then Ctrl+Z several times | The building returns exactly; no violet cage remains; undo steps through every nudge |
 | 135 | Row houses: Building mode, align the left side (Alt+Shift+←) to the neighbour house | The wall moves onto the neighbour's wall (its building cage), the gardens stay; a park next door falls back to its lot edge |
-| 136 | Lot only: deform a lot but not the building, save, reload; then run the orphan sweep (restart with pruning on) | The variant has no `UQ_` assets in its manifest entry; nothing is refused or deleted wrongly (`Orphan sweep` log line) |
+| 136 | Lot only: deform a lot but not the building, save, reload, restart | Shape kept; the housekeeping line evicts nothing it shouldn't (no rebake on the next load) |
 | 137 | Car park with a storey and a separate ground-level extension: Building mode, lean the building | The storey leans with the building; the ground-level extension follows the lot (stays unless the lot changes) |
 | 138 | Switch modes, restart the game | The last chosen mode is active again |
 | 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Blend toggle shows None: everything on the ground stays, paths may end at the old wall |
@@ -290,10 +290,20 @@ render meshes cannot be read; if buildings come back undeformed after reload, va
 | 189 | After 188, save and reload five times | Paths, areas and lot props don't drift or move |
 | 190 | Wait for an autosave while dragging a cage corner | No flicker or hitch at the autosave; the drag continues; the autosave loads with the shape at the moment of saving |
 | 191 | Save a city with deformed buildings, remove Unsquare, load | The save loads; buildings are undeformed, paths and areas keep their deformed layout; game log `Not serializable type …SavedCage`, no errors |
-| 192 | Load a save made with 1.1.0 (deformed buildings), save it, close the game, move `ModsData/Unsquare/variants.json` and `.bak` aside (never delete them), start and load it; then close the game and move both back | Shapes kept both times; the second load builds them from the save (`Saved cages: …`). Without the manifest, other old saves show white boxes: don't load them before the files are back |
+| 192 | Load a save made with 1.1.0 (deformed buildings), save it, close the game, move `ModsData/Unsquare/variants.json`, `.bak` and `variants.archive.json` aside (never delete them), start and load it; then close the game and move all back | Shapes kept both times; the second load builds them from the save (`Saved cages: …`). Without the manifest, other old saves show white boxes: don't load them before the files are back |
 | 193 | Deformed growable under construction (levelling up): save, reload, let the level-up finish | The new level keeps the shape (log `levelled up before its saved shape was restored` if it finished first); no reset to plain |
 | 194 | Car park with a deformed extra storey and the school with a deformed wing: save, reload | Storey and wing keep their shapes; the wing keeps its own cage; no crash when hovering both |
 | 195 | Move It copy (and an eyedropper copy) of a deformed building: save, reload | Copies keep the shape |
 | 196 | Placemaker row: convert one house, convert a whole row, save at once, reload | Converted houses keep their Unsquare shapes, undecided ones are bent by Placemaker again; no house switching shape after the load |
 | 197 | Save, raise `<Version>` locally (no publish), rebuild, load that save | Shapes restored: the `SavedCage` type still resolves |
-| 198 | After 188, close the game, move `ModsData/Unsquare/variants.json` and `.bak` aside (never delete them), start, wait in the menu until mods are loaded, load the save; afterwards close the game and move both back over the new ones | No crash; `Restored 0 variants`, then `Saved cages: N buildings on M variants …, 0 failed`; no `has no instance archetype` or `Not swapping to …` lines; all shapes back |
+| 198 | After 188, close the game, move `ModsData/Unsquare/variants.json`, `.bak` and `variants.archive.json` aside (never delete them), start, wait in the menu until mods are loaded, load the save; afterwards close the game and move all back over the new ones | No crash; `Restored 0 variants`, then `Saved cages: N buildings on M variants …, 0 failed`; no `has no instance archetype` or `Not swapping to …` lines; all shapes back |
+| 199 | First start with PR B (manifest from 1.1 present) | `variants.archive.json` appears with the manifest's entry count (`Legacy manifest archive holds N variants`); housekeeping line names pruned, evicted, cache and legacy-claimed MB |
+| 200 | Set *Geometry cache size* to 0.5 GB, restart | Housekeeping evicts assets (count and MB in the log); the folder holds about 0.5 GB plus the legacy-claimed assets |
+| 201 | After 200, load a new-format save whose shapes were evicted; then evict again (restart) and load it a second time in one session after loading another save | Shapes rebaked (`Saved cages: … new assets`), none lost; no asset errors |
+| 202 | Load a 1.1 save after 200 | Its shapes are intact: legacy-claimed assets were not evicted |
+| 203 | Note the entry count of `variants.json`, deform a new building, save, restart | The entry count is unchanged |
+| 204 | Load a 1.1 save, save over it, load it again, close the game | That city is gone from its entries' `Cities` in `variants.json` |
+| 205 | Close the game, move `variants.json` and `.bak` aside (keep the archive), start | Log `Variant manifest rebuilt from the legacy archive`; a 1.1 save loads with its shapes; afterwards move the files back |
+| 206 | Settings → *I've converted all my old saves*, restart, load a converted save, then a 1.1 save that was not converted | `variants.json` is empty, no legacy restore at start (`Restored 0 variants`); the converted save is fine, the old one shows white boxes |
+| 207 | After 206, Settings → *Restore shapes for old saves*, load that 1.1 save again | Status shows the restored count; the old save loads with its shapes (slower once) |
+| 208 | Load a city whose legacy restore had failures (e.g. a Placemaker-base entry it uses), press *I've converted all my old saves* | Refused: the status names the failed variants of this city; the manifest is unchanged |

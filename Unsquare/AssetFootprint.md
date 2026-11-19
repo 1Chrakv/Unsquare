@@ -3,9 +3,11 @@
 Handover of 17 Nov 2026 for the sessions that implement it. Findings come from reading Unsquare, the game's
 assemblies (decompiled for reading only) and the local `ModsData/Unsquare` folder. Runtime memory was never measured.
 
-**Status 18 Nov 2026:**
-- Step 1 (PR A, branch `feature/saved-cages`) is implemented and partly tested in game; see sections 6 and 7.
-- Steps 2–4 (PR B, PR C) are open. Section 8 is the handover for PR B.
+**Status 19 Nov 2026:**
+- Step 1 (PR A) is implemented and partly tested in game; see sections 6 and 7.
+- Steps 2 and 3 (PR B) are implemented on `feature/asset-saving-redesign` and not yet tested in game; see section 9
+  (it supersedes 8.1 where they differ).
+- Open: step 4 (PR C), and the popup for old saves (PR B2, section 9.4).
 
 **Decision:**
 - **Saves:** they store each deformed building as its base prefab plus a small cage component. Variants are rebuilt
@@ -378,10 +380,10 @@ Commits `42e04e5`..`f102779` on top of `develop` (ac9e592). Changes from the des
 - **Input:** `CachedAsset(string Name, long Bytes, DateTime LastUsedUtc)`. The caller passes the file's write time
   when `bounds.json` has no last use.
 - **`IReadOnlyList<string> Plan(IReadOnlyList<CachedAsset> assets, ISet<string> claimed, long capBytes)`:**
-  - The total counts every asset, claimed or not.
-  - It deletes the least recently used unclaimed assets (ties by name, ordinal) until the total is at most the
+  - Decided on 19 Nov: the cap applies to unclaimed assets only. Claimed (legacy) assets are neither counted nor
+    returned, so a large legacy set can't force every new asset to be rebaked at each start.
+  - It deletes the least recently used unclaimed assets (ties by name, ordinal) until their total is at most the
     cap.
-  - If claimed assets alone exceed the cap, it returns every unclaimed asset.
   - It throws `ArgumentException` for a cap ≤ 0.
 - **Tests** in `Unsquare.Tests/Housekeeping/CacheEvictionPlannerTests.cs`:
   - under the cap → nothing
@@ -442,3 +444,80 @@ from it and logs that.
 **Verify:** `dotnet test Unsquare.Tests`, then a compile check with
 `dotnet msbuild Unsquare/Unsquare.csproj -t:Compile`. Ask before any deploying build. Back up `ModsData/Unsquare`
 outside the game folder before the first in-game run with eviction.
+
+## 9. PR B as implemented (19 Nov 2026)
+
+Decided with the user on 19 Nov: the cap counts unclaimed assets only; the safety net is an append-only archive with
+two Settings buttons; the legacy prune stays at 14 days, fixed; the popup goes into a follow-up (PR B2).
+
+### 9.1 Migration of existing saves
+
+| Save | References | Load path |
+|---|---|---|
+| 1.0–1.1 (legacy) | variant `PrefabID`s | preload restores manifest entries (`VariantOrigin.Legacy`); converted at the next save over the same file |
+| 1.2+ | base + `SavedCage` | `RestoreSavedCages` after load (`VariantOrigin.Load`); no manifest |
+| 1.2+ leftovers | a few variant IDs (Placemaker-base variants) | like legacy; a warning is logged when such a variant has no manifest entry |
+
+Lifecycle of a legacy city:
+1. Preload restores its entries. The manifest is frozen, so restores only complete existing entries (`MergeAssets`,
+   `AddExtension`).
+2. Load complete: `MarkUsage` marks the city.
+3. The next save writes base + cage; names are unchanged.
+4. On the next load of that save, buildings are still on their bases at load complete, so the city drops out of its
+   entries.
+5. 14 days later the entries are pruned. Their assets become cache, and the entries stay in the archive.
+
+Kept invariants:
+- **Formats:** the manifest format is unchanged (`FormatVersion` 3; a 1.1 downgrade reads it). `bounds.json` takes 6
+  or 7 floats.
+- **Eviction never loses a shape:** it runs only at the first preload, before anything is created, and a missing asset
+  is rebaked.
+- **Corrupt archive:** a corrupt `variants.archive.json` is never overwritten.
+
+### 9.2 What changed
+
+- **`VariantSystem`:**
+  - Edit and Load no longer register manifest entries. Extension variants pass their origin, and only Legacy calls
+    `AddExtension`.
+  - `CollectUsedVariantKeys` no longer counts `SavedCage` buildings.
+  - Every legacy restore failure is logged, and kept for the Retire check.
+- **Archive** (`variants.archive.json`, manifest format):
+  - Every first preload appends new manifest entries (`VariantManifest.AddMissing`) before the prune.
+  - When the manifest is missing or corrupt, it is rebuilt from the archive (`Revive`: last use now, no cities). That
+    session is untrusted, so no housekeeping runs.
+- **Settings group "Saves from before version 1.2":**
+  - *I've converted all my old saves* (`IBuildingDeformService.RetireLegacyManifest`): archives the manifest and
+    writes it empty, not deleted, since a missing file would be rebuilt from the archive. It is refused while the
+    loaded city has entries that failed to restore.
+  - *Restore shapes for old saves* (`RestoreLegacyShapes`): revives archived entries missing from the manifest. They
+    load with the next save opened.
+- **`BoundsCache`:** an optional 7th float holds the last use in Unix days. `Touch` comes from `ObtainAsset` on a hit
+  and after a bake; the file is rewritten at most hourly per asset.
+- **`CacheEvictionPlanner`** (Core, tested) replaces the orphan sweep (`OrphanSweepPlan` removed).
+  `VariantHousekeeper` prunes legacy entries (assets kept), evicts beyond `PipelineOptions.GeometryCacheGigabytes`
+  (slider 0.5–20 GB, default 2), drops bounds of deleted assets, and logs the MB.
+- **Settings removed:** `PruneUnused` and `PruneAfterDays`.
+
+### 9.3 Side effects
+
+- **Restore cost:** *Restore shapes for old saves* brings back the full legacy restore for loads (about 47 s per
+  1,400 entries) plus 35–90 ms per evicted asset. The restored prefabs show up in other mods' catalogs again.
+- **Rebakes:** rebaked assets use the current bake code and attachment options.
+- **Claimed assets:** revived entries claim their assets, which then stay outside the cap until pruned again.
+- **No-manifest tests:** they must move `variants.archive.json` aside too (Testing rows 192 and 198).
+- **Downgrade to 1.1:** 1.1 ignores the archive. Its orphan sweep may delete new or archived-only assets, or refuse
+  at 50 %, which only costs rebakes.
+- **Converted cities:** older 1.x saves of a converted city lose their shapes 14 days after the converted save is
+  loaded, until *Restore shapes for old saves* is pressed (README, prune log line).
+
+### 9.4 Handover for PR B2: popup after a legacy load
+
+- **Detect:** at `OnGameLoadingComplete` (`GameMode.Game`), count buildings on prefabs created with
+  `VariantOrigin.Legacy` (a new set in `VariantSystem`) that `TryGetSavedSpec` can convert.
+- **Show:** once per city, with "remind me later" and "don't show again", stored in settings. Text:
+  - Saving over this save converts it; other old saves of this city need the same.
+  - Saving under a new name leaves the original old.
+  - Afterwards: *I've converted all my old saves*.
+- **Build:** a UISystem with bindings and a React dialog in `UiModule`, like the Placemaker dialog. Paths go
+  UI → Api → Integration. Retire and Restore already exist on `IBuildingDeformService`.
+- **Optional:** count saves of this city older than the update (a heuristic).
