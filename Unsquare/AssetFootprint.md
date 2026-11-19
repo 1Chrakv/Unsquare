@@ -5,10 +5,10 @@ assemblies (decompiled for reading only) and the local `ModsData/Unsquare` folde
 
 **Status 19 Nov 2026:**
 - Step 1 (PR A) is implemented and partly tested in game; see sections 6 and 7.
-- Steps 2 and 3 (PR B) are implemented on `feature/asset-saving-redesign` and not yet tested in game; see section 9
-  (it supersedes 8.1 where they differ).
-- The popup for old saves (PR B2, section 9.4) is implemented on the same branch, not yet tested in game.
-- Open: step 4 (PR C).
+- Steps 2 and 3 (PR B) and the old-saves popup (PR B2) are implemented and committed on
+  `feature/asset-saving-redesign`. They are not yet tested in game. See section 9, which supersedes 8.1 where they
+  differ.
+- **Next steps:** section 10.
 
 **Decision:**
 - **Saves:** they store each deformed building as its base prefab plus a small cage component. Variants are rebuilt
@@ -390,7 +390,7 @@ Commits `42e04e5`..`f102779` on top of `develop` (ac9e592). Changes from the des
   - under the cap → nothing
   - over the cap → oldest first, stops as soon as it fits
   - claimed assets are never returned
-  - claimed alone over the cap → all unclaimed
+  - claimed assets are not counted (replaces "claimed alone over the cap → all unclaimed", per the 19 Nov decision)
   - deterministic ties
 - **Removals:** `PrunePlanner.PlanOrphanSweep`, `OrphanSweepPlan.cs`, the sweep constants and their tests in
   `Unsquare.Tests/Housekeeping/PrunePlannerTests.cs`. `PlanPrune` stays for legacy entries; keep its tests.
@@ -528,3 +528,75 @@ The original handover:
 - **Build:** a UISystem with bindings and a React dialog in `UiModule`, like the Placemaker dialog. Paths go
   UI → Api → Integration. Retire and Restore already exist on `IBuildingDeformService`.
 - **Optional:** count saves of this city older than the update (a heuristic).
+
+## 10. State on 19 Nov 2026 and next steps
+
+### 10.1 Done
+
+| Commit | Content |
+|---|---|
+| `a495fe4` | PR B code: frozen manifest, append-only archive with rebuild, Retire/Restore in Settings, bounds last use, `CacheEvictionPlanner`, new housekeeping, cache size option; orphan sweep and prune options removed |
+| `a1055c6` | PR B docs: CLAUDE.md, HowTo.md, README, this document (section 9), Testing rows 199–208 |
+| `c253c45` | PR B2 code: `LegacySaveLoaded` (Integration → Api), `LegacySavesUISystem`, `legacy-saves-dialog.tsx`, hidden setting `HideLegacySavesPrompt`, locale |
+| `ae79fa0` | PR B2 docs: CLAUDE.md, README, section 9.4, Testing rows 209–212 |
+
+Verified without the game:
+- `dotnet test Unsquare.Tests`: 620 passed. That includes the new tests for `BoundsCache`, `CacheEvictionPlanner`,
+  `VariantManifest.AddMissing` and `Revive`, and `PipelineOptions`.
+- `dotnet msbuild Unsquare/Unsquare.csproj -t:Compile`: no errors.
+- `tsc --noEmit` in `UiModule`: no errors.
+
+Not done:
+- No deploying build.
+- No in-game run.
+- Nothing pushed.
+
+Deviations from the plans above:
+- **Popup detection:** it counts buildings on convertible Unsquare variants at load complete. There is no
+  `_legacyPrefabs` set: new-format buildings are still on their bases at that point.
+- **Archive name:** the archive is `variants.archive.json`, not `variants.legacy-backup.json`. It is append-only
+  rather than write-once, so it also catches entries a 1.1 downgrade adds.
+- **Retire:** *I've converted all my old saves* writes an empty manifest instead of deleting it. It is refused only for
+  failed entries of the loaded city.
+
+### 10.2 Next steps
+
+1. **Back up first:** copy `ModsData/Unsquare` outside the game folder before the first run with this build. The first
+   start writes the archive and evicts cache files beyond the cap. Keep `C:\Users\Tobi\Unsquare-Backup-2026-11-18`
+   until PR B is confirmed.
+2. **Deploying build:** `dotnet build Unsquare.sln`, only with the user's go-ahead. Never pass `SkipUiModule`.
+3. **In-game tests**, Testing.md:
+   - **New rows:** 199–212 (archive, eviction, rebake after eviction, frozen manifest, converted city, archive
+     rebuild, Retire, Restore, Retire refusal, popup).
+   - **Rows still open from PR A:** 188–190 and 193–197.
+   - **Rerun:** 192 and 198, now moving `variants.archive.json` aside too.
+   - **What to watch for:**
+     - the housekeeping log line (MB figures plausible, nothing claimed evicted);
+     - no `Unknown prefab ID …__uq…` for old saves while the manifest or archive exists;
+     - a same-session rebake after eviction (GUID reuse) without asset errors;
+     - the popup's count against the log line `N deformed buildings were loaded in the old save format`.
+4. **Record results** in a new section with a status table like 7.5, and fix what the tests find.
+5. **Merge:** a PR from `feature/asset-saving-redesign` into `develop` (never `master`), no version bump on the
+   branch. Then the `develop` → `master` release bumps the version. PR A, B and B2 change the save format, so it is a
+   minor bump (1.2.0) if the user agrees.
+6. **Before release:**
+   - Check that the README and the `LongDescription` in `Properties/PublishConfiguration.xml` agree. The long
+     description may need one plain sentence that old saves convert when saved over, and that geometry is a size-capped
+     cache.
+   - Release notes should tell players to open and save over each old save, mention the popup and the two Settings
+     buttons, and say that a downgrade to 1.1 loads new-format saves undeformed.
+7. **Step 4 (PR C):** release source meshes in `RenderVariantBuilder.ObtainAsset`, independent of the rest; see
+   section 5.
+8. **Later (step 5):** reuse base meshes for rigidly moved sub-meshes, and measure memory with snapshots before and
+   after.
+
+### 10.3 Known limits to keep in mind
+
+- **Same-name cities:** legacy usage tracking is per city name, so two cities with the same name keep each other's
+  entries alive.
+- **Popup:** it appears at every load of a not-yet-converted old save until *Don't show again*. It can't tell
+  whether the player later saved over the same file or under a new name.
+- **Retire:** it trusts the player's confirmation. *Restore shapes for old saves* is the way back, and costs one slow
+  load.
+- **Local `FR_Hospital` entries:** the 3 entries with `BlendMode` 1 exist only on the developer's machine. They keep
+  failing until pruned, and don't block Retire unless the loaded city uses them.
