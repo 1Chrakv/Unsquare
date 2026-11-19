@@ -332,14 +332,113 @@ Commits `42e04e5`..`f102779` on top of `develop` (ac9e592). Changes from the des
   - `PruneUnused` and `PruneAfterDays` are removed from the settings.
   - Legacy entries are pruned after a fixed 14 unused days, and the assets of pruned entries are not deleted but
     fall to the cache.
-- **Design details:** section 3 "Geometry cache", plus the plan in the PR A session:
-  - Last use is stored as a 7th float in `bounds.json`, refreshed at most once an hour.
-  - `CacheEvictionPlanner` lives in Core, with tests.
-  - Sizes come from the `*.Geometry` files in `ModPaths.DataDirectory`.
-  - Eviction runs only on the first preload, and only when the manifest is trusted.
+- **Design details:** section 3 "Geometry cache" and the plan in 8.1.
 - **Proposed, needs the user's decision:** a write-once copy of the frozen manifest (e.g.
   `variants.legacy-backup.json`) that preload restores from when `variants.json` and `.bak` are both missing (7.3).
 - **Test without risk:** move manifest files aside, never delete them. Keep the developer backup until the user
   confirms that PR B works.
-- **Questions:** the PR A session ("AssetFootprint implementation plan", Claude Desktop) knows the code and the test
-  history. Ask it with `SendMessage` before guessing.
+- **Questions:** this document and the code should answer them. The PR A session ("AssetFootprint implementation
+  plan", Claude Desktop) has a long context and is expensive to wake; ask it only about history that is in neither.
+
+### 8.1 Implementation plan
+
+**Freeze the manifest (step 2)**, in `Integration/Systems/VariantSystem.cs`:
+- `TryGetOrCreateVariant`: only `VariantOrigin.Legacy` touches the manifest, through `MergeAssets` as today. Edit and
+  Load build no `ManifestEntry` and call no `Register`.
+- `TryGetOrCreateExtensionVariant`: give it the origin and call `_manifest.AddExtension` only for Legacy. Pass the
+  origin through `PlanExtensionTargets` from:
+  - `Bake` (Edit)
+  - `ProcessLevelUps` (Edit)
+  - `ProcessExtensionRefreshes` (Edit)
+  - `Request` for identity (Edit)
+  - `ResetAll` (Edit)
+  - `RestoreSavedCages` (Load)
+  - `RestoreExtensions` (Legacy)
+- `CollectUsedVariantKeys`: remove the `SavedCage` loop. `MarkUsage` then drops converted cities from legacy entries
+  by itself.
+- `VariantManifest` keeps its format (`FormatVersion` 3, no bump). Add a class remark that it is legacy and frozen.
+
+**Bounds cache with last use**, in `Core/Persistence/BoundsCache.cs` (`bounds.json`, a cache, not save-relevant):
+- **Format:** an optional 7th float in each array: last use in Unix days (resolution about 3 min). The loader
+  accepts 6 or 7 elements; an entry without it counts as never touched. Today's loader drops arrays whose length
+  isn't 6, so an older mod version would re-measure bounds. That only costs time.
+- **New members:**
+  - `Touch(string assetName, DateTime nowUtc)`: no-op for unknown assets. It marks the cache dirty only when the
+    stored value is more than 1 h older, so `bounds.json` isn't rewritten after every edit.
+  - `bool TryGetLastUsed(string, out DateTime)`.
+- **Tests** in `Unsquare.Tests/Persistence/BoundsCacheTests.cs`:
+  - round trip with last use
+  - a 6-element entry has no last use
+  - touching an unknown asset does nothing and stays clean
+  - a touch within the hour stays clean, one after it is dirty
+- **Callers:** `Integration/Prefabs/RenderVariantBuilder.ObtainAsset` calls `Touch` on a hit and after a bake. That
+  covers edits, load creations and legacy restores.
+
+**Eviction planner**, new `Core/Housekeeping/CacheEvictionPlanner.cs` plus a `CachedAsset` readonly struct:
+- **Input:** `CachedAsset(string Name, long Bytes, DateTime LastUsedUtc)`. The caller passes the file's write time
+  when `bounds.json` has no last use.
+- **`IReadOnlyList<string> Plan(IReadOnlyList<CachedAsset> assets, ISet<string> claimed, long capBytes)`:**
+  - The total counts every asset, claimed or not.
+  - It deletes the least recently used unclaimed assets (ties by name, ordinal) until the total is at most the
+    cap.
+  - If claimed assets alone exceed the cap, it returns every unclaimed asset.
+  - It throws `ArgumentException` for a cap ≤ 0.
+- **Tests** in `Unsquare.Tests/Housekeeping/CacheEvictionPlannerTests.cs`:
+  - under the cap → nothing
+  - over the cap → oldest first, stops as soon as it fits
+  - claimed assets are never returned
+  - claimed alone over the cap → all unclaimed
+  - deterministic ties
+- **Removals:** `PrunePlanner.PlanOrphanSweep`, `OrphanSweepPlan.cs`, the sweep constants and their tests in
+  `Unsquare.Tests/Housekeeping/PrunePlannerTests.cs`. `PlanPrune` stays for legacy entries; keep its tests.
+
+**Asset store and housekeeping:**
+- `Integration/Assets/GeometryAssetStore.cs`: new `ListOwnAssets()` returning name, bytes and write time.
+  - Enumerate `*.Geometry` in `ModPaths.DataDirectory` with `FileInfo`, filtered by `AssetNaming.IsOwnAssetName` on
+    the name without extension. The `.cid` sidecars are tiny; ignore them.
+  - Deletion stays `Delete(names)`, through the asset database.
+- `Integration/Systems/VariantHousekeeper.Run(manifest, bounds, nowUtc, capBytes)`:
+  - First the legacy prune with `PrunePlanner.DefaultMaxUnusedAge` (14 days): remove the expired entries from the
+    manifest. Do not delete their assets; they fall to the cache.
+  - Then eviction. `claimed` is the union of all remaining entries' `Assets`, and the last use comes from
+    `bounds.TryGetLastUsed`, else the file time.
+  - Delete the planned names, remove them from `BoundsCache`, and log the count and the MB freed against the total.
+- `VariantSystem.RunHousekeeping` passes `_options.GeometryCacheBytes`. It still runs only on the first preload,
+  before `RestoreVariants`, and only when `LoadState` says the manifest is trusted.
+
+**Options and settings:**
+- `Core/Options/PipelineOptions.cs`:
+  - Replace the constructor parameters `pruneUnused` and `pruneAfterDays` with `float geometryCacheGigabytes`. The
+    default is 2, and a value ≤ 0 throws.
+  - Add `GeometryCacheBytes`.
+  - Remove `PruneUnused`, `PruneAfterDays` and `PruneAfter`.
+  - Update `ToString` and `Unsquare.Tests/Options/PipelineOptionsTests.cs`.
+- `UI/Input/UnsquareSettings.Tunables.cs`:
+  - Remove `PruneUnused`, `PruneAfterDays` and `IsPruneDisabled`.
+  - Add `GeometryCacheGigabytes` in `PerformanceGroup` with `[SettingsUISlider(min = 0.5f, max = 20f, step = 0.5f,
+    unit = Unit.kFloatSingleFraction)]`. `Clamped` needs the slider attribute.
+  - Update `ToPipelineOptions` and `SetSettingsDefaults`. Players' saved values for the removed settings are simply
+    ignored.
+- `LocaleEN.cs`: replace the two prune entries with "Geometry cache size (GB)" and the description "At startup,
+  deletes the least recently used deformed geometry beyond this size; it is rebuilt when needed."
+
+**Optional, only if the user agrees:** the write-once manifest copy (section 8). Write `variants.legacy-backup.json`
+once, when it doesn't exist yet. If `variants.json` and `.bak` are both missing at preload, `LoadState` restores
+from it and logs that.
+
+**Docs:**
+- CLAUDE.md: in the options line, "pruning" becomes "geometry cache size". The "Saves" paragraph says that the
+  manifest is legacy and frozen.
+- HowTo.md: assets are a cache.
+- This document: mark steps 2 and 3 as done.
+- README: mention the cache size option if it lists options.
+- Testing.md rows:
+  - Lower the slider to 0.5 GB and restart: the log names the deleted count and MB, and the folder is about
+    0.5 GB plus the legacy-claimed assets.
+  - Then load a save whose shapes were evicted: they are rebaked, not lost.
+  - Old save with a manifest: its assets survive eviction.
+  - New edits add no manifest entries (compare the `variants.json` entry count before and after).
+
+**Verify:** `dotnet test Unsquare.Tests`, then a compile check with
+`dotnet msbuild Unsquare/Unsquare.csproj -t:Compile`. Ask before any deploying build. Back up `ModsData/Unsquare`
+outside the game folder before the first in-game run with eviction.
