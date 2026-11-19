@@ -12,7 +12,7 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
-| `UiModule/` | React UI module (game template): mode button (next to the underground toggle, or top left/right by option `ButtonPosition`) and the tool window above the edited building (pick mode, resets); talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
+| `UiModule/` | React UI module (game template): mode button (next to the underground toggle, or top left/right by option `ButtonPosition`), the tool window above the edited building (pick mode, resets) and the old-saves popup; talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
 | `*/PlacemakerCompatibility/` | Everything for buildings the Placemaker mod has bent, per layer (see Placemaker compatibility) | as its layer |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
@@ -188,7 +188,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - The manifest is legacy and frozen: edits and loads never add entries; only legacy restores complete theirs.
     Entries used by no city for 14 days are pruned (not their assets). At each start, before the prune, every entry
     is appended to `variants.archive.json` (never rewritten). It rebuilds a missing manifest, and the Settings buttons
-    retire the manifest (archive it, write it empty) or revive archived entries.
+    retire the manifest (archive it, write it empty) or revive archived entries. After a load with old-format
+    buildings (on a variant at `OnGameLoadingComplete`, convertible), `IBuildingDeformService.LegacySaveLoaded` opens
+    a popup (`LegacySavesUISystem`, `legacy-saves-dialog.tsx`) asking to resave old saves and offering the retire.
   - Geometry assets are a cache: at the first preload, `VariantHousekeeper` evicts the least recently used unclaimed
     ones (last use in `bounds.json`) beyond `PipelineOptions.GeometryCacheGigabytes`. Assets of manifest entries are
     claimed and don't count. Never delete assets while the game runs; a missing asset is rebaked on demand.

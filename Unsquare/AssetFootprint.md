@@ -7,7 +7,8 @@ assemblies (decompiled for reading only) and the local `ModsData/Unsquare` folde
 - Step 1 (PR A) is implemented and partly tested in game; see sections 6 and 7.
 - Steps 2 and 3 (PR B) are implemented on `feature/asset-saving-redesign` and not yet tested in game; see section 9
   (it supersedes 8.1 where they differ).
-- Open: step 4 (PR C), and the popup for old saves (PR B2, section 9.4).
+- The popup for old saves (PR B2, section 9.4) is implemented on the same branch, not yet tested in game.
+- Open: step 4 (PR C).
 
 **Decision:**
 - **Saves:** they store each deformed building as its base prefab plus a small cage component. Variants are rebuilt
@@ -510,7 +511,13 @@ Kept invariants:
 - **Converted cities:** older 1.x saves of a converted city lose their shapes 14 days after the converted save is
   loaded, until *Restore shapes for old saves* is pressed (README, prune log line).
 
-### 9.4 Handover for PR B2: popup after a legacy load
+### 9.4 PR B2: popup after a legacy load (implemented 19 Nov)
+
+As implemented: one popup at load, no second step after saving (autosaves don't convert the original file).
+`VariantSystem.CountLegacyBuildings` counts buildings on convertible variants at load complete and raises
+`LegacySaveLoaded`; `LegacySavesUISystem` opens the dialog unless the hidden setting `HideLegacySavesPrompt` is set
+(*Reset settings* clears it). The retire runs from an inline confirm; its result or refusal is shown in the popup.
+The original handover:
 
 - **Detect:** at `OnGameLoadingComplete` (`GameMode.Game`), count buildings on prefabs created with
   `VariantOrigin.Legacy` (a new set in `VariantSystem`) that `TryGetSavedSpec` can convert.

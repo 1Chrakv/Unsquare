@@ -307,3 +307,7 @@ render meshes cannot be read; if buildings come back undeformed after reload, va
 | 206 | Settings → *I've converted all my old saves*, restart, load a converted save, then a 1.1 save that was not converted | `variants.json` is empty, no legacy restore at start (`Restored 0 variants`); the converted save is fine, the old one shows white boxes |
 | 207 | After 206, Settings → *Restore shapes for old saves*, load that 1.1 save again | Status shows the restored count; the old save loads with its shapes (slower once) |
 | 208 | Load a city whose legacy restore had failures (e.g. a Placemaker-base entry it uses), press *I've converted all my old saves* | Refused: the status names the failed variants of this city; the manifest is unchanged |
+| 209 | Load a 1.1 save with deformed buildings | Popup "Saves from an older Unsquare version" names the count (log `N deformed buildings were loaded in the old save format`); *Got it* closes it; loading again shows it again |
+| 210 | In the popup, *Don't show again*; load the 1.1 save again; then Settings → *Reset settings* and load it once more | No popup the second time; it is back after the reset |
+| 211 | In the popup, *I've converted all my saves* → *Yes, all my saves are converted*; save over the same file, restart | The popup shows the result (or the refusal for failed variants of this city); after the restart `variants.json` is empty and the save loads with its shapes |
+| 212 | Load a new-format save, a 1.1 save after saving it over the same file, and a new city | No popup in any of them |

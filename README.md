@@ -175,7 +175,8 @@ size.
 ### Saves from before version 1.2
 
 Older saves reference deformed buildings that Unsquare must rebuild at every start, which slows loading. Open each
-old save you want to keep and save it over the same file: it then stores the buildings in the new format.
+old save you want to keep and save it over the same file: it then stores the buildings in the new format. A popup
+after loading such a save reminds you and offers the next step (it can be turned off there).
 
 - Once all are converted, press Options → Unsquare → Settings → **I've converted all my old saves**. From the next
   start they are no longer rebuilt.
