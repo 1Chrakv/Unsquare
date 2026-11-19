@@ -51,6 +51,9 @@ namespace Unsquare.Integration.Systems
         /// <summary>Brings archived variants of old saves back into the manifest; they load from the next save loaded.</summary>
         bool TryRestoreLegacyShapes(out int restored, out string refusal);
 
+        /// <summary>A city was loaded with this many deformed buildings in the old save format (only raised when > 0).</summary>
+        event Action<int> LegacySaveLoaded;
+
         /// <summary>
         /// Read-only description of a building on another mod's variant that was not taken over yet (see
         /// <see cref="IForeignPrefabs"/>), for the hover preview: on its plain base with the takeover's cage applied.

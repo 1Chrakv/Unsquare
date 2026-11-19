@@ -1,4 +1,5 @@
 import { ModRegistrar } from "cs2/modding";
+import { GuardedLegacySavesDialog } from "mods/legacy-saves/legacy-saves-dialog";
 import { GuardedPlacemakerDialog } from "mods/placemaker-compatibility/placemaker-dialog";
 import { GuardedToolWindow } from "mods/tool-window";
 import { GuardedTopLeftToggle, GuardedTopRightToggle, withUnsquareToggle } from "mods/unsquare-toggle";
@@ -15,6 +16,8 @@ const register: ModRegistrar = (moduleRegistry) => {
     moduleRegistry.append("Game", GuardedToolWindow);
     // Asks before Unsquare edits a building Placemaker has bent.
     moduleRegistry.append("Game", GuardedPlacemakerDialog);
+    // After loading a save from before 1.2: asks to resave old saves and offers to stop rebuilding them.
+    moduleRegistry.append("Game", GuardedLegacySavesDialog);
 };
 
 export default register;

@@ -76,6 +76,24 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ConvertDialog.Convert", "Convert only this building" },
                 { "Unsquare.ConvertDialog.ConvertRow", "Convert whole row ({COUNT} houses)" },
                 { "Unsquare.ConvertDialog.Cancel", "Cancel" },
+                { "Unsquare.LegacySavesDialog.Title", "Saves from an older Unsquare version" },
+                { "Unsquare.LegacySavesDialog.Message",
+                    "{COUNT} deformed buildings in this save use the old format, which Unsquare rebuilds at every " +
+                    "start and which makes loading slower. Save this city over the same file to convert it, and do " +
+                    "the same with every other old save you want to keep. Saving under a new name leaves the " +
+                    "original old." },
+                { "Unsquare.LegacySavesDialog.Hint",
+                    "When all of them are converted, press \"I've converted all my saves\": from the next start, old " +
+                    "saves are no longer rebuilt. Options → Unsquare can bring them back." },
+                { "Unsquare.LegacySavesDialog.ConfirmText",
+                    "Save this city over the same file before you quit, so it is converted too. Old saves you did " +
+                    "not convert lose their deformed buildings until you restore them in the options." },
+                { "Unsquare.LegacySavesDialog.GotIt", "Got it" },
+                { "Unsquare.LegacySavesDialog.Converted", "I've converted all my saves" },
+                { "Unsquare.LegacySavesDialog.Confirm", "Yes, all my saves are converted" },
+                { "Unsquare.LegacySavesDialog.Back", "Back" },
+                { "Unsquare.LegacySavesDialog.Hide", "Don't show again" },
+                { "Unsquare.LegacySavesDialog.Close", "Close" },
                 { "Unsquare.ConvertDialog.Problem.PlacemakerBusy",
                     "Placemaker is reshaping this building right now. Try again in a moment." },
                 { "Unsquare.ConvertDialog.Problem.PlacemakerMissing",

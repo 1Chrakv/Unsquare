@@ -103,6 +103,12 @@ namespace Unsquare.Api
         /// <summary>Brings archived variants of old saves back; they load with the next save opened.</summary>
         LegacySavesResult RestoreLegacyShapes();
 
+        /// <summary>
+        /// A city was loaded with this many deformed buildings in the format of saves from before 1.2; saving over the
+        /// same file converts them. Only raised when there are any.
+        /// </summary>
+        event Action<int> LegacySaveLoaded;
+
         /// <summary>Current tunables (limits, attachments, rebake delay, geometry cache size, lot sync).</summary>
         PipelineOptions Options { get; }
 

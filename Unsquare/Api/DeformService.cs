@@ -43,9 +43,11 @@ namespace Unsquare.Api
             _neighbours = neighbours;
             _entityManager = entityManager;
             _pipeline.BuildingChanged += building => CageChanged?.Invoke(building);
+            _pipeline.LegacySaveLoaded += count => LegacySaveLoaded?.Invoke(count);
         }
 
         public event Action<Entity> CageChanged;
+        public event Action<int> LegacySaveLoaded;
 
         public PipelineOptions Options => _pipeline.Options;
 

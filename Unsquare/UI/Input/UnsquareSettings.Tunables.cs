@@ -40,6 +40,10 @@ namespace Unsquare.UI.Input
         [SettingsUIHidden]
         public CageTarget EditMode { get; set; }
 
+        /// <summary>"Don't show again" of the popup after loading an old save; set from the popup, not shown here.</summary>
+        [SettingsUIHidden]
+        public bool HideLegacySavesPrompt { get; set; }
+
         [SettingsUISection(SettingsTab, InterfaceGroup)]
         public ButtonPosition ButtonPosition { get; set; }
 
@@ -261,6 +265,7 @@ namespace Unsquare.UI.Input
         {
             var edit = CageEditOptions.Default;
             EditMode = CageTarget.Both;
+            HideLegacySavesPrompt = false;
             ButtonPosition = ButtonPosition.Bottom;
             SmallStep = edit.SmallStep;
             MediumStep = edit.MediumStep;

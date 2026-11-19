@@ -82,11 +82,18 @@ namespace Unsquare.Integration.Systems
         private bool _simulationReady;
         private bool _savedCagesPending;
         private Action<Entity> _buildingChanged;
+        private Action<int> _legacySaveLoaded;
 
         event Action<Entity> IVariantPipeline.BuildingChanged
         {
             add => _buildingChanged += value;
             remove => _buildingChanged -= value;
+        }
+
+        event Action<int> IVariantPipeline.LegacySaveLoaded
+        {
+            add => _legacySaveLoaded += value;
+            remove => _legacySaveLoaded -= value;
         }
 
         internal IVariantPipeline Pipeline => this;
@@ -235,6 +242,43 @@ namespace Unsquare.Integration.Systems
                 _manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
                 SaveIfDirty();
             }
+            if (mode == GameMode.Game)
+                AnnounceLegacySave();
+        }
+
+        private void AnnounceLegacySave()
+        {
+            try
+            {
+                int legacy = CountLegacyBuildings();
+                if (legacy == 0)
+                    return;
+                Mod.Log.Info($"{legacy} deformed buildings were loaded in the old save format; saving converts them.");
+                _legacySaveLoaded?.Invoke(legacy);
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, "Checking the save format of deformed buildings failed.");
+            }
+        }
+
+        // Saved cages are still on their bases here, so a building on a variant was loaded from an old save.
+        private int CountLegacyBuildings()
+        {
+            int count = 0;
+            var convertible = new Dictionary<Entity, bool>();
+            using var prefabRefs = _buildingQuery.ToComponentDataArray<PrefabRef>(Allocator.Temp);
+            foreach (var prefabRef in prefabRefs)
+            {
+                if (!convertible.TryGetValue(prefabRef.m_Prefab, out bool converts))
+                {
+                    converts = TryGetSavedSpec(prefabRef.m_Prefab, out _, out _, out _);
+                    convertible[prefabRef.m_Prefab] = converts;
+                }
+                if (converts)
+                    count++;
+            }
+            return count;
         }
 
         bool IVariantPipeline.TryDescribe(Entity building, out BuildingDescription description) =>
