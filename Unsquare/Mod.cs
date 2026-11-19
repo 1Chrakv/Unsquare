@@ -64,7 +64,10 @@ namespace Unsquare
             world.GetOrCreateSystemManaged<UnsquareUISystem>().Bind(_settings);
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
             _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
-            _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world), session,
+            var deformService = UnsquareApi.GetDeformService(world);
+            _settings.BindLegacySaves(() => deformService.RetireLegacyManifest().ToString(),
+                () => deformService.RestoreLegacyShapes().ToString());
+            _settingsApplier = new SettingsApplier(_settings, deformService, session,
                 world.GetOrCreateSystemManaged<CageOverlaySystem>());
             _settingsApplier.Apply();
         }

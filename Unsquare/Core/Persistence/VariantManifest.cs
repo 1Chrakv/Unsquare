@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace Unsquare.Core.Persistence
 {
     /// <summary>
-    /// All variants ever registered, keyed by "BaseType/VariantName". Losing it breaks every save
-    /// that uses variants, so it is only written through <see cref="AtomicJsonFile"/>.
+    /// Legacy and frozen: variants that 1.0–1.1 saves reference by prefab ID, keyed by "BaseType/VariantName".
+    /// Newer saves hold base + cage and need no entry. Also the format of the append-only archive.
     /// </summary>
     public sealed class VariantManifest
     {
@@ -87,6 +87,47 @@ namespace Unsquare.Core.Persistence
                 changed |= AddUnique(entry.Assets, asset);
             IsDirty |= changed;
             return changed;
+        }
+
+        /// <summary>Adds copies of the entries whose key is missing, usage data included; returns how many.</summary>
+        /// <remarks>Append-only: existing entries are never changed, which is what the archive relies on.</remarks>
+        public int AddMissing(IEnumerable<ManifestEntry> entries)
+        {
+            if (entries == null)
+                throw new ArgumentNullException(nameof(entries));
+            int added = 0;
+            foreach (var entry in entries)
+            {
+                if (entry?.BaseType == null || entry.VariantName == null || _entries.ContainsKey(entry.Key))
+                    continue;
+                _entries.Add(entry.Key, entry.Copy());
+                added++;
+            }
+            IsDirty |= added > 0;
+            return added;
+        }
+
+        /// <summary>
+        /// Brings back copies of missing entries as freshly used by no city, so the next prune keeps them and the
+        /// next load of a city marks them again. Returns how many.
+        /// </summary>
+        public int Revive(IEnumerable<ManifestEntry> entries, DateTime nowUtc)
+        {
+            if (entries == null)
+                throw new ArgumentNullException(nameof(entries));
+            int revived = 0;
+            foreach (var entry in entries)
+            {
+                if (entry?.BaseType == null || entry.VariantName == null || _entries.ContainsKey(entry.Key))
+                    continue;
+                var copy = entry.Copy();
+                copy.Cities.Clear();
+                copy.LastUsedUtc = nowUtc;
+                _entries.Add(copy.Key, copy);
+                revived++;
+            }
+            IsDirty |= revived > 0;
+            return revived;
         }
 
         /// <summary>Records which variants the loaded city uses: adds or removes the city per entry.</summary>

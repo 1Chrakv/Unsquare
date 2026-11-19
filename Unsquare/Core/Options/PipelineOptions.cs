@@ -1,25 +1,26 @@
 using System;
 using Unsquare.Core.Deformation;
-using Unsquare.Core.Housekeeping;
 
 namespace Unsquare.Core.Options
 {
     /// <summary>
-    /// Tunable settings of the variant pipeline: cage limits, attachments, rebake delay, pruning, lot sync
+    /// Tunable settings of the variant pipeline: cage limits, attachments, rebake delay, geometry cache size, lot sync
     /// tolerances and level-ups. Immutable; the UI builds a new instance from the options page.
     /// </summary>
     public sealed class PipelineOptions
     {
-        public static readonly PipelineOptions Default = new(CageLimits.Default, AttachmentOptions.Default, 0.2, true,
-            (int)PrunePlanner.DefaultMaxUnusedAge.TotalDays, 1f, 1f, true);
+        public static readonly PipelineOptions Default = new(CageLimits.Default, AttachmentOptions.Default, 0.2, 2f, 1f,
+            1f, true);
+
+        private const long BytesPerGigabyte = 1024L * 1024 * 1024;
 
         public PipelineOptions(CageLimits limits, AttachmentOptions attachments, double rebakeDelaySeconds,
-            bool pruneUnused, int pruneAfterDays, float areaMatchMeters, float coarseLodTwistMeters, bool keepOnLevelUp)
+            float geometryCacheGigabytes, float areaMatchMeters, float coarseLodTwistMeters, bool keepOnLevelUp)
         {
             if (!(rebakeDelaySeconds >= 0))
                 throw new ArgumentException("Rebake delay must not be negative.", nameof(rebakeDelaySeconds));
-            if (pruneAfterDays < 1)
-                throw new ArgumentException("Prune age must be at least one day.", nameof(pruneAfterDays));
+            if (!(geometryCacheGigabytes > 0f))
+                throw new ArgumentException("Geometry cache size must be positive.", nameof(geometryCacheGigabytes));
             if (!(areaMatchMeters > 0f))
                 throw new ArgumentException("Area match distance must be positive.", nameof(areaMatchMeters));
             if (!(coarseLodTwistMeters >= 0f))
@@ -27,8 +28,7 @@ namespace Unsquare.Core.Options
             Limits = limits ?? throw new ArgumentNullException(nameof(limits));
             Attachments = attachments ?? throw new ArgumentNullException(nameof(attachments));
             RebakeDelaySeconds = rebakeDelaySeconds;
-            PruneUnused = pruneUnused;
-            PruneAfterDays = pruneAfterDays;
+            GeometryCacheGigabytes = geometryCacheGigabytes;
             AreaMatchMeters = areaMatchMeters;
             CoarseLodTwistMeters = coarseLodTwistMeters;
             KeepOnLevelUp = keepOnLevelUp;
@@ -40,10 +40,10 @@ namespace Unsquare.Core.Options
         /// <summary>Quiet time after the last edit before a building is baked.</summary>
         public double RebakeDelaySeconds { get; }
 
-        /// <summary>Whether variants unused for <see cref="PruneAfterDays"/> are deleted at startup.</summary>
-        public bool PruneUnused { get; }
-        public int PruneAfterDays { get; }
-        public TimeSpan PruneAfter => TimeSpan.FromDays(PruneAfterDays);
+        /// <summary>Baked geometry beyond this size is evicted at startup, least recently used first.</summary>
+        /// <remarks>Assets that legacy manifest entries claim are outside the cache and don't count.</remarks>
+        public float GeometryCacheGigabytes { get; }
+        public long GeometryCacheBytes => (long)(GeometryCacheGigabytes * BytesPerGigabyte);
 
         /// <summary>How far saved lot areas may be from their expected layout and still be matched.</summary>
         public float AreaMatchMeters { get; }
@@ -59,7 +59,7 @@ namespace Unsquare.Core.Options
 
         public override string ToString() =>
             $"limits [{Limits}], attachments [{Attachments}], rebake {RebakeDelaySeconds} s, " +
-            $"prune {(PruneUnused ? $"after {PruneAfterDays} d" : "off")}, match areas {AreaMatchMeters} m, " +
+            $"geometry cache {GeometryCacheGigabytes} GB, match areas {AreaMatchMeters} m, " +
             $"coarse LOD twist {CoarseLodTwistMeters} m, keep on level-up {KeepOnLevelUp}";
     }
 }

@@ -90,7 +90,10 @@ namespace Unsquare.Integration.Prefabs
         {
             bool exists = _store.TryGet(hash, out var asset);
             if (exists && BoundsCache.TryGet(assetName, out bounds))
+            {
+                BoundsCache.Touch(assetName, DateTime.UtcNow); // the cache's eviction order
                 return asset;
+            }
 
             var meshes = MeshDeformer.DeformCopies(source.ObtainMeshes(), transform, deformation, out bounds);
             if (exists)
@@ -101,6 +104,7 @@ namespace Unsquare.Integration.Prefabs
                 CreatedAssetCount++;
             }
             BoundsCache.Set(assetName, bounds);
+            BoundsCache.Touch(assetName, DateTime.UtcNow);
             return asset;
         }
 

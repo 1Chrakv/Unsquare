@@ -386,6 +386,18 @@ namespace Unsquare.Api
 
         public int ResetAll() => _pipeline.ResetAll();
 
+        public LegacySavesResult RetireLegacyManifest()
+        {
+            bool done = _pipeline.TryRetireLegacyManifest(out int retired, out string refusal);
+            return LegacySavesResult.Retired(done, retired, refusal);
+        }
+
+        public LegacySavesResult RestoreLegacyShapes()
+        {
+            bool done = _pipeline.TryRestoreLegacyShapes(out int restored, out string refusal);
+            return LegacySavesResult.Restored(done, restored, refusal);
+        }
+
         public FlexItImportResult ImportFlexIt()
         {
             var batch = _pipeline.PrepareFlexItImport();

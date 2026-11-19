@@ -43,6 +43,15 @@ namespace Unsquare.Integration.Systems
         FlexItImportBatch PrepareFlexItImport();
 
         /// <summary>
+        /// Moves the legacy manifest into the archive and leaves it empty: from the next start, saves from before
+        /// saved cages are no longer restored. Refused while the loaded city has variants that failed to load.
+        /// </summary>
+        bool TryRetireLegacyManifest(out int retired, out string refusal);
+
+        /// <summary>Brings archived variants of old saves back into the manifest; they load from the next save loaded.</summary>
+        bool TryRestoreLegacyShapes(out int restored, out string refusal);
+
+        /// <summary>
         /// Read-only description of a building on another mod's variant that was not taken over yet (see
         /// <see cref="IForeignPrefabs"/>), for the hover preview: on its plain base with the takeover's cage applied.
         /// </summary>

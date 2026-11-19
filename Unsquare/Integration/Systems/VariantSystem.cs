@@ -72,6 +72,9 @@ namespace Unsquare.Integration.Systems
         private VariantPrefabFactory _factory;
         private VariantLocalization _localization;
         private VariantManifest _manifest = new();
+        private VariantManifest _archive = new();
+        private bool _archiveWritable;
+        private readonly List<ManifestEntry> _legacyFailures = new();
         private PipelineOptions _options = PipelineOptions.Default;
         private EntityQuery _buildingQuery;
         private EntityQuery _savedCageQuery;
@@ -186,6 +189,7 @@ namespace Unsquare.Integration.Systems
             if (!_stateLoaded)
             {
                 bool trusted = LoadState();
+                ArchiveLegacyEntries(); // before the prune, so pruned entries stay recoverable
                 if (trusted)
                     RunHousekeeping();
                 _stateLoaded = true;
@@ -548,22 +552,9 @@ namespace Unsquare.Integration.Systems
                 _variantPrefabs.Add(variantEntity);
             }
 
-            string key = ManifestEntry.MakeKey(typeName, variantName);
+            // The manifest is frozen: only legacy entries complete their asset lists, so their assets stay claimed.
             if (origin == VariantOrigin.Legacy)
-            {
-                _manifest.MergeAssets(key, assets);
-                return true;
-            }
-            var entry = new ManifestEntry
-            {
-                BaseType = typeName,
-                BaseName = basePrefab.name,
-                VariantName = variantName,
-                Assets = new List<string>(assets),
-            };
-            entry.SetSpec(spec);
-            // Load registers too until the manifest is frozen: the orphan sweep deletes unclaimed assets.
-            _manifest.Register(entry, _citySystem.cityName, DateTime.UtcNow);
+                _manifest.MergeAssets(ManifestEntry.MakeKey(typeName, variantName), assets);
             return true;
         }
 
@@ -701,7 +692,8 @@ namespace Unsquare.Integration.Systems
 
         // Base targets when ownerVariantName is null; an extension that can't be deformed goes back to its base.
         private List<(Entity Extension, Entity Target)> PlanExtensionTargets(Entity building,
-            ObjectGeometryPrefab ownerBase, DeformSpec spec, string ownerVariantName)
+            ObjectGeometryPrefab ownerBase, DeformSpec spec, string ownerVariantName,
+            VariantOrigin origin = VariantOrigin.Edit)
         {
             var targets = new List<(Entity, Entity)>();
             InstalledExtensions.Collect(EntityManager, building, _extensions);
@@ -715,7 +707,7 @@ namespace Unsquare.Integration.Systems
                     if (!IsDeformedExtension(building, extension, extensionBase, out var offset))
                         Mod.Log.Warn($"Extension {extensionBase.name} of building {building} was moved (at {offset}, " +
                                      $"prefab {extensionBase.m_Position}); it stays undeformed.");
-                    else if (TryGetOrCreateExtensionVariant(ownerBase, spec, ownerVariantName, extensionBase,
+                    else if (TryGetOrCreateExtensionVariant(ownerBase, spec, ownerVariantName, extensionBase, origin,
                                  out var variant))
                         target = variant;
                 }
@@ -758,7 +750,8 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>Bakes an upgrade extension with its owner's cage, in its own frame on the owner's lot.</summary>
         private bool TryGetOrCreateExtensionVariant(ObjectGeometryPrefab ownerBase, DeformSpec spec,
-            string ownerVariantName, BuildingExtensionPrefab extensionBase, out ObjectGeometryPrefab variant)
+            string ownerVariantName, BuildingExtensionPrefab extensionBase, VariantOrigin origin,
+            out ObjectGeometryPrefab variant)
         {
             variant = null;
             string typeName = extensionBase.GetType().Name;
@@ -781,8 +774,9 @@ namespace Unsquare.Integration.Systems
             _localization.Register(variantName, extensionBase.name);
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
                 _simDataPending[variantEntity] = extensionBase;
-            _manifest.AddExtension(ManifestEntry.MakeKey(ownerBase.GetType().Name, ownerVariantName),
-                ManifestEntry.MakeKey(typeName, extensionBase.name), assets);
+            if (origin == VariantOrigin.Legacy)
+                _manifest.AddExtension(ManifestEntry.MakeKey(ownerBase.GetType().Name, ownerVariantName),
+                    ManifestEntry.MakeKey(typeName, extensionBase.name), assets);
             return true;
         }
 
@@ -1024,17 +1018,51 @@ namespace Unsquare.Integration.Systems
             BoundsCache.Load(ModPaths.BoundsCacheFile, out var bounds);
             _renderBuilder.BoundsCache = bounds;
 
+            var archiveStatus = VariantManifest.Load(ModPaths.LegacyArchiveFile, out _archive);
+            // A corrupt archive is never overwritten: it may hold the only copy of pruned entries.
+            _archiveWritable = archiveStatus != JsonReadStatus.Corrupt;
+            if (!_archiveWritable)
+                Mod.Log.Error("Legacy manifest archive (variants.archive.json) is unreadable; it is left as it is.");
+
             switch (manifestStatus)
             {
                 case JsonReadStatus.Corrupt:
                     Mod.Log.Error("Variant manifest is unreadable; deformed buildings in saves may break.");
                     PreserveCorruptManifest();
+                    ReviveFromArchive();
                     return false;
                 case JsonReadStatus.FromBackup:
                     Mod.Log.Warn("Variant manifest restored from backup.");
                     return false;
+                case JsonReadStatus.Missing when _archive.Count > 0:
+                    ReviveFromArchive();
+                    return false;
                 default:
                     return true;
+            }
+        }
+
+        // Lost manifest: old saves still find their variants. Untrusted for this session, so nothing is pruned.
+        private void ReviveFromArchive()
+        {
+            int revived = _manifest.Revive(_archive.Entries, DateTime.UtcNow);
+            if (revived > 0)
+                Mod.Log.Warn($"Variant manifest rebuilt from the legacy archive: {revived} variants of old saves.");
+        }
+
+        private void ArchiveLegacyEntries()
+        {
+            try
+            {
+                if (_archiveWritable && _archive.AddMissing(_manifest.Entries) > 0)
+                {
+                    _archive.Save(ModPaths.LegacyArchiveFile);
+                    Mod.Log.Info($"Legacy manifest archive holds {_archive.Count} variants.");
+                }
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, "Writing the legacy manifest archive failed.");
             }
         }
 
@@ -1043,7 +1071,7 @@ namespace Unsquare.Integration.Systems
             try
             {
                 new VariantHousekeeper(_store).Run(_manifest, _renderBuilder.BoundsCache, DateTime.UtcNow,
-                    _options.PruneUnused ? _options.PruneAfter : (TimeSpan?)null);
+                    _options.GeometryCacheBytes);
             }
             catch (Exception e)
             {
@@ -1051,8 +1079,72 @@ namespace Unsquare.Integration.Systems
             }
         }
 
+        bool IVariantPipeline.TryRetireLegacyManifest(out int retired, out string refusal)
+        {
+            retired = 0;
+            if (!_stateLoaded || !_archiveWritable)
+            {
+                refusal = _stateLoaded ? "the archive file is unreadable, see the log" : "not ready yet";
+                return false;
+            }
+            // Resaving a city whose shapes failed to load would lose them for good.
+            int failed = 0;
+            if (_simulationReady && !string.IsNullOrEmpty(_citySystem.cityName))
+            {
+                foreach (var entry in _legacyFailures)
+                {
+                    if (entry.Cities.Contains(_citySystem.cityName))
+                        failed++;
+                }
+            }
+            if (failed > 0)
+            {
+                refusal = $"{failed} deformed variants of this city failed to load, see the log";
+                return false;
+            }
+            try
+            {
+                _archive.AddMissing(_manifest.Entries);
+                _archive.Save(ModPaths.LegacyArchiveFile);
+                retired = _manifest.Count;
+                // An empty file, not a deleted one: a missing manifest would be rebuilt from the archive.
+                _manifest = new VariantManifest();
+                _manifest.Save(ModPaths.ManifestFile);
+                Mod.Log.Info($"Legacy manifest retired: {retired} variants moved to the archive.");
+                refusal = null;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, "Retiring the legacy manifest failed.");
+                refusal = "writing the files failed, see the log";
+                return false;
+            }
+        }
+
+        bool IVariantPipeline.TryRestoreLegacyShapes(out int restored, out string refusal)
+        {
+            restored = 0;
+            if (!_stateLoaded)
+            {
+                refusal = "not ready yet";
+                return false;
+            }
+            if (!_archiveWritable)
+            {
+                refusal = "the archive file is unreadable, see the log";
+                return false;
+            }
+            restored = _manifest.Revive(_archive.Entries, DateTime.UtcNow);
+            SaveIfDirty();
+            Mod.Log.Info($"Restored {restored} archived variants of old saves to the manifest; they load with the next save.");
+            refusal = null;
+            return true;
+        }
+
         private void RestoreVariants()
         {
+            _legacyFailures.Clear();
             int restored = 0, failed = 0, extensions = 0;
             foreach (var entry in new List<ManifestEntry>(_manifest.Entries))
             {
@@ -1067,11 +1159,16 @@ namespace Unsquare.Integration.Systems
                         extensions += RestoreExtensions(entry, basePrefab, spec, variant.name);
                     }
                     else
+                    {
                         failed++;
+                        _legacyFailures.Add(entry);
+                        Mod.Log.Warn($"Restoring variant {entry.Key} failed: base missing or variant not created.");
+                    }
                 }
                 catch (Exception e)
                 {
                     failed++;
+                    _legacyFailures.Add(entry);
                     Mod.Log.Error(e, $"Restoring variant {entry.Key} failed.");
                 }
             }
@@ -1087,7 +1184,8 @@ namespace Unsquare.Integration.Systems
                 int slash = key.IndexOf('/');
                 if (slash > 0 && _resolver.TryFind(key.Substring(0, slash), key.Substring(slash + 1), out var found) &&
                     found is BuildingExtensionPrefab extensionBase &&
-                    TryGetOrCreateExtensionVariant(ownerBase, spec, ownerVariantName, extensionBase, out _))
+                    TryGetOrCreateExtensionVariant(ownerBase, spec, ownerVariantName, extensionBase,
+                        VariantOrigin.Legacy, out _))
                     restored++;
                 else
                     Mod.Log.Warn($"Restoring upgrade extension {key} of {entry.Key} failed.");
@@ -1130,7 +1228,7 @@ namespace Unsquare.Integration.Systems
                     continue;
                 }
                 QueueSwap(building, variant.Entity, basePrefab, spec,
-                    PlanExtensionTargets(building, basePrefab, spec, variant.Name), syncLot: false,
+                    PlanExtensionTargets(building, basePrefab, spec, variant.Name, VariantOrigin.Load), syncLot: false,
                     expectedCurrent: baseEntity);
                 queued++;
             }
@@ -1158,8 +1256,14 @@ namespace Unsquare.Integration.Systems
             if (!_resolver.TryGetVariant(current.name, out var info) || VariantNaming.IsVariantName(info.BasePrefab.name) ||
                 _foreign.IsRuntimePrefab(info.BasePrefab) || !_prefabSystem.TryGetEntity(info.BasePrefab, out baseEntity))
             {
-                if (_unsavableLogged.Add(prefab))
+                if (!_unsavableLogged.Add(prefab))
+                    return false;
+                // Only the legacy restore brings such a variant back at load; without an entry the save loses it.
+                if (_manifest.TryGet(ManifestEntry.MakeKey(current.GetType().Name, current.name), out _))
                     Mod.Log.Info($"{current.name} is saved as the variant itself: its base is unknown or not saved by the game.");
+                else
+                    Mod.Log.Warn($"{current.name} is saved as the variant itself but has no manifest entry: " +
+                                 "its buildings will be missing when this save is loaded.");
                 return false;
             }
             spec = info.Spec;
@@ -1188,15 +1292,7 @@ namespace Unsquare.Integration.Systems
                 if (VariantNaming.IsVariantName(prefab.name))
                     keys.Add(ManifestEntry.MakeKey(prefab.GetType().Name, prefab.name));
             }
-            // Saved shapes whose swap has not run yet still use their variant.
-            using var saved = _savedCageQuery.ToEntityArray(Allocator.Temp);
-            foreach (var building in saved)
-            {
-                if (SavedCageLoader.TryRead(EntityManager, _prefabSystem, building, _savedScratch, out var basePrefab,
-                        out _, out var spec))
-                    keys.Add(ManifestEntry.MakeKey(basePrefab.GetType().Name,
-                        VariantNaming.VariantName(basePrefab.name, spec)));
-            }
+            // Saved cages are still on their base here, so a converted city drops out of its legacy entries.
             return keys;
         }
 

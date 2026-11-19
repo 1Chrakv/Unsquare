@@ -94,7 +94,16 @@ namespace Unsquare.Api
         /// </summary>
         FlexItImportResult ImportFlexIt();
 
-        /// <summary>Current tunables (limits, attachments, rebake delay, pruning, lot sync).</summary>
+        /// <summary>
+        /// For players who resaved all their old saves: archives the variants that saves from before 1.2 need, so they
+        /// are no longer restored at every start. Refused while the loaded city has variants that failed to load.
+        /// </summary>
+        LegacySavesResult RetireLegacyManifest();
+
+        /// <summary>Brings archived variants of old saves back; they load with the next save opened.</summary>
+        LegacySavesResult RestoreLegacyShapes();
+
+        /// <summary>Current tunables (limits, attachments, rebake delay, geometry cache size, lot sync).</summary>
         PipelineOptions Options { get; }
 
         /// <summary>Replaces the tunables; applies to later requests and new variants, not to existing ones.</summary>

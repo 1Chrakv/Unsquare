@@ -14,7 +14,7 @@ using Unsquare.UI.Overlay;
 
 namespace Unsquare.UI.Input
 {
-    // Settings tab: tunables of editing, cage limits, attachments, lot sync, overlay and housekeeping.
+    // Settings tab: tunables of editing, cage limits, attachments, lot sync, overlay and the geometry cache.
     // Defaults come from the option types; values are clamped to the slider ranges when mapped.
     public sealed partial class UnsquareSettings
     {
@@ -28,9 +28,13 @@ namespace Unsquare.UI.Input
         public const string PerformanceGroup = "Performance";
         public const string ResetGroup = "Reset";
         public const string FlexItGroup = "FlexIt";
+        public const string OldSavesGroup = "OldSaves";
 
         private Func<string> _importFlexIt;
         private string _importFlexItStatus = "";
+        private Func<string> _retireLegacy;
+        private Func<string> _restoreLegacy;
+        private string _legacySavesStatus = "";
 
         /// <summary>The last edit mode, so it survives a restart; set from the tool window, not shown here.</summary>
         [SettingsUIHidden]
@@ -148,12 +152,35 @@ namespace Unsquare.UI.Input
         public float CoarseLodTwist { get; set; }
 
         [SettingsUISection(SettingsTab, PerformanceGroup)]
-        public bool PruneUnused { get; set; }
+        [SettingsUISlider(min = 0.5f, max = 20f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
+        public float GeometryCacheGigabytes { get; set; }
 
-        [SettingsUISection(SettingsTab, PerformanceGroup)]
-        [SettingsUISlider(min = 1f, max = 180f, step = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(UnsquareSettings), nameof(IsPruneDisabled))]
-        public int PruneAfterDays { get; set; }
+        [SettingsUISection(SettingsTab, OldSavesGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool RetireLegacyManifest
+        {
+            set
+            {
+                if (_retireLegacy != null)
+                    _legacySavesStatus = _retireLegacy();
+            }
+        }
+
+        [SettingsUISection(SettingsTab, OldSavesGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool RestoreLegacyShapes
+        {
+            set
+            {
+                if (_restoreLegacy != null)
+                    _legacySavesStatus = _restoreLegacy();
+            }
+        }
+
+        [SettingsUISection(SettingsTab, OldSavesGroup)]
+        public string LegacySavesStatus => _legacySavesStatus;
 
         [SettingsUISection(SettingsTab, ResetGroup)]
         [SettingsUIButton]
@@ -183,8 +210,6 @@ namespace Unsquare.UI.Input
         [SettingsUISection(SettingsTab, FlexItGroup)]
         public string ImportFlexItStatus => _importFlexItStatus;
 
-        public bool IsPruneDisabled() => !PruneUnused;
-
         public bool IsNoCityLoaded()
         {
             var manager = GameManager.instance;
@@ -193,6 +218,13 @@ namespace Unsquare.UI.Input
 
         /// <summary>Hooks up the FlexIt import button; the action returns the status line shown below it.</summary>
         internal void BindFlexItImport(Func<string> import) => _importFlexIt = import;
+
+        /// <summary>Hooks up the old-saves buttons; each action returns the status line shown below them.</summary>
+        internal void BindLegacySaves(Func<string> retire, Func<string> restore)
+        {
+            _retireLegacy = retire;
+            _restoreLegacy = restore;
+        }
 
         public PipelineOptions ToPipelineOptions()
         {
@@ -203,8 +235,8 @@ namespace Unsquare.UI.Input
                 Defined(AttachedProps, AttachmentOptions.Default.AttachedPropMode),
                 Clamped(FacadeReach, nameof(FacadeReach)), LotPropsFollowGround,
                 AlignLinearProps);
-            return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)), PruneUnused,
-                (int)Clamped(PruneAfterDays, nameof(PruneAfterDays)),
+            return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)),
+                Clamped(GeometryCacheGigabytes, nameof(GeometryCacheGigabytes)),
                 Clamped(AreaMatchDistance, nameof(AreaMatchDistance)),
                 Clamped(CoarseLodTwist, nameof(CoarseLodTwist)), KeepOnLevelUp);
         }
@@ -256,8 +288,7 @@ namespace Unsquare.UI.Input
             KeepOnLevelUp = pipeline.KeepOnLevelUp;
             RebakeDelay = (float)pipeline.RebakeDelaySeconds;
             CoarseLodTwist = pipeline.CoarseLodTwistMeters;
-            PruneUnused = pipeline.PruneUnused;
-            PruneAfterDays = pipeline.PruneAfterDays;
+            GeometryCacheGigabytes = pipeline.GeometryCacheGigabytes;
 
             var style = CageOverlayStyle.Default;
             LineRadius = style.LineRadius;
