@@ -51,7 +51,7 @@ const LegacySavesDialog = () => {
                 {!result && (
                     <div className={styles.message}>
                         {confirming
-                            ? text("ConfirmText", "Saves made with Unsquare < v1.1 will lose their deformed " +
+                            ? text("ConfirmText", "Saves made with Unsquare < v1.2 will lose their deformed " +
                                 "buildings! (Can be restored in Unsquare settings though)")
                             : text("Hint", "When all of them are converted, press \"I've converted all my saves\". " +
                                 "Options → Unsquare → \"Restore shapes for old saves\" can bring them back.")}

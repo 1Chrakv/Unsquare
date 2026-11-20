@@ -84,7 +84,7 @@ namespace Unsquare.UI.Input
                     "When all of them are converted, press \"I've converted all my saves\". Options → Unsquare → " +
                     "\"Restore shapes for old saves\" can bring them back." },
                 { "Unsquare.LegacySavesDialog.ConfirmText",
-                    "Saves made with Unsquare < v1.1 will lose their deformed buildings! (Can be restored in " +
+                    "Saves made with Unsquare < v1.2 will lose their deformed buildings! (Can be restored in " +
                     "Unsquare settings though)" },
                 { "Unsquare.LegacySavesDialog.GotIt", "Got it" },
                 { "Unsquare.LegacySavesDialog.Converted", "I've converted all my saves" },
