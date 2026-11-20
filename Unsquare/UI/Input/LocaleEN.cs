@@ -76,18 +76,16 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ConvertDialog.Convert", "Convert only this building" },
                 { "Unsquare.ConvertDialog.ConvertRow", "Convert whole row ({COUNT} houses)" },
                 { "Unsquare.ConvertDialog.Cancel", "Cancel" },
-                { "Unsquare.LegacySavesDialog.Title", "Saves from an older Unsquare version" },
+                { "Unsquare.LegacySavesDialog.Title", "Changes in how Unsquare saves its deformations" },
                 { "Unsquare.LegacySavesDialog.Message",
-                    "{COUNT} deformed buildings in this save use the old format, which Unsquare rebuilds at every " +
-                    "start and which makes loading slower. Save this city over the same file to convert it, and do " +
-                    "the same with every other old save you want to keep. Saving under a new name leaves the " +
-                    "original old." },
+                    "{COUNT} deformed buildings in this save use the old format. Save this city to convert it, and " +
+                    "do the same with every other old save you want to keep." },
                 { "Unsquare.LegacySavesDialog.Hint",
-                    "When all of them are converted, press \"I've converted all my saves\": from the next start, old " +
-                    "saves are no longer rebuilt. Options → Unsquare can bring them back." },
+                    "When all of them are converted, press \"I've converted all my saves\". Options → Unsquare → " +
+                    "\"Restore shapes for old saves\" can bring them back." },
                 { "Unsquare.LegacySavesDialog.ConfirmText",
-                    "Save this city over the same file before you quit, so it is converted too. Old saves you did " +
-                    "not convert lose their deformed buildings until you restore them in the options." },
+                    "Saves made with Unsquare < v1.1 will lose their deformed buildings! (Can be restored in " +
+                    "Unsquare settings though)" },
                 { "Unsquare.LegacySavesDialog.GotIt", "Got it" },
                 { "Unsquare.LegacySavesDialog.Converted", "I've converted all my saves" },
                 { "Unsquare.LegacySavesDialog.Confirm", "Yes, all my saves are converted" },

@@ -40,24 +40,21 @@ const LegacySavesDialog = () => {
             <Panel
                 className={styles.panel}
                 contentClassName={styles.content}
-                header={text("Title", "Saves from an older Unsquare version")}
+                header={text("Title", "Changes in how Unsquare saves its deformations")}
                 onClose={close}
             >
                 <div className={styles.message}>
-                    {text("Message", "{COUNT} deformed buildings in this save use the old format, which Unsquare " +
-                        "rebuilds at every start and which makes loading slower. Save this city over the same file " +
-                        "to convert it, and do the same with every other old save you want to keep. Saving under a " +
-                        "new name leaves the original old.").replace("{COUNT}", String(count))}
+                    {text("Message", "{COUNT} deformed buildings in this save use the old format. Save this city " +
+                        "to convert it, and do the same with every other old save you want to keep.")
+                        .replace("{COUNT}", String(count))}
                 </div>
                 {!result && (
                     <div className={styles.message}>
                         {confirming
-                            ? text("ConfirmText", "Save this city over the same file before you quit, so it is " +
-                                "converted too. Old saves you did not convert lose their deformed buildings until " +
-                                "you restore them in the options.")
-                            : text("Hint", "When all of them are converted, press \"I've converted all my saves\": " +
-                                "from the next start, old saves are no longer rebuilt. Options → Unsquare can bring " +
-                                "them back.")}
+                            ? text("ConfirmText", "Saves made with Unsquare < v1.1 will lose their deformed " +
+                                "buildings! (Can be restored in Unsquare settings though)")
+                            : text("Hint", "When all of them are converted, press \"I've converted all my saves\". " +
+                                "Options → Unsquare → \"Restore shapes for old saves\" can bring them back.")}
                     </div>
                 )}
                 {result && (
