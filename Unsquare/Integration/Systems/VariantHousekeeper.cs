@@ -36,22 +36,18 @@ namespace Unsquare.Integration.Systems
             var files = _store.ListOwnAssets();
             var assets = new List<CachedAsset>(files.Count);
             var sizes = new Dictionary<string, long>(files.Count, StringComparer.Ordinal);
-            long cacheBytes = 0, claimedBytes = 0;
             foreach (var file in files)
             {
                 var lastUsed = boundsCache.TryGetLastUsed(file.Name, out var touched) ? touched : file.LastUsedUtc;
                 assets.Add(new CachedAsset(file.Name, file.Bytes, lastUsed));
                 sizes[file.Name] = file.Bytes;
-                if (claimed.Contains(file.Name))
-                    claimedBytes += file.Bytes;
-                else
-                    cacheBytes += file.Bytes;
             }
 
             var plan = CacheEvictionPlanner.Plan(assets, claimed, capBytes);
+            var evicted = plan.Evicted;
             long freed = 0;
-            var deleted = plan.Count > 0
-                ? _store.Delete(new HashSet<string>(plan, StringComparer.Ordinal))
+            var deleted = evicted.Count > 0
+                ? _store.Delete(new HashSet<string>(evicted, StringComparer.Ordinal))
                 : new List<string>();
             foreach (var name in deleted)
             {
@@ -59,8 +55,9 @@ namespace Unsquare.Integration.Systems
                     freed += bytes;
                 sizes.Remove(name);
             }
-            if (deleted.Count < plan.Count)
-                Mod.Log.Warn($"Cache eviction: {plan.Count - deleted.Count} of {plan.Count} assets could not be deleted.");
+            if (deleted.Count < evicted.Count)
+                Mod.Log.Warn($"Cache eviction: {evicted.Count - deleted.Count} of {evicted.Count} assets could not " +
+                             "be deleted.");
 
             // Bounds of assets that are gone (evicted now or deleted by hand) only cost a re-measure if rebaked.
             int forgotten = 0;
@@ -73,7 +70,7 @@ namespace Unsquare.Integration.Systems
             Mod.Log.Info($"Housekeeping: {prune.EntryKeys.Count} legacy variants unused for " +
                          $"{PrunePlanner.DefaultMaxUnusedAge.TotalDays:0} days pruned (Settings: \"Restore shapes for " +
                          $"old saves\" brings them back); evicted {deleted.Count} assets ({Mb(freed)} MB), cache " +
-                         $"{Mb(cacheBytes - freed)} of {Mb(capBytes)} MB, legacy-claimed {Mb(claimedBytes)} MB, " +
+                         $"{Mb(plan.CacheBytes - freed)} of {Mb(capBytes)} MB, legacy-claimed {Mb(plan.ClaimedBytes)} MB, " +
                          $"{forgotten} stale bounds dropped.");
         }
 

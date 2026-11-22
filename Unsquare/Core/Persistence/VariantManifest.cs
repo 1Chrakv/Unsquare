@@ -91,7 +91,20 @@ namespace Unsquare.Core.Persistence
 
         /// <summary>Adds copies of the entries whose key is missing, usage data included; returns how many.</summary>
         /// <remarks>Append-only: existing entries are never changed, which is what the archive relies on.</remarks>
-        public int AddMissing(IEnumerable<ManifestEntry> entries)
+        public int AddMissing(IEnumerable<ManifestEntry> entries) => AddCopies(entries, null);
+
+        /// <summary>
+        /// Brings back copies of missing entries as freshly used by no city, so the next prune keeps them and the
+        /// next load of a city marks them again. Returns how many.
+        /// </summary>
+        public int Revive(IEnumerable<ManifestEntry> entries, DateTime nowUtc) =>
+            AddCopies(entries, copy =>
+            {
+                copy.Cities.Clear();
+                copy.LastUsedUtc = nowUtc;
+            });
+
+        private int AddCopies(IEnumerable<ManifestEntry> entries, Action<ManifestEntry> adjust)
         {
             if (entries == null)
                 throw new ArgumentNullException(nameof(entries));
@@ -100,34 +113,13 @@ namespace Unsquare.Core.Persistence
             {
                 if (entry?.BaseType == null || entry.VariantName == null || _entries.ContainsKey(entry.Key))
                     continue;
-                _entries.Add(entry.Key, entry.Copy());
+                var copy = entry.Copy();
+                adjust?.Invoke(copy);
+                _entries.Add(copy.Key, copy);
                 added++;
             }
             IsDirty |= added > 0;
             return added;
-        }
-
-        /// <summary>
-        /// Brings back copies of missing entries as freshly used by no city, so the next prune keeps them and the
-        /// next load of a city marks them again. Returns how many.
-        /// </summary>
-        public int Revive(IEnumerable<ManifestEntry> entries, DateTime nowUtc)
-        {
-            if (entries == null)
-                throw new ArgumentNullException(nameof(entries));
-            int revived = 0;
-            foreach (var entry in entries)
-            {
-                if (entry?.BaseType == null || entry.VariantName == null || _entries.ContainsKey(entry.Key))
-                    continue;
-                var copy = entry.Copy();
-                copy.Cities.Clear();
-                copy.LastUsedUtc = nowUtc;
-                _entries.Add(copy.Key, copy);
-                revived++;
-            }
-            IsDirty |= revived > 0;
-            return revived;
         }
 
         /// <summary>Records which variants the loaded city uses: adds or removes the city per entry.</summary>

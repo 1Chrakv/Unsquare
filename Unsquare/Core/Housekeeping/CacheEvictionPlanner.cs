@@ -9,7 +9,7 @@ namespace Unsquare.Core.Housekeeping
     /// </summary>
     public static class CacheEvictionPlanner
     {
-        public static IReadOnlyList<string> Plan(IReadOnlyList<CachedAsset> assets, ISet<string> claimed, long capBytes)
+        public static CacheEvictionPlan Plan(IReadOnlyList<CachedAsset> assets, ISet<string> claimed, long capBytes)
         {
             if (assets == null)
                 throw new ArgumentNullException(nameof(assets));
@@ -19,19 +19,22 @@ namespace Unsquare.Core.Housekeeping
                 throw new ArgumentException("Cache cap must be positive.", nameof(capBytes));
 
             var candidates = new List<CachedAsset>();
-            long total = 0;
+            long cacheBytes = 0, claimedBytes = 0;
             foreach (var asset in assets)
             {
                 if (claimed.Contains(asset.Name))
+                {
+                    claimedBytes += asset.Bytes;
                     continue;
+                }
                 candidates.Add(asset);
-                total += asset.Bytes;
+                cacheBytes += asset.Bytes;
             }
 
             var evicted = new List<string>();
-            if (total <= capBytes)
-                return evicted;
-            candidates.Sort(OldestFirst);
+            long total = cacheBytes;
+            if (total > capBytes)
+                candidates.Sort(OldestFirst);
             foreach (var asset in candidates)
             {
                 if (total <= capBytes)
@@ -39,7 +42,7 @@ namespace Unsquare.Core.Housekeeping
                 evicted.Add(asset.Name);
                 total -= asset.Bytes;
             }
-            return evicted;
+            return new CacheEvictionPlan(evicted, cacheBytes, claimedBytes);
         }
 
         private static int OldestFirst(CachedAsset a, CachedAsset b)
