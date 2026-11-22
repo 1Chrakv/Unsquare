@@ -22,25 +22,28 @@ namespace Unsquare.Tests.Options
             Assert.That(options.AreaMatchMeters, Is.EqualTo(1f));
             Assert.That(options.CoarseLodTwistMeters, Is.EqualTo(1f));
             Assert.That(options.KeepOnLevelUp, Is.True);
+            Assert.That(options.SourceMeshBudgetVertices, Is.EqualTo(1_000_000));
         }
 
-        [TestCase(-0.1, 2f, 1f, 1f)]
-        [TestCase(0.4, 0f, 1f, 1f)]
-        [TestCase(0.4, float.NaN, 1f, 1f)]
-        [TestCase(0.4, 2f, 0f, 1f)]
-        [TestCase(0.4, 2f, 1f, -0.1f)]
-        public void Constructor_InvalidValues_Throw(double delay, float cacheGigabytes, float areaMatch, float lodTwist)
+        [TestCase(-0.1, 2f, 1f, 1f, 1000L)]
+        [TestCase(0.4, 0f, 1f, 1f, 1000L)]
+        [TestCase(0.4, float.NaN, 1f, 1f, 1000L)]
+        [TestCase(0.4, 2f, 0f, 1f, 1000L)]
+        [TestCase(0.4, 2f, 1f, -0.1f, 1000L)]
+        [TestCase(0.4, 2f, 1f, 1f, 0L)]
+        public void Constructor_InvalidValues_Throw(double delay, float cacheGigabytes, float areaMatch, float lodTwist,
+            long sourceVertices)
         {
             Assert.That(() => new PipelineOptions(CageLimits.Default, AttachmentOptions.Default, delay, cacheGigabytes,
-                areaMatch, lodTwist, true), Throws.ArgumentException);
+                areaMatch, lodTwist, true, sourceVertices), Throws.ArgumentException);
         }
 
         [Test]
         public void Constructor_NullParts_Throw()
         {
-            Assert.That(() => new PipelineOptions(null, AttachmentOptions.Default, 0.4, 2f, 1f, 1f, true),
+            Assert.That(() => new PipelineOptions(null, AttachmentOptions.Default, 0.4, 2f, 1f, 1f, true, 1000),
                 Throws.InstanceOf<ArgumentNullException>());
-            Assert.That(() => new PipelineOptions(CageLimits.Default, null, 0.4, 2f, 1f, 1f, true),
+            Assert.That(() => new PipelineOptions(CageLimits.Default, null, 0.4, 2f, 1f, 1f, true, 1000),
                 Throws.InstanceOf<ArgumentNullException>());
         }
     }

@@ -242,7 +242,8 @@ namespace Unsquare.UI.Input
             return new PipelineOptions(limits, attachments, Clamped(RebakeDelay, nameof(RebakeDelay)),
                 Clamped(GeometryCacheGigabytes, nameof(GeometryCacheGigabytes)),
                 Clamped(AreaMatchDistance, nameof(AreaMatchDistance)),
-                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)), KeepOnLevelUp);
+                Clamped(CoarseLodTwist, nameof(CoarseLodTwist)), KeepOnLevelUp,
+                PipelineOptions.Default.SourceMeshBudgetVertices);
         }
 
         public CageEditOptions ToEditOptions() => new(Clamped(SmallStep, nameof(SmallStep)),

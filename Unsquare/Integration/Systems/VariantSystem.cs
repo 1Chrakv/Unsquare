@@ -23,6 +23,7 @@ using Unsquare.Core.Scheduling;
 using Unsquare.Integration.Assets;
 using Unsquare.Integration.Entities;
 using Unsquare.Integration.Import;
+using Unsquare.Integration.Meshes;
 using Unsquare.Integration.PlacemakerCompatibility;
 using Unsquare.Integration.Prefabs;
 using Unsquare.Integration.Prefabs.Attachments;
@@ -68,6 +69,7 @@ namespace Unsquare.Integration.Systems
         private CityConfigurationSystem _citySystem;
         private PrefabResolver _resolver;
         private GeometryAssetStore _store;
+        private SourceMeshCache _sourceMeshes;
         private RenderVariantBuilder _renderBuilder;
         private VariantPrefabFactory _factory;
         private VariantLocalization _localization;
@@ -114,6 +116,8 @@ namespace Unsquare.Integration.Systems
             {
                 _options = value ?? throw new ArgumentNullException(nameof(value));
                 _debouncer.DelaySeconds = value.RebakeDelaySeconds;
+                if (_sourceMeshes != null)
+                    _sourceMeshes.BudgetVertices = value.SourceMeshBudgetVertices;
             }
         }
 
@@ -124,7 +128,8 @@ namespace Unsquare.Integration.Systems
             _citySystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
             _resolver = new PrefabResolver(_prefabSystem);
             _store = new GeometryAssetStore();
-            _renderBuilder = new RenderVariantBuilder(_store);
+            _sourceMeshes = new SourceMeshCache(_options.SourceMeshBudgetVertices);
+            _renderBuilder = new RenderVariantBuilder(_store, _sourceMeshes);
             _factory = new VariantPrefabFactory(_prefabSystem, _renderBuilder,
                 new IAttachmentDeformer[]
                 {
@@ -146,6 +151,7 @@ namespace Unsquare.Integration.Systems
         protected override void OnDestroy()
         {
             _localization?.Dispose();
+            _sourceMeshes?.ReleaseAll();
             base.OnDestroy();
         }
 
@@ -202,6 +208,7 @@ namespace Unsquare.Integration.Systems
                 _stateLoaded = true;
             }
             RestoreVariants();
+            _sourceMeshes.ReleaseAll(); // the previous city's edits and the restore's misses
             SaveIfDirty();
         }
 
@@ -224,6 +231,7 @@ namespace Unsquare.Integration.Systems
             {
                 Mod.Log.Error(e, "Restoring deformed buildings from the save failed.");
             }
+            _sourceMeshes.ReleaseAll(); // rebakes of evicted shapes; nobody edits most of them now
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -543,7 +551,8 @@ namespace Unsquare.Integration.Systems
             stopwatch.Stop();
             // 0 new assets means everything was reused (existing prefab or cached geometry).
             Mod.Log.Info($"Bake for building {building}: {(created ? variant.name : "failed")}, " +
-                         $"{stopwatch.ElapsedMilliseconds} ms, {_renderBuilder.CreatedAssetCount - createdBefore} new assets");
+                         $"{stopwatch.ElapsedMilliseconds} ms, {_renderBuilder.CreatedAssetCount - createdBefore} new assets, " +
+                         $"sources held {_sourceMeshes.Count} ({_sourceMeshes.HeldVertices} vertices)");
 
             if (created && _prefabSystem.TryGetEntity(variant, out var variantEntity))
                 QueueSwap(building, variantEntity, description.BasePrefab, spec,
