@@ -176,12 +176,16 @@ size.
 
 Older saves reference deformed buildings that Unsquare must rebuild at every start, which slows loading. Open each
 old save you want to keep and save it over the same file: it then stores the buildings in the new format. A popup
-after loading such a save reminds you and offers the next step (it can be turned off there).
+after loading such a save reminds you; press **I've converted all my saves** there once all are converted, or keep it
+coming with **I still have old saves I need to keep**. It also comes back on converted saves while old ones still slow
+down every start. Settings → **Hide the old-saves reminders** turns it off.
 
 - Once all are converted, press Options → Unsquare → Settings → **I've converted all my old saves**. From the next
   start they are no longer rebuilt.
 - Old variants no save has used for 14 days are no longer rebuilt either. If an old save then shows plain or
-  missing buildings, press **Restore shapes for old saves** and open it again; it loads slower once.
+  missing buildings, the popup offers **Restore shapes** for that save: press it and open the save again before
+  saving it. **Restore shapes for old saves** in Settings brings back the shapes of all old saves; loading is
+  slower once.
 
 ### Coming from FlexIt
 

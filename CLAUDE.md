@@ -193,7 +193,9 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
     retire the manifest (archive it, write it empty) or revive archived entries (all in `LegacyManifestStore`;
     `VariantSystem.Saves.cs` holds the save/load side of `VariantSystem`). After a load with old-format
     buildings (on a variant at `OnGameLoadingComplete`, convertible), `IBuildingDeformService.LegacySaveLoaded` opens
-    a popup (`LegacySavesUISystem`, `legacy-saves-dialog.tsx`) asking to resave old saves and offering the retire.
+    a popup (`LegacySavesUISystem`, `legacy-saves-dialog.tsx`) asking to resave old saves and offering the retire;
+    an old save whose variants are only archived (buildings on obsolete prefabs) instead offers to restore just those,
+    and a converted save (with `SavedCage` buildings) loaded while the manifest has entries asks to finish converting.
   - Geometry assets are a cache: at the first preload, `VariantHousekeeper` evicts the least recently used unclaimed
     ones (last use in `bounds.json`) beyond `PipelineOptions.GeometryCacheGigabytes`. Assets of manifest entries are
     claimed and don't count. Never delete assets while the game runs; a missing asset is rebaked on demand.

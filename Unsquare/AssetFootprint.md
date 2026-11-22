@@ -256,7 +256,7 @@ Kept invariants:
 
 - **Frozen manifest:** Edit and Load register no entries. Extension variants pass their origin, and only Legacy
   calls `AddExtension`. `CollectUsedVariantKeys` counts only buildings on variants. Every legacy restore failure is
-  logged and kept for the Retire check.
+  logged and kept for the Retire warning.
 - **Archive** (`variants.archive.json`, manifest format). `Integration/Saves/LegacyManifestStore` owns manifest and
   archive:
   - Every first preload appends new manifest entries (`VariantManifest.AddMissing`) before the prune. It is
@@ -265,8 +265,9 @@ Kept invariants:
     session is untrusted, so no housekeeping runs.
 - **Settings group "Saves from before version 1.2":**
   - *I've converted all my old saves* (`IBuildingDeformService.RetireLegacyManifest`): archives the manifest and
-    writes it empty, not deleted, since a missing file would be rebuilt from the archive. It is refused while the
-    loaded city has entries that failed to restore.
+    writes it empty, not deleted, since a missing file would be rebuilt from the archive. When the loaded city has
+    entries that failed to restore, it still retires and warns with their base buildings (`LegacySavesResult.Warning`,
+    at most 5 names inline, all in the log), so the player deforms them again: those shapes can't come back.
   - *Restore shapes for old saves* (`RestoreLegacyShapes`): revives archived entries missing from the manifest. They
     load with the next save opened.
 - **`BoundsCache`:** an optional 7th float holds the last use in Unix days (about 3 min resolution). `Touch` comes
@@ -284,10 +285,22 @@ Kept invariants:
 ### 5.4 Old-saves popup
 
 One popup at load, no second step after saving (autosaves don't convert the original file).
-`VariantSystem.CountLegacyBuildings` counts buildings on convertible variants at load complete (new-format buildings
-are still on their bases then) and raises `LegacySaveLoaded`. `LegacySavesUISystem` opens `legacy-saves-dialog.tsx`
-unless the hidden setting `HideLegacySavesPrompt` is set (*Reset settings* clears it). The retire runs from an inline
-confirm; its result or refusal is shown in the popup.
+At load complete `VariantSystem` sorts the load into three states and raises `LegacySaveLoaded`
+(`LegacySaveCounts`):
+- **Convertible** (`CountLegacyBuildings`): on restored legacy variants (new-format buildings are still on their
+  bases then). The popup asks to save over old saves; the green *I've converted all my saves* retires at once (the
+  hint under it names the Settings restore), *I still have old saves I need to keep* closes it. The Settings toggle
+  `HideLegacySavesPrompt` (*Hide the old-saves reminders*; *Reset settings* clears it) hides this state and the next.
+- **Archived** (`CollectArchivedBuildings`): on obsolete prefabs, which the game makes of unknown prefab IDs
+  (`PrefabData.m_Index < 0`, name from `PrefabSystem.GetObsoleteID`), whose variant name is only in the archive
+  (`LegacyManifestStore.TryFindArchivedOnly`): the old save was loaded after a retire or prune. This state always
+  shows and wins; *Restore shapes* revives only those entries (`IBuildingDeformService.RestoreArchivedShapes`) and
+  asks to load the save again before saving it.
+- **Remaining** (`AnnounceLegacySave`): neither of the above, the save holds saved cages (`SavedCage` stays on the
+  buildings after load) and the legacy manifest still has entries. The popup names the entry count, highlights
+  "Open and save each old save you want to keep" and offers the same buttons as the convertible state, so converted
+  players finish and the manifest can be emptied. Plain cities and new games don't show it.
+Precedence: archived, convertible, remaining. Results and refusals are shown in the popup.
 
 ### 5.5 Source mesh release (step 4)
 
@@ -389,7 +402,8 @@ confirm; its result or refusal is shown in the popup.
 | 192 1.1.0 save converted, loaded without manifest | passed (before the archive; rerun) |
 | 198 no-manifest load (the crash case) | passed after the fix (before the archive; rerun) |
 | 188–190, 193–197 | open; some normal behaviour was checked on 22 Nov, record which rows that covered |
-| 199–212 (archive, eviction, rebake after eviction, frozen manifest, converted city, archive rebuild, Retire, Restore, Retire refusal, popup) | open |
+| 199–212 (archive, eviction, rebake after eviction, frozen manifest, converted city, archive rebuild, Retire, Restore, Retire warning, popup) | open |
+| 218–219 (popup restore of archived shapes, reminder on converted saves) | open |
 | 213–217 (source meshes within the budget, no reload per nudge, plain buildings after a release, release on city change, bake time) | open |
 
 Verified without the game: `dotnet test Unsquare.Tests`, `dotnet msbuild Unsquare/Unsquare.csproj -t:Compile`,
@@ -424,12 +438,12 @@ Verified without the game: `dotnet test Unsquare.Tests`, `dotnet msbuild Unsquar
 
 - **Same-name cities:** legacy usage tracking is per city name, so two cities with the same name keep each other's
   entries alive.
-- **Popup:** it appears at every load of a not-yet-converted old save until *Don't show again*. It can't tell
-  whether the player later saved over the same file or under a new name.
+- **Popup:** it appears at every load of a not-yet-converted old save until *Hide the old-saves reminders*. It
+  can't tell whether the player later saved over the same file or under a new name.
 - **Retire:** it trusts the player's confirmation. *Restore shapes for old saves* is the way back, and costs one slow
   load.
 - **Local `FR_Hospital` entries:** the 3 entries with `BlendMode` 1 exist only on the developer's machine. They keep
-  failing until pruned, and don't block Retire unless the loaded city uses them.
+  failing until pruned; Retire names them when the loaded city uses them.
 - **In-session prefabs:** every edited shape still registers a variant prefab until restart (section 2, "Deleting
   leftovers while the game runs"). Long edit sessions accumulate them; this needs its own design.
 - **Extensions of unsavable owners:** `SavedCageWriteSystem` moves every extension on an extension variant to its
