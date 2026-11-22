@@ -8,7 +8,9 @@ assemblies (decompiled for reading only) and the local `ModsData/Unsquare` folde
 - Steps 2 and 3 (PR B) and the old-saves popup (PR B2) are implemented and committed on
   `feature/asset-saving-redesign`. They are not yet tested in game. See section 9, which supersedes 8.1 where they
   differ.
-- **Next steps:** section 10.
+- **Status 22 Nov 2026:** step 4 (release source meshes) is implemented on the same branch, untested in game; see
+  10.4.
+- **Next steps:** section 10.2. The combined in-game test runs in a separate session.
 
 **Decision:**
 - **Saves:** they store each deformed building as its base prefab plus a small cage component. Variants are rebuilt
@@ -203,7 +205,7 @@ Verify while implementing (results from PR A in 7):
 2. **Legacy freeze and convert on load.** `VariantSystem` (`Register` only for legacy), `VariantManifest`.
 3. **Geometry cache.** `BoundsCache` (last-used), a Core eviction planner with tests replacing the orphan sweep,
    `VariantHousekeeper`, `PipelineOptions`, `UnsquareSettings`, `LocaleEN`.
-4. **Release source meshes.** Independent and small: `ReleaseMeshes()` in a `finally` in `ObtainAsset`, or a small
+4. **Release source meshes** (done 22 Nov, 10.4). Independent and small: `ReleaseMeshes()` in a `finally` in `ObtainAsset`, or a small
    size-limited source cache that releases on eviction (BakeSpeed.md item 3).
 5. **Later:** sub-meshes whose part of the cage moves rigidly reuse the base mesh. Measure memory with snapshots
    before and after.
@@ -565,10 +567,13 @@ Deviations from the plans above:
    start writes the archive and evicts cache files beyond the cap. Keep `C:\Users\Tobi\Unsquare-Backup-2026-11-18`
    until PR B is confirmed.
 2. **Deploying build:** `dotnet build Unsquare.sln`, only with the user's go-ahead. Never pass `SkipUiModule`.
-3. **In-game tests**, Testing.md:
+3. **In-game tests** (separate session, all features together), Testing.md:
    - **New rows:** 199–212 (archive, eviction, rebake after eviction, frozen manifest, converted city, archive
      rebuild, Retire, Restore, Retire refusal, popup).
-   - **Rows still open from PR A:** 188–190 and 193–197.
+   - **Step 4 rows:** 213–217 (source meshes held within the budget, no reload per nudge, plain buildings render
+     after their source was released, release on city change, bake time without the manifest write).
+   - **Rows still open from PR A:** 188–190 and 193–197. Some normal behaviour was already checked on 22 Nov and
+     looked fine; record which rows that covered.
    - **Rerun:** 192 and 198, now moving `variants.archive.json` aside too.
    - **What to watch for:**
      - the housekeeping log line (MB figures plausible, nothing claimed evicted);
@@ -585,8 +590,7 @@ Deviations from the plans above:
      cache.
    - Release notes should tell players to open and save over each old save, mention the popup and the two Settings
      buttons, and say that a downgrade to 1.1 loads new-format saves undeformed.
-7. **Step 4 (PR C):** release source meshes in `RenderVariantBuilder.ObtainAsset`, independent of the rest; see
-   section 5.
+7. **Step 4:** done on this branch (10.4).
 8. **Later (step 5):** reuse base meshes for rigidly moved sub-meshes, and measure memory with snapshots before and
    after.
 
@@ -600,3 +604,27 @@ Deviations from the plans above:
   load.
 - **Local `FR_Hospital` entries:** the 3 entries with `BlendMode` 1 exist only on the developer's machine. They keep
   failing until pruned, and don't block Retire unless the loaded city uses them.
+- **In-session prefabs:** every edited shape still registers a variant prefab until restart (section 2, "Deleting
+  leftovers while the game runs"). Long edit sessions accumulate them; this needs its own design.
+
+### 10.4 Step 4 as implemented (22 Nov 2026)
+
+- **The leak, confirmed in the game assemblies:**
+  - `GeometryAsset.ObtainMeshes` loads meshes and raw data once and counts a reference. `ReleaseMeshes` frees
+    them at 0.
+  - `ObtainAsset` obtained on every miss and never released.
+  - Baked assets were never affected: `GeometryAssetStore.Create` unloads them.
+- **`LruBudget<TKey>`** (`Core/Caching`, tested) orders keys by last use with a cost each. The most recent key is
+  never evicted.
+- **`SourceMeshCache`** (`Integration/Meshes`):
+  - It holds one reference per base render prefab, costed by its vertex count.
+  - It releases the least recently used sources beyond `PipelineOptions.SourceMeshBudgetVertices`. The default is
+    1,000,000, with no slider.
+  - It re-obtains a source whose meshes were destroyed.
+- **Where it releases everything:**
+  - after the preload restore (which also covers leaving a city)
+  - after the saved-cage restore at load
+  - in `OnDestroy`
+- **Log:** the bake line shows `sources held N (M vertices)`. Each full release logs `Released source meshes …`.
+- **Not measured yet:** the memory saved and the right budget. Rows 213–216 give the first numbers; tune the default
+  from them.

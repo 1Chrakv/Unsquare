@@ -115,7 +115,9 @@ All other phases stayed below 4 ms each (`obtain` 0, `addPrefab` 0.1, `attachmen
   takes off the main thread or removes.
 - **The manifest write is a second, constant hitch:** 33–36 ms after every bake, whatever the building, because
   the whole manifest (755 entries) is rewritten. For a row house that is almost half the bake again.
-- **Item 3 has nothing to gain:** `obtain` is 0 ms; the source meshes are already loaded.
+- **Item 3 has nothing to gain:** `obtain` is 0 ms; the source meshes are already loaded. That was because they were
+  never released (a memory leak). Since step 4 of AssetFootprint.md, `SourceMeshCache` keeps recent sources within a
+  vertex budget, so repeated edits stay at 0 ms and memory is bounded.
 - **Item 4 gains little:** `save` is 5–7 % of the bake.
 - **The swap is negligible** (0.5–9 ms).
 - **First bake of a session:** 406 ms for the row house, from one-off costs in `read` (174 ms) and `save` (157 ms).

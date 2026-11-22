@@ -8,7 +8,7 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 
 | Path | Contents | Depends on |
 |---|---|---|
-| `Unsquare/Core/` | Pure logic: cage model, deformation math, naming, debouncing, persistence, prune and cache eviction planning | `Unity.Mathematics`, `Newtonsoft.Json` only |
+| `Unsquare/Core/` | Pure logic: cage model, deformation math, naming, debouncing, persistence, prune and cache eviction planning, LRU budgets | `Unity.Mathematics`, `Newtonsoft.Json` only |
 | `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
@@ -85,6 +85,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - Buildings have no impostors (CS2 only gives them to trees). The coarsest LOD is left out for twisted cages
   (`CageTwist` > `PipelineOptions.CoarseLodTwistMeters`); it can't follow the bend.
 - Mesh and prefab APIs are main-thread only; keep hot loops allocation-free (no LINQ, no closures).
+- Base meshes are obtained only through `SourceMeshCache` (`PipelineOptions.SourceMeshBudgetVertices`, LRU), never
+  `RenderPrefab.ObtainMeshes` directly: every obtain counts a reference, and unreleased meshes stay loaded all session.
 - Wrap each game-API step (clone, AddPrefab, asset I/O, reflection) in try/catch, log, and degrade by not swapping.
 - Use `Mod.Log` (`Colossal.Logging.ILog`) for logging, never `Debug.Log`.
 - `OverlayRenderSystem` lines/curves are ground-plane only (length measured in xz; vertical ones vanish). Draw 3D
@@ -101,7 +103,7 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 ## Options (settings tab)
 
 - Tunables are option objects with a `Default`, not consts: `PipelineOptions` (Core: `CageLimits`,
-  `AttachmentOptions`, rebake delay, geometry cache size, sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
+  `AttachmentOptions`, rebake delay, geometry cache size, source mesh budget (no slider), sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
 - Flow: `UnsquareSettings` (Settings tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
   `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
 - The rebake delay only applies to nudges, undo/redo and pauses within a drag; drag release and one-shot commands

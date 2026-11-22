@@ -311,3 +311,8 @@ render meshes cannot be read; if buildings come back undeformed after reload, va
 | 210 | In the popup, *Don't show again*; load the 1.1 save again; then Settings → *Reset settings* and load it once more | No popup the second time; it is back after the reset |
 | 211 | In the popup, *I've converted all my saves* → *Yes, all my saves are converted*; save over the same file, restart | The popup shows the result (or the refusal for failed variants of this city); after the restart `variants.json` is empty and the save loads with its shapes |
 | 212 | Load a new-format save, a 1.1 save after saving it over the same file, and a new city | No popup in any of them |
+| 213 | Deform 15 different large buildings in a row (hospitals, offices); watch the private working set in Task Manager | Each `Bake for building …` line shows `sources held N (M vertices)` with M near or below 1,000,000 (one building alone may exceed it); memory levels off instead of rising with every building |
+| 214 | Nudge one building repeatedly | Bake times as before (about 30–40 ms for a row house, 60–90 ms for a hospital): its sources stay held, nothing is reloaded per nudge |
+| 215 | After 213, look at plain buildings of the bases edited first (their sources were released), from near to far | They render at every LOD; no missing, pink or flickering meshes; no asset errors in the log |
+| 216 | Load a save, then load another city | Log `Released source meshes of N render prefabs (M vertices)` after the restore at load (if anything was rebaked) and when leaving the city |
+| 217 | Compare a bake line with BakeSpeed.md (row house 33 ms, `FR_Hospital` 90 ms, both before the manifest froze) | Bakes are faster by about the 33–45 ms manifest write that edits no longer do |
