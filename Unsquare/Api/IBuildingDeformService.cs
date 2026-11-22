@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
+using Unsquare.Core.Persistence;
 using Unsquare.Core.Terrain;
 
 namespace Unsquare.Api
@@ -96,18 +97,21 @@ namespace Unsquare.Api
 
         /// <summary>
         /// For players who resaved all their old saves: archives the variants that saves from before 1.2 need, so they
-        /// are no longer restored at every start. Refused while the loaded city has variants that failed to load.
+        /// are no longer restored at every start. Warns with the loaded city's buildings whose old shape failed to load.
         /// </summary>
         LegacySavesResult RetireLegacyManifest();
 
         /// <summary>Brings archived variants of old saves back; they load with the next save opened.</summary>
         LegacySavesResult RestoreLegacyShapes();
 
+        /// <summary>Brings back only the archived variants the loaded city is missing; they load when it is loaded again.</summary>
+        LegacySavesResult RestoreArchivedShapes();
+
         /// <summary>
-        /// A city was loaded with this many deformed buildings in the format of saves from before 1.2; saving over the
-        /// same file converts them. Only raised when there are any.
+        /// A city was loaded with deformed buildings in the format of saves from before 1.2: convertible ones (saving
+        /// over the same file converts them) or ones missing because their variants are only archived.
         /// </summary>
-        event Action<int> LegacySaveLoaded;
+        event Action<LegacySaveCounts> LegacySaveLoaded;
 
         /// <summary>Current tunables (limits, attachments, rebake delay, geometry cache size, lot sync).</summary>
         PipelineOptions Options { get; }

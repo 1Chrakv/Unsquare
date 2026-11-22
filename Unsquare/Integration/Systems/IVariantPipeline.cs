@@ -4,6 +4,7 @@ using Game.Prefabs;
 using Unity.Entities;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Options;
+using Unsquare.Core.Persistence;
 using Unsquare.Integration.Import;
 
 namespace Unsquare.Integration.Systems
@@ -44,15 +45,21 @@ namespace Unsquare.Integration.Systems
 
         /// <summary>
         /// Moves the legacy manifest into the archive and leaves it empty: from the next start, saves from before
-        /// saved cages are no longer restored. Refused while the loaded city has variants that failed to load.
+        /// saved cages are no longer restored. Names the loaded city's buildings whose old shape failed to load.
         /// </summary>
-        bool TryRetireLegacyManifest(out int retired, out string refusal);
+        bool TryRetireLegacyManifest(out int retired, out IReadOnlyList<string> failedBuildings, out string refusal);
 
         /// <summary>Brings archived variants of old saves back into the manifest; they load from the next save loaded.</summary>
         bool TryRestoreLegacyShapes(out int restored, out string refusal);
 
-        /// <summary>A city was loaded with this many deformed buildings in the old save format (only raised when > 0).</summary>
-        event Action<int> LegacySaveLoaded;
+        /// <summary>
+        /// Revives only the archived variants the loaded city is missing (see <see cref="LegacySaveCounts.Archived"/>);
+        /// they load when the save is loaded again. Refused when there are none.
+        /// </summary>
+        bool TryRestoreArchivedShapes(out int restored, out string refusal);
+
+        /// <summary>A city was loaded with deformed buildings in the old save format (only raised when there are any).</summary>
+        event Action<LegacySaveCounts> LegacySaveLoaded;
 
         /// <summary>
         /// Read-only description of a building on another mod's variant that was not taken over yet (see

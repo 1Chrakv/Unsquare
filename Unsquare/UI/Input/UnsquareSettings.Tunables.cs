@@ -40,10 +40,6 @@ namespace Unsquare.UI.Input
         [SettingsUIHidden]
         public CageTarget EditMode { get; set; }
 
-        /// <summary>"Don't show again" of the popup after loading an old save; set from the popup, not shown here.</summary>
-        [SettingsUIHidden]
-        public bool HideLegacySavesPrompt { get; set; }
-
         [SettingsUISection(SettingsTab, InterfaceGroup)]
         public ButtonPosition ButtonPosition { get; set; }
 
@@ -158,6 +154,10 @@ namespace Unsquare.UI.Input
         [SettingsUISection(SettingsTab, PerformanceGroup)]
         [SettingsUISlider(min = 0.5f, max = 20f, step = 0.5f, unit = Unit.kFloatSingleFraction)]
         public float GeometryCacheGigabytes { get; set; }
+
+        /// <summary>Hides the popups that ask to convert old saves; the one offering to restore archived shapes stays.</summary>
+        [SettingsUISection(SettingsTab, OldSavesGroup)]
+        public bool HideLegacySavesPrompt { get; set; }
 
         [SettingsUISection(SettingsTab, OldSavesGroup)]
         [SettingsUIButton]

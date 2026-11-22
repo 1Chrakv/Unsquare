@@ -13,6 +13,7 @@ namespace Unsquare.Integration.Saves
     {
         private readonly List<ManifestEntry> _failures = new();
         private VariantManifest _archive = new();
+        private Dictionary<string, string> _archiveByName; // variant name → key; rebuilt when the archive changes
         private bool _archiveWritable;
 
         public VariantManifest Manifest { get; private set; } = new();
@@ -27,6 +28,7 @@ namespace Unsquare.Integration.Saves
                              "Deformed buildings in older saves revert or break; delete ModsData/Unsquare to free space.");
 
             var archiveStatus = VariantManifest.Load(ModPaths.LegacyArchiveFile, out _archive);
+            _archiveByName = null;
             // A corrupt archive is never overwritten: it may hold the only copy of pruned entries.
             _archiveWritable = archiveStatus != JsonReadStatus.Corrupt;
             if (!_archiveWritable)
@@ -57,6 +59,7 @@ namespace Unsquare.Integration.Saves
             {
                 if (_archiveWritable && _archive.AddMissing(Manifest.Entries) > 0)
                 {
+                    _archiveByName = null;
                     _archive.Save(ModPaths.LegacyArchiveFile);
                     Mod.Log.Info($"Legacy manifest archive holds {_archive.Count} variants.");
                 }
@@ -72,33 +75,25 @@ namespace Unsquare.Integration.Saves
 
         public void RecordFailure(ManifestEntry entry) => _failures.Add(entry);
 
-        /// <param name="loadedCity">The city in play, or null; its failed entries refuse the retire.</param>
-        public bool TryRetire(string loadedCity, out int retired, out string refusal)
+        /// <param name="loadedCity">The city in play, or null.</param>
+        /// <param name="failedBuildings">Sorted base names of this city's entries that failed to load; the player must
+        /// deform them again, since resaving the city loses their old shapes.</param>
+        public bool TryRetire(string loadedCity, out int retired, out List<string> failedBuildings, out string refusal)
         {
             retired = 0;
+            failedBuildings = FailedBuildingsOf(loadedCity);
             if (!_archiveWritable)
             {
                 refusal = "the archive file is unreadable, see the log";
                 return false;
             }
-            // Resaving a city whose shapes failed to load would lose them for good.
-            int failed = 0;
-            if (!string.IsNullOrEmpty(loadedCity))
-            {
-                foreach (var entry in _failures)
-                {
-                    if (entry.Cities.Contains(loadedCity))
-                        failed++;
-                }
-            }
-            if (failed > 0)
-            {
-                refusal = $"{failed} deformed variants of this city failed to load, see the log";
-                return false;
-            }
+            if (failedBuildings.Count > 0)
+                Mod.Log.Warn($"Retiring although these buildings of {loadedCity} failed to load their old shape: " +
+                             string.Join(", ", failedBuildings));
             try
             {
                 _archive.AddMissing(Manifest.Entries);
+                _archiveByName = null;
                 _archive.Save(ModPaths.LegacyArchiveFile);
                 retired = Manifest.Count;
                 // An empty file, not a deleted one: a missing manifest would be rebuilt from the archive.
@@ -116,8 +111,40 @@ namespace Unsquare.Integration.Saves
             }
         }
 
-        /// <summary>Revives archived entries in the manifest; the caller saves it.</summary>
-        public bool TryRestore(out int restored, out string refusal)
+        private List<string> FailedBuildingsOf(string city)
+        {
+            var names = new SortedSet<string>(StringComparer.Ordinal);
+            if (!string.IsNullOrEmpty(city))
+            {
+                foreach (var entry in _failures)
+                {
+                    if (entry.Cities.Contains(city))
+                        names.Add(entry.BaseName);
+                }
+            }
+            return new List<string>(names);
+        }
+
+        /// <summary>
+        /// Key of the archived entry of a variant the manifest lacks; false when the manifest has it (then its restore
+        /// failed, which the archive can't fix) or the archive doesn't.
+        /// </summary>
+        public bool TryFindArchivedOnly(string variantName, out string key)
+        {
+            if (_archiveByName == null)
+            {
+                _archiveByName = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var entry in _archive.Entries)
+                    _archiveByName[entry.VariantName] = entry.Key;
+            }
+            return _archiveByName.TryGetValue(variantName, out key) && !Manifest.TryGet(key, out _);
+        }
+
+        /// <summary>
+        /// Revives archived entries in the manifest: those of <paramref name="keys"/>, or all when null. The caller
+        /// saves it.
+        /// </summary>
+        public bool TryRestore(ICollection<string> keys, out int restored, out string refusal)
         {
             restored = 0;
             if (!_archiveWritable)
@@ -125,10 +152,22 @@ namespace Unsquare.Integration.Saves
                 refusal = "the archive file is unreadable, see the log";
                 return false;
             }
-            restored = Manifest.Revive(_archive.Entries, DateTime.UtcNow);
+            var entries = keys == null ? _archive.Entries : SelectArchived(keys);
+            restored = Manifest.Revive(entries, DateTime.UtcNow);
             Mod.Log.Info($"Restored {restored} archived variants of old saves to the manifest; they load with the next save.");
             refusal = null;
             return true;
+        }
+
+        private List<ManifestEntry> SelectArchived(ICollection<string> keys)
+        {
+            var selected = new List<ManifestEntry>();
+            foreach (var entry in _archive.Entries)
+            {
+                if (keys.Contains(entry.Key))
+                    selected.Add(entry);
+            }
+            return selected;
         }
 
         /// <summary>Writes the manifest if it changed; throws on I/O errors.</summary>

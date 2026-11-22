@@ -19,9 +19,10 @@ namespace Unsquare.Integration.Systems
         private readonly HashSet<Entity> _unsavableLogged = new();
         private readonly List<int> _savedScratch = new();
         private readonly LegacyManifestStore _legacy = new();
+        private readonly HashSet<string> _archivedKeys = new(StringComparer.Ordinal); // missing in the loaded city
         private EntityQuery _savedCageQuery;
         private bool _savedCagesPending;
-        private Action<int> _legacySaveLoaded;
+        private Action<LegacySaveCounts> _legacySaveLoaded;
 
         /// <summary>Buildings on their base for the save in progress; see <see cref="SavedCageWriteSystem"/>.</summary>
         internal SaveSwapLedger SaveSwaps { get; } = new();
@@ -29,7 +30,7 @@ namespace Unsquare.Integration.Systems
         /// <summary>Prefab entities of every variant created or reused this session.</summary>
         internal IReadOnlyCollection<Entity> VariantPrefabs => _variantPrefabs;
 
-        event Action<int> IVariantPipeline.LegacySaveLoaded
+        event Action<LegacySaveCounts> IVariantPipeline.LegacySaveLoaded
         {
             add => _legacySaveLoaded += value;
             remove => _legacySaveLoaded -= value;
@@ -61,11 +62,27 @@ namespace Unsquare.Integration.Systems
         {
             try
             {
-                int legacy = CountLegacyBuildings();
-                if (legacy == 0)
+                int convertible = CountLegacyBuildings();
+                int archived = CollectArchivedBuildings();
+                // A converted save while old saves still need the manifest: remind to finish them. SavedCage stays on
+                // the buildings after load, so the query tells a new-format save.
+                int remaining = convertible == 0 && archived == 0 && !_savedCageQuery.IsEmptyIgnoreFilter
+                    ? _legacy.Manifest.Count
+                    : 0;
+                var counts = new LegacySaveCounts(convertible, archived, remaining);
+                if (!counts.Any)
                     return;
-                Mod.Log.Info($"{legacy} deformed buildings were loaded in the old save format; saving converts them.");
-                _legacySaveLoaded?.Invoke(legacy);
+                if (counts.Remaining > 0)
+                    Mod.Log.Info($"Converted save loaded; {counts.Remaining} legacy variants are still restored at " +
+                                 "every start for older saves.");
+                if (counts.Convertible > 0)
+                    Mod.Log.Info($"{counts.Convertible} deformed buildings were loaded in the old save format; " +
+                                 "saving converts them.");
+                if (counts.Archived > 0)
+                    Mod.Log.Warn($"{counts.Archived} deformed buildings of an old save are missing: their " +
+                                 $"{_archivedKeys.Count} variants are only in the archive. Restoring them and loading " +
+                                 "the save again brings them back.");
+                _legacySaveLoaded?.Invoke(counts);
             }
             catch (Exception e)
             {
@@ -90,6 +107,38 @@ namespace Unsquare.Integration.Systems
                     count++;
             }
             return count;
+        }
+
+        // The game turns unknown prefab IDs into obsolete prefabs (negative index); an old save loaded after its
+        // variants were retired or pruned has its buildings on those. Their archived keys go to _archivedKeys.
+        private int CollectArchivedBuildings()
+        {
+            _archivedKeys.Clear();
+            int count = 0;
+            var archived = new Dictionary<Entity, bool>();
+            using var prefabRefs = _buildingQuery.ToComponentDataArray<PrefabRef>(Allocator.Temp);
+            foreach (var prefabRef in prefabRefs)
+            {
+                if (!archived.TryGetValue(prefabRef.m_Prefab, out bool isArchived))
+                {
+                    string key = null;
+                    isArchived = EntityManager.TryGetComponent(prefabRef.m_Prefab, out PrefabData data) &&
+                                 data.m_Index < 0 && TryGetArchivedKey(data, out key);
+                    if (isArchived)
+                        _archivedKeys.Add(key);
+                    archived[prefabRef.m_Prefab] = isArchived;
+                }
+                if (isArchived)
+                    count++;
+            }
+            return count;
+        }
+
+        private bool TryGetArchivedKey(PrefabData data, out string key)
+        {
+            key = null;
+            string name = _prefabSystem.GetObsoleteID(data).GetName();
+            return name != null && VariantNaming.IsVariantName(name) && _legacy.TryFindArchivedOnly(name, out key);
         }
 
         // The save's base was replaced before its shape came back: a finished level-up carries the cage over, anything
@@ -130,15 +179,20 @@ namespace Unsquare.Integration.Systems
             }
         }
 
-        bool IVariantPipeline.TryRetireLegacyManifest(out int retired, out string refusal)
+        bool IVariantPipeline.TryRetireLegacyManifest(out int retired, out IReadOnlyList<string> failedBuildings,
+            out string refusal)
         {
             if (!_stateLoaded)
             {
                 retired = 0;
+                failedBuildings = Array.Empty<string>();
                 refusal = "not ready yet";
                 return false;
             }
-            return _legacy.TryRetire(_simulationReady ? _citySystem.cityName : null, out retired, out refusal);
+            bool done = _legacy.TryRetire(_simulationReady ? _citySystem.cityName : null, out retired,
+                out var failed, out refusal);
+            failedBuildings = failed;
+            return done;
         }
 
         bool IVariantPipeline.TryRestoreLegacyShapes(out int restored, out string refusal)
@@ -149,7 +203,26 @@ namespace Unsquare.Integration.Systems
                 refusal = "not ready yet";
                 return false;
             }
-            if (!_legacy.TryRestore(out restored, out refusal))
+            if (!_legacy.TryRestore(null, out restored, out refusal))
+                return false;
+            SaveIfDirty();
+            return true;
+        }
+
+        bool IVariantPipeline.TryRestoreArchivedShapes(out int restored, out string refusal)
+        {
+            restored = 0;
+            if (!_stateLoaded)
+            {
+                refusal = "not ready yet";
+                return false;
+            }
+            if (_archivedKeys.Count == 0)
+            {
+                refusal = "this city has no archived shapes to restore";
+                return false;
+            }
+            if (!_legacy.TryRestore(_archivedKeys, out restored, out refusal))
                 return false;
             SaveIfDirty();
             return true;

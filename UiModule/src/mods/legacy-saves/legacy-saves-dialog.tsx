@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import { Button, Panel } from "cs2/ui";
@@ -9,32 +8,48 @@ import styles from "./legacy-saves-dialog.module.scss";
 const group = "Unsquare";
 
 const pending$ = bindValue<boolean>(group, "legacySavesPending", false);
-// Deformed buildings of the loaded save still in the format of saves from before 1.2.
+// "convert": old-format buildings, save this city; "archived": their shapes are only in the archive, restore them;
+// "remaining": a converted save while old saves still need the legacy variants, finish converting them.
+const kind$ = bindValue<string>(group, "legacySavesKind", "convert");
+// Buildings (convert, archived) or legacy variants (remaining) the message names.
 const count$ = bindValue<number>(group, "legacySavesCount", 0);
-// Result of "I've converted all my saves": empty before; a refusal unless done.
+// Result of the retire or restore: empty before; a refusal unless done.
 const result$ = bindValue<string>(group, "legacySavesResult", "");
 const done$ = bindValue<boolean>(group, "legacySavesDone", false);
+// After a retire: buildings of this city whose old shape failed to load and must be deformed again.
+const warning$ = bindValue<string>(group, "legacySavesWarning", "");
 
-// After loading an old save: asks to resave old saves, then to confirm when all are converted.
+// After loading a save tied to old saves: asks to convert (or confirm all are), or to restore archived shapes.
 const LegacySavesDialog = () => {
     const pending = useValue(pending$);
     const count = useValue(count$);
+    const kind = useValue(kind$);
     const result = useValue(result$);
     const done = useValue(done$);
-    const [confirming, setConfirming] = useState(false);
+    const warning = useValue(warning$);
     const { translate } = useLocalization();
     if (!pending || !Panel || !Button)
         return null;
     const text = (key: string, fallback: string) =>
         translate(`Unsquare.LegacySavesDialog.${key}`, fallback) ?? fallback;
-    const close = () => {
-        setConfirming(false);
-        trigger(group, "closeLegacySaves");
-    };
-    const retire = () => {
-        setConfirming(false);
-        trigger(group, "retireLegacySaves");
-    };
+    const close = () => trigger(group, "closeLegacySaves");
+    const archived = kind === "archived";
+    // Whole sentences, one block each: the game's UI stacks inline pieces, so the highlighted step is its own line.
+    const [lead, step, follow] = archived
+        ? [text("ArchivedMessage", "{COUNT} deformed buildings in this save use the old format, but their shapes " +
+            "were archived after \"I've converted all my saves\". Restore them, then load this save again before " +
+            "saving it."), "", ""]
+        : kind === "remaining"
+            ? [text("RemainingMessage", "This save already uses the new format, but Unsquare still rebuilds {COUNT} " +
+                "deformed buildings for older saves at every start, which slows loading."),
+                text("SaveOld", "Open and save each old save you want to keep."),
+                text("RemainingFollow", "Then press \"I've converted all my saves\".")]
+            : [text("Message", "{COUNT} deformed buildings in this save use the old format."),
+                text("SaveNow", "Save this city now to convert it."),
+                text("MessageFollow", "Do the same with every other old save you want to keep.")];
+    const outcome = done && archived
+        ? text("Restored", "Shapes restored. Load this save again to see them; don't save it before that.")
+        : result;
     return (
         <div className={styles.anchor}>
             <Panel
@@ -43,48 +58,42 @@ const LegacySavesDialog = () => {
                 header={text("Title", "Changes in how Unsquare saves its deformations")}
                 onClose={close}
             >
-                <div className={styles.message}>
-                    {text("Message", "{COUNT} deformed buildings in this save use the old format. Save this city " +
-                        "to convert it, and do the same with every other old save you want to keep.")
-                        .replace("{COUNT}", String(count))}
-                </div>
                 {!result && (
                     <div className={styles.message}>
-                        {confirming
-                            ? text("ConfirmText", "Saves made with Unsquare < v1.2 will lose their deformed " +
-                                "buildings! (Can be restored in Unsquare settings though)")
-                            : text("Hint", "When all of them are converted, press \"I've converted all my saves\". " +
-                                "Options → Unsquare → \"Restore shapes for old saves\" can bring them back.")}
+                        <div>{lead.replace("{COUNT}", String(count))}</div>
+                        {step && <div className={`${styles.next} ${styles.highlight}`}>{step}</div>}
+                        {follow && <div className={styles.next}>{follow}</div>}
                     </div>
                 )}
-                {result && (
-                    <div className={done ? styles.message : styles.problem}>{result}</div>
-                )}
+                {result && <div className={done ? styles.message : styles.problem}>{outcome}</div>}
+                {result && warning && <div className={styles.problem}>{warning}</div>}
                 <div className={styles.buttons}>
                     {result ? (
                         <Button className={styles.button} variant="primary" onSelect={close}>
                             {text("Close", "Close")}
                         </Button>
-                    ) : confirming ? (
+                    ) : archived ? (
                         <>
-                            <Button className={styles.button} variant="primary" onSelect={retire}>
-                                {text("Confirm", "Yes, all my saves are converted")}
+                            <Button className={styles.button} variant="primary"
+                                onSelect={() => trigger(group, "restoreLegacySaves")}>
+                                {text("Restore", "Restore shapes")}
                             </Button>
-                            <Button className={styles.button} variant="flat" onSelect={() => setConfirming(false)}>
-                                {text("Back", "Back")}
+                            <Button className={styles.button} variant="flat" onSelect={close}>
+                                {text("NotNow", "Not now")}
                             </Button>
                         </>
                     ) : (
                         <>
-                            <Button className={styles.button} variant="primary" onSelect={close}>
-                                {text("GotIt", "Got it")}
-                            </Button>
-                            <Button className={styles.button} variant="flat" onSelect={() => setConfirming(true)}>
+                            <Button className={styles.button} variant="primary"
+                                onSelect={() => trigger(group, "retireLegacySaves")}>
                                 {text("Converted", "I've converted all my saves")}
                             </Button>
-                            <Button className={styles.button} variant="flat"
-                                onSelect={() => trigger(group, "hideLegacySaves")}>
-                                {text("Hide", "Don't show again")}
+                            <div className={styles.hint}>
+                                {text("Hint", "Old saves that aren't converted then load without their deformed " +
+                                    "buildings. Can be undone: Options → Unsquare → \"Restore shapes for old saves\".")}
+                            </div>
+                            <Button className={styles.button} variant="flat" onSelect={close}>
+                                {text("KeepOld", "I still have old saves I need to keep")}
                             </Button>
                         </>
                     )}

@@ -78,19 +78,26 @@ namespace Unsquare.UI.Input
                 { "Unsquare.ConvertDialog.Cancel", "Cancel" },
                 { "Unsquare.LegacySavesDialog.Title", "Changes in how Unsquare saves its deformations" },
                 { "Unsquare.LegacySavesDialog.Message",
-                    "{COUNT} deformed buildings in this save use the old format. Save this city to convert it, and " +
-                    "do the same with every other old save you want to keep." },
-                { "Unsquare.LegacySavesDialog.Hint",
-                    "When all of them are converted, press \"I've converted all my saves\". Options → Unsquare → " +
-                    "\"Restore shapes for old saves\" can bring them back." },
-                { "Unsquare.LegacySavesDialog.ConfirmText",
-                    "Saves made with Unsquare < v1.2 will lose their deformed buildings! (Can be restored in " +
-                    "Unsquare settings though)" },
-                { "Unsquare.LegacySavesDialog.GotIt", "Got it" },
+                    "{COUNT} deformed buildings in this save use the old format." },
+                { "Unsquare.LegacySavesDialog.SaveNow", "Save this city now to convert it." },
+                { "Unsquare.LegacySavesDialog.MessageFollow", "Do the same with every other old save you want to keep." },
+                { "Unsquare.LegacySavesDialog.RemainingMessage",
+                    "This save already uses the new format, but Unsquare still rebuilds {COUNT} deformed buildings " +
+                    "for older saves at every start, which slows loading." },
+                { "Unsquare.LegacySavesDialog.SaveOld", "Open and save each old save you want to keep." },
+                { "Unsquare.LegacySavesDialog.RemainingFollow", "Then press \"I've converted all my saves\"." },
                 { "Unsquare.LegacySavesDialog.Converted", "I've converted all my saves" },
-                { "Unsquare.LegacySavesDialog.Confirm", "Yes, all my saves are converted" },
-                { "Unsquare.LegacySavesDialog.Back", "Back" },
-                { "Unsquare.LegacySavesDialog.Hide", "Don't show again" },
+                { "Unsquare.LegacySavesDialog.Hint",
+                    "Old saves that aren't converted then load without their deformed buildings. Can be undone: " +
+                    "Options → Unsquare → \"Restore shapes for old saves\"." },
+                { "Unsquare.LegacySavesDialog.KeepOld", "I still have old saves I need to keep" },
+                { "Unsquare.LegacySavesDialog.ArchivedMessage",
+                    "{COUNT} deformed buildings in this save use the old format, but their shapes were archived after " +
+                    "\"I've converted all my saves\". Restore them, then load this save again before saving it." },
+                { "Unsquare.LegacySavesDialog.Restore", "Restore shapes" },
+                { "Unsquare.LegacySavesDialog.NotNow", "Not now" },
+                { "Unsquare.LegacySavesDialog.Restored",
+                    "Shapes restored. Load this save again to see them; don't save it before that." },
                 { "Unsquare.LegacySavesDialog.Close", "Close" },
                 { "Unsquare.ConvertDialog.Problem.PlacemakerBusy",
                     "Placemaker is reshaping this building right now. Try again in a moment." },
@@ -264,11 +271,16 @@ namespace Unsquare.UI.Input
             Option(entries, nameof(UnsquareSettings.GeometryCacheGigabytes), "Geometry cache size (GB)",
                 "At startup, deletes the least recently used deformed geometry beyond this size; it is rebuilt when " +
                 "needed. Geometry that saves from before version 1.2 still need is kept and doesn't count.");
+            Option(entries, nameof(UnsquareSettings.HideLegacySavesPrompt), "Hide the old-saves reminders",
+                "Don't show the popups asking to convert old saves (from before version 1.2): when one is loaded, " +
+                "and when a converted save is loaded while old saves still slow down every start. A save whose " +
+                "deformed buildings are missing because they were archived still offers to restore them.");
             Option(entries, nameof(UnsquareSettings.RetireLegacyManifest), "I've converted all my old saves",
                 "Saves from before version 1.2 need their deformed buildings rebuilt at every start, which slows " +
                 "loading. Opening such a save and saving it over the same file converts it. Once every old save you " +
-                "want to keep is converted, press this: from the next start they are no longer rebuilt. Refused " +
-                "while the loaded city has deformed buildings that failed to load.");
+                "want to keep is converted, press this: from the next start they are no longer rebuilt. If the " +
+                "loaded city has deformed buildings whose old shape failed to load, the status names them: deform " +
+                "them again.");
             Option(entries, nameof(UnsquareSettings.RestoreLegacyShapes), "Restore shapes for old saves",
                 "If an old save (from before version 1.2) shows plain boxes or lost its deformed buildings, press " +
                 "this, then open the save again. Its shapes come back from the archive; loading takes longer once.");

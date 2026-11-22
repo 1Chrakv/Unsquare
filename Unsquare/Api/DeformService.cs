@@ -7,6 +7,7 @@ using Unsquare.Core.Cage;
 using Unsquare.Core.Deformation;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
+using Unsquare.Core.Persistence;
 using Unsquare.Core.Terrain;
 using Unsquare.Integration.Entities;
 using Unsquare.Integration.Systems;
@@ -43,11 +44,11 @@ namespace Unsquare.Api
             _neighbours = neighbours;
             _entityManager = entityManager;
             _pipeline.BuildingChanged += building => CageChanged?.Invoke(building);
-            _pipeline.LegacySaveLoaded += count => LegacySaveLoaded?.Invoke(count);
+            _pipeline.LegacySaveLoaded += counts => LegacySaveLoaded?.Invoke(counts);
         }
 
         public event Action<Entity> CageChanged;
-        public event Action<int> LegacySaveLoaded;
+        public event Action<LegacySaveCounts> LegacySaveLoaded;
 
         public PipelineOptions Options => _pipeline.Options;
 
@@ -390,13 +391,19 @@ namespace Unsquare.Api
 
         public LegacySavesResult RetireLegacyManifest()
         {
-            bool done = _pipeline.TryRetireLegacyManifest(out int retired, out string refusal);
-            return LegacySavesResult.Retired(done, retired, refusal);
+            bool done = _pipeline.TryRetireLegacyManifest(out int retired, out var failedBuildings, out string refusal);
+            return LegacySavesResult.Retired(done, retired, failedBuildings, refusal);
         }
 
         public LegacySavesResult RestoreLegacyShapes()
         {
             bool done = _pipeline.TryRestoreLegacyShapes(out int restored, out string refusal);
+            return LegacySavesResult.Restored(done, restored, refusal);
+        }
+
+        public LegacySavesResult RestoreArchivedShapes()
+        {
+            bool done = _pipeline.TryRestoreArchivedShapes(out int restored, out string refusal);
             return LegacySavesResult.Restored(done, restored, refusal);
         }
 

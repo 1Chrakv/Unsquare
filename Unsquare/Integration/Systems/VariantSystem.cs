@@ -172,6 +172,7 @@ namespace Unsquare.Integration.Systems
             _foreign.Clear();
             _swapGroups.Clear();
             _unsavableLogged.Clear();
+            _archivedKeys.Clear();
             SaveSwaps.Clear();
             _savedCagesPending = false;
             _simulationReady = false;

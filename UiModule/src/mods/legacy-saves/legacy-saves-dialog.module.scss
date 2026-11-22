@@ -36,3 +36,21 @@
     margin-top: 10rem;
     padding: 6rem 12rem;
 }
+
+// A sentence of the message after the first (plain classes: the game's UI may lack sibling selectors).
+.next {
+    margin-top: 6rem;
+}
+
+// The step the player should take right away.
+.highlight {
+    font-weight: bold;
+    color: rgb(255, 200, 80);
+}
+
+// Small note under the button it explains.
+.hint {
+    margin: 6rem 4rem 4rem;
+    font-size: 12rem;
+    opacity: 0.7;
+}
