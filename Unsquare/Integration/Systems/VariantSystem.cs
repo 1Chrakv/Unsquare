@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
@@ -57,8 +56,6 @@ namespace Unsquare.Integration.Systems
         private readonly Debouncer<Entity, DeformSpec> _debouncer = new(PipelineOptions.Default.RebakeDelaySeconds);
         private readonly SwapGroups<Entity> _swapGroups = new();
         private readonly HashSet<Entity> _variantPrefabs = new();
-        private readonly HashSet<Entity> _unsavableLogged = new();
-        private readonly List<int> _savedScratch = new();
         private Func<Entity, SwapMemberState> _swapState;
         private IForeignPrefabs _foreign;
 
@@ -73,18 +70,11 @@ namespace Unsquare.Integration.Systems
         private RenderVariantBuilder _renderBuilder;
         private VariantPrefabFactory _factory;
         private VariantLocalization _localization;
-        private VariantManifest _manifest = new();
-        private VariantManifest _archive = new();
-        private bool _archiveWritable;
-        private readonly List<ManifestEntry> _legacyFailures = new();
         private PipelineOptions _options = PipelineOptions.Default;
         private EntityQuery _buildingQuery;
-        private EntityQuery _savedCageQuery;
         private bool _stateLoaded;
         private bool _simulationReady;
-        private bool _savedCagesPending;
         private Action<Entity> _buildingChanged;
-        private Action<int> _legacySaveLoaded;
 
         event Action<Entity> IVariantPipeline.BuildingChanged
         {
@@ -92,19 +82,7 @@ namespace Unsquare.Integration.Systems
             remove => _buildingChanged -= value;
         }
 
-        event Action<int> IVariantPipeline.LegacySaveLoaded
-        {
-            add => _legacySaveLoaded += value;
-            remove => _legacySaveLoaded -= value;
-        }
-
         internal IVariantPipeline Pipeline => this;
-
-        /// <summary>Buildings on their base for the save in progress; see <see cref="SavedCageWriteSystem"/>.</summary>
-        internal SaveSwapLedger SaveSwaps { get; } = new();
-
-        /// <summary>Prefab entities of every variant created or reused this session.</summary>
-        internal IReadOnlyCollection<Entity> VariantPrefabs => _variantPrefabs;
 
         /// <summary>Placemaker's bent buildings and their takeover; see <see cref="PlacemakerAdoptions"/>.</summary>
         internal PlacemakerAdoptions Placemaker { get; private set; }
@@ -202,7 +180,7 @@ namespace Unsquare.Integration.Systems
             if (!_stateLoaded)
             {
                 bool trusted = LoadState();
-                ArchiveLegacyEntries(); // before the prune, so pruned entries stay recoverable
+                _legacy.ArchiveEntries(); // before the prune, so pruned entries stay recoverable
                 if (trusted)
                     RunHousekeeping();
                 _stateLoaded = true;
@@ -210,28 +188,6 @@ namespace Unsquare.Integration.Systems
             RestoreVariants();
             _sourceMeshes.ReleaseAll(); // the previous city's edits and the restore's misses
             SaveIfDirty();
-        }
-
-        // Prefabs added here lose Created before PrefabInitializeSystem sees them and stay uninitialized (no instance
-        // archetype; swapping to them crashes natively), so the variants are created in the next prefab update.
-        protected override void OnGameLoaded(Context serializationContext)
-        {
-            base.OnGameLoaded(serializationContext);
-            _savedCagesPending = true;
-            Enabled = true;
-        }
-
-        private void RestoreSavedCagesSafely()
-        {
-            try
-            {
-                RestoreSavedCages();
-            }
-            catch (Exception e)
-            {
-                Mod.Log.Error(e, "Restoring deformed buildings from the save failed.");
-            }
-            _sourceMeshes.ReleaseAll(); // rebakes of evicted shapes; nobody edits most of them now
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -247,46 +203,11 @@ namespace Unsquare.Integration.Systems
                 _foreign.OnLoaded();
             if (mode == GameMode.Game && !string.IsNullOrEmpty(_citySystem.cityName))
             {
-                _manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
+                _legacy.Manifest.MarkUsage(_citySystem.cityName, CollectUsedVariantKeys(), DateTime.UtcNow);
                 SaveIfDirty();
             }
             if (mode == GameMode.Game)
                 AnnounceLegacySave();
-        }
-
-        private void AnnounceLegacySave()
-        {
-            try
-            {
-                int legacy = CountLegacyBuildings();
-                if (legacy == 0)
-                    return;
-                Mod.Log.Info($"{legacy} deformed buildings were loaded in the old save format; saving converts them.");
-                _legacySaveLoaded?.Invoke(legacy);
-            }
-            catch (Exception e)
-            {
-                Mod.Log.Error(e, "Checking the save format of deformed buildings failed.");
-            }
-        }
-
-        // Saved cages are still on their bases here, so a building on a variant was loaded from an old save.
-        private int CountLegacyBuildings()
-        {
-            int count = 0;
-            var convertible = new Dictionary<Entity, bool>();
-            using var prefabRefs = _buildingQuery.ToComponentDataArray<PrefabRef>(Allocator.Temp);
-            foreach (var prefabRef in prefabRefs)
-            {
-                if (!convertible.TryGetValue(prefabRef.m_Prefab, out bool converts))
-                {
-                    converts = TryGetSavedSpec(prefabRef.m_Prefab, out _, out _, out _);
-                    convertible[prefabRef.m_Prefab] = converts;
-                }
-                if (converts)
-                    count++;
-            }
-            return count;
         }
 
         bool IVariantPipeline.TryDescribe(Entity building, out BuildingDescription description) =>
@@ -586,7 +507,8 @@ namespace Unsquare.Integration.Systems
             }
 
             // Restores skip validation: a save already holds the shape, refusing it breaks the building.
-            if (origin == VariantOrigin.Edit && CageValidator.ValidateSplit(box, buildingBox, spec, _options.Limits) != CageValidity.Valid)
+            if (origin == VariantOrigin.Edit &&
+                CageValidator.ValidateSplit(box, buildingBox, spec, _options.Limits) != CageValidity.Valid)
             {
                 Mod.Log.Warn($"Rejected invalid cage for {basePrefab.name}: {spec}");
                 return false;
@@ -607,7 +529,7 @@ namespace Unsquare.Integration.Systems
 
             // The manifest is frozen: only legacy entries complete their asset lists, so their assets stay claimed.
             if (origin == VariantOrigin.Legacy)
-                _manifest.MergeAssets(ManifestEntry.MakeKey(typeName, variantName), assets);
+                _legacy.Manifest.MergeAssets(ManifestEntry.MakeKey(typeName, variantName), assets);
             return true;
         }
 
@@ -828,7 +750,7 @@ namespace Unsquare.Integration.Systems
             if (_prefabSystem.TryGetEntity(variant, out var variantEntity))
                 _simDataPending[variantEntity] = extensionBase;
             if (origin == VariantOrigin.Legacy)
-                _manifest.AddExtension(ManifestEntry.MakeKey(ownerBase.GetType().Name, ownerVariantName),
+                _legacy.Manifest.AddExtension(ManifestEntry.MakeKey(ownerBase.GetType().Name, ownerVariantName),
                     ManifestEntry.MakeKey(typeName, extensionBase.name), assets);
             return true;
         }
@@ -1024,23 +946,6 @@ namespace Unsquare.Integration.Systems
             return valid;
         }
 
-        // The save's base was replaced before its shape came back: a finished level-up carries the cage over, anything
-        // else leaves the building as it is (swapping would undo the change).
-        private bool HandOverLoadSwap(Entity building, PendingSwap swap, Entity current)
-        {
-            if (_prefabSystem.TryGetPrefab(current, out PrefabBase prefab) && prefab is ObjectGeometryPrefab &&
-                !VariantNaming.IsVariantName(prefab.name) &&
-                LevelUpCarrySystem.SameLot(EntityManager, swap.ExpectedCurrent, current) &&
-                TryGetBoxes(swap.BasePrefab, out var fromLot, out _))
-            {
-                Mod.Log.Info($"Building {building} levelled up before its saved shape was restored: carrying it over.");
-                PrepareLevelUp(building, swap.ExpectedCurrent, current, fromLot, swap.Spec);
-                return true;
-            }
-            Mod.Log.Warn($"Building {building} changed prefab before its saved shape was restored; it stays as it is.");
-            return true;
-        }
-
         private void LogUpgradesOnce(Entity building)
         {
             if (!_upgradesLogged.Add(building))
@@ -1062,319 +967,17 @@ namespace Unsquare.Integration.Systems
             _buildingChanged?.Invoke(building);
         }
 
-        private bool LoadState()
-        {
-            var manifestStatus = VariantManifest.Load(ModPaths.ManifestFile, out _manifest);
-            if (_manifest.DiscardedOutdatedCount > 0)
-                Mod.Log.Warn($"Variant manifest has an old format: discarded {_manifest.DiscardedOutdatedCount} variants. " +
-                             "Deformed buildings in older saves revert or break; delete ModsData/Unsquare to free space.");
-            BoundsCache.Load(ModPaths.BoundsCacheFile, out var bounds);
-            _renderBuilder.BoundsCache = bounds;
-
-            var archiveStatus = VariantManifest.Load(ModPaths.LegacyArchiveFile, out _archive);
-            // A corrupt archive is never overwritten: it may hold the only copy of pruned entries.
-            _archiveWritable = archiveStatus != JsonReadStatus.Corrupt;
-            if (!_archiveWritable)
-                Mod.Log.Error("Legacy manifest archive (variants.archive.json) is unreadable; it is left as it is.");
-
-            switch (manifestStatus)
-            {
-                case JsonReadStatus.Corrupt:
-                    Mod.Log.Error("Variant manifest is unreadable; deformed buildings in saves may break.");
-                    PreserveCorruptManifest();
-                    ReviveFromArchive();
-                    return false;
-                case JsonReadStatus.FromBackup:
-                    Mod.Log.Warn("Variant manifest restored from backup.");
-                    return false;
-                case JsonReadStatus.Missing when _archive.Count > 0:
-                    ReviveFromArchive();
-                    return false;
-                default:
-                    return true;
-            }
-        }
-
-        // Lost manifest: old saves still find their variants. Untrusted for this session, so nothing is pruned.
-        private void ReviveFromArchive()
-        {
-            int revived = _manifest.Revive(_archive.Entries, DateTime.UtcNow);
-            if (revived > 0)
-                Mod.Log.Warn($"Variant manifest rebuilt from the legacy archive: {revived} variants of old saves.");
-        }
-
-        private void ArchiveLegacyEntries()
-        {
-            try
-            {
-                if (_archiveWritable && _archive.AddMissing(_manifest.Entries) > 0)
-                {
-                    _archive.Save(ModPaths.LegacyArchiveFile);
-                    Mod.Log.Info($"Legacy manifest archive holds {_archive.Count} variants.");
-                }
-            }
-            catch (Exception e)
-            {
-                Mod.Log.Error(e, "Writing the legacy manifest archive failed.");
-            }
-        }
-
-        private void RunHousekeeping()
-        {
-            try
-            {
-                new VariantHousekeeper(_store).Run(_manifest, _renderBuilder.BoundsCache, DateTime.UtcNow,
-                    _options.GeometryCacheBytes);
-            }
-            catch (Exception e)
-            {
-                Mod.Log.Error(e, "Housekeeping failed.");
-            }
-        }
-
-        bool IVariantPipeline.TryRetireLegacyManifest(out int retired, out string refusal)
-        {
-            retired = 0;
-            if (!_stateLoaded || !_archiveWritable)
-            {
-                refusal = _stateLoaded ? "the archive file is unreadable, see the log" : "not ready yet";
-                return false;
-            }
-            // Resaving a city whose shapes failed to load would lose them for good.
-            int failed = 0;
-            if (_simulationReady && !string.IsNullOrEmpty(_citySystem.cityName))
-            {
-                foreach (var entry in _legacyFailures)
-                {
-                    if (entry.Cities.Contains(_citySystem.cityName))
-                        failed++;
-                }
-            }
-            if (failed > 0)
-            {
-                refusal = $"{failed} deformed variants of this city failed to load, see the log";
-                return false;
-            }
-            try
-            {
-                _archive.AddMissing(_manifest.Entries);
-                _archive.Save(ModPaths.LegacyArchiveFile);
-                retired = _manifest.Count;
-                // An empty file, not a deleted one: a missing manifest would be rebuilt from the archive.
-                _manifest = new VariantManifest();
-                _manifest.Save(ModPaths.ManifestFile);
-                Mod.Log.Info($"Legacy manifest retired: {retired} variants moved to the archive.");
-                refusal = null;
-                return true;
-            }
-            catch (Exception e)
-            {
-                Mod.Log.Error(e, "Retiring the legacy manifest failed.");
-                refusal = "writing the files failed, see the log";
-                return false;
-            }
-        }
-
-        bool IVariantPipeline.TryRestoreLegacyShapes(out int restored, out string refusal)
-        {
-            restored = 0;
-            if (!_stateLoaded)
-            {
-                refusal = "not ready yet";
-                return false;
-            }
-            if (!_archiveWritable)
-            {
-                refusal = "the archive file is unreadable, see the log";
-                return false;
-            }
-            restored = _manifest.Revive(_archive.Entries, DateTime.UtcNow);
-            SaveIfDirty();
-            Mod.Log.Info($"Restored {restored} archived variants of old saves to the manifest; they load with the next save.");
-            refusal = null;
-            return true;
-        }
-
-        private void RestoreVariants()
-        {
-            _legacyFailures.Clear();
-            int restored = 0, failed = 0, extensions = 0;
-            foreach (var entry in new List<ManifestEntry>(_manifest.Entries))
-            {
-                try
-                {
-                    var spec = entry.ToSpec();
-                    if (_resolver.TryFind(entry.BaseType, entry.BaseName, out var found) &&
-                        found is ObjectGeometryPrefab basePrefab &&
-                        TryGetOrCreateVariant(basePrefab, spec, VariantOrigin.Legacy, out var variant))
-                    {
-                        restored++;
-                        extensions += RestoreExtensions(entry, basePrefab, spec, variant.name);
-                    }
-                    else
-                    {
-                        failed++;
-                        _legacyFailures.Add(entry);
-                        Mod.Log.Warn($"Restoring variant {entry.Key} failed: base missing or variant not created.");
-                    }
-                }
-                catch (Exception e)
-                {
-                    failed++;
-                    _legacyFailures.Add(entry);
-                    Mod.Log.Error(e, $"Restoring variant {entry.Key} failed.");
-                }
-            }
-            Mod.Log.Info($"Restored {restored} variants (+{extensions} upgrade extensions), {failed} failed.");
-        }
-
-        private int RestoreExtensions(ManifestEntry entry, ObjectGeometryPrefab ownerBase, DeformSpec spec,
-            string ownerVariantName)
-        {
-            int restored = 0;
-            foreach (string key in entry.Extensions)
-            {
-                int slash = key.IndexOf('/');
-                if (slash > 0 && _resolver.TryFind(key.Substring(0, slash), key.Substring(slash + 1), out var found) &&
-                    found is BuildingExtensionPrefab extensionBase &&
-                    TryGetOrCreateExtensionVariant(ownerBase, spec, ownerVariantName, extensionBase,
-                        VariantOrigin.Legacy, out _))
-                    restored++;
-                else
-                    Mod.Log.Warn($"Restoring upgrade extension {key} of {entry.Key} failed.");
-            }
-            return restored;
-        }
-
-        // Buildings the save holds as base + cage: create each variant once and swap them without moving their lot
-        // items, which the save already has in the variant's layout.
-        private void RestoreSavedCages()
-        {
-            if (_savedCageQuery.IsEmptyIgnoreFilter)
-                return;
-            var stopwatch = Stopwatch.StartNew();
-            int createdBefore = _renderBuilder.CreatedAssetCount;
-            var variants = new Dictionary<(ObjectGeometryPrefab, DeformSpec), (Entity Entity, string Name)>();
-            int queued = 0, unreadable = 0, failed = 0;
-            using var buildings = _savedCageQuery.ToEntityArray(Allocator.Temp);
-            foreach (var building in buildings)
-            {
-                if (!SavedCageLoader.TryRead(EntityManager, _prefabSystem, building, _savedScratch, out var basePrefab,
-                        out var baseEntity, out var spec))
-                {
-                    unreadable++;
-                    continue;
-                }
-                if (!variants.TryGetValue((basePrefab, spec), out var variant))
-                {
-                    variant = TryGetOrCreateVariant(basePrefab, spec, VariantOrigin.Load, out var created) &&
-                              _prefabSystem.TryGetEntity(created, out var createdEntity)
-                        ? (createdEntity, created.name)
-                        : (Entity.Null, null);
-                    variants[(basePrefab, spec)] = variant;
-                    if (variant.Entity == Entity.Null)
-                        Mod.Log.Warn($"No variant of {basePrefab.name} for the saved cage {spec}; its buildings stay undeformed.");
-                }
-                if (variant.Entity == Entity.Null)
-                {
-                    failed++;
-                    continue;
-                }
-                QueueSwap(building, variant.Entity, basePrefab, spec,
-                    PlanExtensionTargets(building, basePrefab, spec, variant.Name, VariantOrigin.Load), syncLot: false,
-                    expectedCurrent: baseEntity);
-                queued++;
-            }
-            stopwatch.Stop();
-            Mod.Log.Info($"Saved cages: {queued} buildings on {variants.Count} variants " +
-                         $"({_renderBuilder.CreatedAssetCount - createdBefore} new assets, {stopwatch.ElapsedMilliseconds} ms), " +
-                         $"{failed} failed, {unreadable} not restored (plain, on a variant or unreadable).");
-            if (queued > 0)
-                Enabled = true;
-        }
-
-        /// <summary>
-        /// Base and cage a building on <paramref name="prefab"/> is saved as. False for plain prefabs, and for variants
-        /// whose base would not exist at load (another mod's runtime prefab) or whose cage is unknown.
-        /// </summary>
-        internal bool TryGetSavedSpec(Entity prefab, out bool isVariant, out Entity baseEntity, out DeformSpec spec)
-        {
-            isVariant = false;
-            baseEntity = Entity.Null;
-            spec = null;
-            if (!_prefabSystem.TryGetPrefab(prefab, out PrefabBase current) || current == null ||
-                !VariantNaming.IsVariantName(current.name))
-                return false;
-            isVariant = true;
-            if (!_resolver.TryGetVariant(current.name, out var info) || VariantNaming.IsVariantName(info.BasePrefab.name) ||
-                _foreign.IsRuntimePrefab(info.BasePrefab) || !_prefabSystem.TryGetEntity(info.BasePrefab, out baseEntity))
-            {
-                if (!_unsavableLogged.Add(prefab))
-                    return false;
-                // Only the legacy restore brings such a variant back at load; without an entry the save loses it.
-                if (_manifest.TryGet(ManifestEntry.MakeKey(current.GetType().Name, current.name), out _))
-                    Mod.Log.Info($"{current.name} is saved as the variant itself: its base is unknown or not saved by the game.");
-                else
-                    Mod.Log.Warn($"{current.name} is saved as the variant itself but has no manifest entry: " +
-                                 "its buildings will be missing when this save is loaded.");
-                return false;
-            }
-            spec = info.Spec;
-            return true;
-        }
-
-        /// <summary>The plain extension prefab an extension variant prefab was baked from.</summary>
-        internal bool TryGetSavedExtensionBase(Entity prefab, out Entity baseEntity)
-        {
-            baseEntity = Entity.Null;
-            return _prefabSystem.TryGetPrefab(prefab, out PrefabBase current) && current != null &&
-                   VariantNaming.TryParse(current.name, out string baseName) &&
-                   _resolver.TryFind(current.GetType().Name, baseName, out var found) &&
-                   found is BuildingExtensionPrefab && _prefabSystem.TryGetEntity(found, out baseEntity);
-        }
-
-        private HashSet<string> CollectUsedVariantKeys()
-        {
-            var keys = new HashSet<string>(StringComparer.Ordinal);
-            var seenPrefabs = new HashSet<Entity>();
-            using var prefabRefs = _buildingQuery.ToComponentDataArray<PrefabRef>(Allocator.Temp);
-            foreach (var prefabRef in prefabRefs)
-            {
-                if (!seenPrefabs.Add(prefabRef.m_Prefab) || !_prefabSystem.TryGetPrefab(prefabRef, out PrefabBase prefab))
-                    continue;
-                if (VariantNaming.IsVariantName(prefab.name))
-                    keys.Add(ManifestEntry.MakeKey(prefab.GetType().Name, prefab.name));
-            }
-            // Saved cages are still on their base here, so a converted city drops out of its legacy entries.
-            return keys;
-        }
-
         private void SaveIfDirty()
         {
             try
             {
-                if (_manifest.IsDirty)
-                    _manifest.Save(ModPaths.ManifestFile);
+                _legacy.SaveIfDirty();
                 if (_renderBuilder.BoundsCache.IsDirty)
                     _renderBuilder.BoundsCache.Save(ModPaths.BoundsCacheFile);
             }
             catch (Exception e)
             {
                 Mod.Log.Error(e, "Saving variant manifest failed.");
-            }
-        }
-
-        private static void PreserveCorruptManifest()
-        {
-            try
-            {
-                string target = ModPaths.ManifestFile + ".corrupt-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                if (File.Exists(ModPaths.ManifestFile))
-                    File.Copy(ModPaths.ManifestFile, target);
-            }
-            catch (Exception e)
-            {
-                Mod.Log.Error(e, "Could not preserve corrupt manifest.");
             }
         }
 

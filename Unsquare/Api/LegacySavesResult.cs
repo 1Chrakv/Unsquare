@@ -6,11 +6,11 @@ namespace Unsquare.Api
     /// </summary>
     public readonly struct LegacySavesResult
     {
-        private readonly bool _isRetire;
+        private readonly Kind _kind;
 
-        private LegacySavesResult(bool isRetire, bool done, int count, string refusal)
+        private LegacySavesResult(Kind kind, bool done, int count, string refusal)
         {
-            _isRetire = isRetire;
+            _kind = kind;
             Done = done;
             Count = count;
             Refusal = refusal;
@@ -24,11 +24,22 @@ namespace Unsquare.Api
         /// <summary>Why nothing was done; null when <see cref="Done"/>.</summary>
         public string Refusal { get; }
 
-        public static LegacySavesResult Retired(bool done, int count, string refusal) => new(true, done, count, refusal);
-        public static LegacySavesResult Restored(bool done, int count, string refusal) => new(false, done, count, refusal);
+        public static LegacySavesResult Retired(bool done, int count, string refusal) =>
+            new(Kind.Retire, done, count, refusal);
 
-        public override string ToString() => !Done ? $"not done: {Refusal}"
-            : _isRetire ? $"{Count} old variants archived; from the next start, old saves load without them"
-            : $"{Count} old variants restored; they load with the next save you open";
+        public static LegacySavesResult Restored(bool done, int count, string refusal) =>
+            new(Kind.Restore, done, count, refusal);
+
+        public override string ToString() => !Done
+            ? $"not done: {Refusal}"
+            : _kind == Kind.Retire
+                ? $"{Count} old variants archived; from the next start, old saves load without them"
+                : $"{Count} old variants restored; they load with the next save you open";
+
+        private enum Kind
+        {
+            Retire,
+            Restore,
+        }
     }
 }

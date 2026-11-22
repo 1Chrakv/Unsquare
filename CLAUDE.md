@@ -190,7 +190,8 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   - The manifest is legacy and frozen: edits and loads never add entries; only legacy restores complete theirs.
     Entries used by no city for 14 days are pruned (not their assets). At each start, before the prune, every entry
     is appended to `variants.archive.json` (never rewritten). It rebuilds a missing manifest, and the Settings buttons
-    retire the manifest (archive it, write it empty) or revive archived entries. After a load with old-format
+    retire the manifest (archive it, write it empty) or revive archived entries (all in `LegacyManifestStore`;
+    `VariantSystem.Saves.cs` holds the save/load side of `VariantSystem`). After a load with old-format
     buildings (on a variant at `OnGameLoadingComplete`, convertible), `IBuildingDeformService.LegacySaveLoaded` opens
     a popup (`LegacySavesUISystem`, `legacy-saves-dialog.tsx`) asking to resave old saves and offering the retire.
   - Geometry assets are a cache: at the first preload, `VariantHousekeeper` evicts the least recently used unclaimed
