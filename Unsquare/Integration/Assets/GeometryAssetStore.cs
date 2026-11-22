@@ -4,6 +4,7 @@ using System.IO;
 using Colossal.IO.AssetDatabase;
 using Hash128 = Colossal.Hash128;
 using Mesh = UnityEngine.Mesh;
+using Unsquare.Core.Housekeeping;
 using Unsquare.Core.Naming;
 
 namespace Unsquare.Integration.Assets
@@ -25,24 +26,29 @@ namespace Unsquare.Integration.Assets
             return asset;
         }
 
-        /// <summary>Names (without extension) of all geometry assets that carry our prefix.</summary>
-        public List<string> ListOwnAssetNames()
+        /// <summary>Own geometry asset files on disk (name without extension, size, last write), for the cache.</summary>
+        /// <remarks>Read from the folder, not the asset database: it has the sizes, and the .cid sidecars are tiny.</remarks>
+        public List<CachedAsset> ListOwnAssets()
         {
-            var names = new List<string>();
-            foreach (var asset in AssetDatabase.user.GetAssets(default(SearchFilter<GeometryAsset>)))
+            var assets = new List<CachedAsset>();
+            var directory = new DirectoryInfo(ModPaths.DataDirectory);
+            if (!directory.Exists)
+                return assets;
+            foreach (var file in directory.EnumerateFiles("*" + GeometryAsset.kExtension, SearchOption.TopDirectoryOnly))
             {
-                string name = NameOf(asset);
+                string name = Path.GetFileNameWithoutExtension(file.Name);
                 if (AssetNaming.IsOwnAssetName(name))
-                    names.Add(name);
+                    assets.Add(new CachedAsset(name, file.Length, file.LastWriteTimeUtc));
             }
-            return names;
+            return assets;
         }
 
-        /// <summary>Deletes own assets by name and returns how many were removed.</summary>
-        public int Delete(ICollection<string> assetNames)
+        /// <summary>Deletes own assets by name through the asset database; returns the names actually deleted.</summary>
+        public List<string> Delete(ICollection<string> assetNames)
         {
+            var deleted = new List<string>();
             if (assetNames.Count == 0)
-                return 0;
+                return deleted;
             var targets = new List<GeometryAsset>();
             foreach (var asset in AssetDatabase.user.GetAssets(default(SearchFilter<GeometryAsset>)))
             {
@@ -51,13 +57,13 @@ namespace Unsquare.Integration.Assets
                     targets.Add(asset);
             }
 
-            int deleted = 0;
             foreach (var asset in targets)
             {
                 try
                 {
+                    string name = NameOf(asset);
                     asset.Delete();
-                    deleted++;
+                    deleted.Add(name);
                 }
                 catch (Exception e)
                 {

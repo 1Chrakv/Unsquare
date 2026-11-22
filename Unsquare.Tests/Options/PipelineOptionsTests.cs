@@ -17,29 +17,33 @@ namespace Unsquare.Tests.Options
             Assert.That(options.Attachments.FacadeReachMeters, Is.EqualTo(6f));
             Assert.That(options.Attachments.AttachedPropMode, Is.EqualTo(PlacementMode.Follow));
             Assert.That(options.RebakeDelaySeconds, Is.EqualTo(0.2));
-            Assert.That(options.PruneUnused, Is.True);
-            Assert.That(options.PruneAfter, Is.EqualTo(TimeSpan.FromDays(14)));
+            Assert.That(options.GeometryCacheGigabytes, Is.EqualTo(2f));
+            Assert.That(options.GeometryCacheBytes, Is.EqualTo(2L * 1024 * 1024 * 1024));
             Assert.That(options.AreaMatchMeters, Is.EqualTo(1f));
             Assert.That(options.CoarseLodTwistMeters, Is.EqualTo(1f));
             Assert.That(options.KeepOnLevelUp, Is.True);
+            Assert.That(options.SourceMeshBudgetVertices, Is.EqualTo(1_000_000));
         }
 
-        [TestCase(-0.1, 14, 1f, 1f)]
-        [TestCase(0.4, 0, 1f, 1f)]
-        [TestCase(0.4, 14, 0f, 1f)]
-        [TestCase(0.4, 14, 1f, -0.1f)]
-        public void Constructor_InvalidValues_Throw(double delay, int days, float areaMatch, float lodTwist)
+        [TestCase(-0.1, 2f, 1f, 1f, 1000L)]
+        [TestCase(0.4, 0f, 1f, 1f, 1000L)]
+        [TestCase(0.4, float.NaN, 1f, 1f, 1000L)]
+        [TestCase(0.4, 2f, 0f, 1f, 1000L)]
+        [TestCase(0.4, 2f, 1f, -0.1f, 1000L)]
+        [TestCase(0.4, 2f, 1f, 1f, 0L)]
+        public void Constructor_InvalidValues_Throw(double delay, float cacheGigabytes, float areaMatch, float lodTwist,
+            long sourceVertices)
         {
-            Assert.That(() => new PipelineOptions(CageLimits.Default, AttachmentOptions.Default, delay, true, days,
-                areaMatch, lodTwist, true), Throws.ArgumentException);
+            Assert.That(() => new PipelineOptions(CageLimits.Default, AttachmentOptions.Default, delay, cacheGigabytes,
+                areaMatch, lodTwist, true, sourceVertices), Throws.ArgumentException);
         }
 
         [Test]
         public void Constructor_NullParts_Throw()
         {
-            Assert.That(() => new PipelineOptions(null, AttachmentOptions.Default, 0.4, true, 14, 1f, 1f, true),
+            Assert.That(() => new PipelineOptions(null, AttachmentOptions.Default, 0.4, 2f, 1f, 1f, true, 1000),
                 Throws.InstanceOf<ArgumentNullException>());
-            Assert.That(() => new PipelineOptions(CageLimits.Default, null, 0.4, true, 14, 1f, 1f, true),
+            Assert.That(() => new PipelineOptions(CageLimits.Default, null, 0.4, 2f, 1f, 1f, true, 1000),
                 Throws.InstanceOf<ArgumentNullException>());
         }
     }

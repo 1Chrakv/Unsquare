@@ -8,11 +8,11 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 
 | Path | Contents | Depends on |
 |---|---|---|
-| `Unsquare/Core/` | Pure logic: cage model, deformation math, naming, debouncing, persistence, prune planning | `Unity.Mathematics`, `Newtonsoft.Json` only |
+| `Unsquare/Core/` | Pure logic: cage model, deformation math, naming, debouncing, persistence, prune and cache eviction planning, LRU budgets | `Unity.Mathematics`, `Newtonsoft.Json` only |
 | `Unsquare/Integration/` | CS2 integration: prefab cloning, mesh baking, assets, ECS systems | Core + game assemblies |
 | `Unsquare/Api/` | UI-facing service (`IBuildingDeformService`) and its data types | Core + Integration |
 | `Unsquare/UI/` | The mod's UI: `CageEditSession` (edit model), Unsquare tool (mouse), hotkeys, cage overlay, UI bindings, options page | Core + Api + game input/render/tool systems |
-| `UiModule/` | React UI module (game template): mode button (next to the underground toggle, or top left/right by option `ButtonPosition`) and the tool window above the edited building (pick mode, resets); talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
+| `UiModule/` | React UI module (game template): mode button (next to the underground toggle, or top left/right by option `ButtonPosition`), the tool window above the edited building (pick mode, resets) and the old-saves popup; talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
 | `*/PlacemakerCompatibility/` | Everything for buildings the Placemaker mod has bent, per layer (see Placemaker compatibility) | as its layer |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 
@@ -85,20 +85,25 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
 - Buildings have no impostors (CS2 only gives them to trees). The coarsest LOD is left out for twisted cages
   (`CageTwist` > `PipelineOptions.CoarseLodTwistMeters`); it can't follow the bend.
 - Mesh and prefab APIs are main-thread only; keep hot loops allocation-free (no LINQ, no closures).
+- Base meshes are obtained only through `SourceMeshCache` (`PipelineOptions.SourceMeshBudgetVertices`, LRU), never
+  `RenderPrefab.ObtainMeshes` directly: every obtain counts a reference, and unreleased meshes stay loaded all session.
 - Wrap each game-API step (clone, AddPrefab, asset I/O, reflection) in try/catch, log, and degrade by not swapping.
 - Use `Mod.Log` (`Colossal.Logging.ILog`) for logging, never `Debug.Log`.
 - `OverlayRenderSystem` lines/curves are ground-plane only (length measured in xz; vertical ones vanish). Draw 3D
   lines as `CustomMeshType.Cylinder` via `DrawCustomMesh` (see `SegmentPose`).
 - Custom meshes are only rendered in frames whose overlay buffer also holds a regular primitive (circle, line);
   `CageOverlaySystem` draws a near-invisible keep-alive circle every frame.
-- Prefab names, deform keys, asset names, GUID seeds and the manifest format are what saves depend on. Since the
-  public 1.0.0 release they must stay compatible: a format change bumps `VariantManifest.FormatVersion` and migrates
-  older entries (never drops them). Any change to them needs the user's confirmation first.
+- Prefab names, deform keys, asset names, GUID seeds, the manifest format (also used by the legacy archive
+  `variants.archive.json`), the `SavedCage` component (type and namespace name) and `SavedCageCodec`'s value format
+  are what saves depend on. Since the public 1.0.0 release they
+  must stay compatible: a manifest change bumps `VariantManifest.FormatVersion` and migrates older entries (never
+  drops them); a codec change bumps `SavedCageCodec.FormatVersion` and keeps decoding older formats. Any change to
+  them needs the user's confirmation first.
 
 ## Options (settings tab)
 
 - Tunables are option objects with a `Default`, not consts: `PipelineOptions` (Core: `CageLimits`,
-  `AttachmentOptions`, rebake delay, pruning, sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
+  `AttachmentOptions`, rebake delay, geometry cache size, source mesh budget (no slider), sync tolerances, coarse LOD twist limit), `CageEditOptions` and `CageOverlayStyle` (UI).
 - Flow: `UnsquareSettings` (Settings tab) → `SettingsApplier` → `IBuildingDeformService.Configure` →
   `IVariantPipeline.Options` → Core method parameters; edit and overlay options go to the session and overlay.
 - The rebake delay only applies to nudges, undo/redo and pauses within a drag; drag release and one-shot commands
@@ -170,6 +175,30 @@ The deploy wipes `Mods\Unsquare`; then the build runs `npm run build` in `UiModu
   until the building's `Updated` is cleaned up: the new areas and nets only appear in Modification1 of the frame after
   the prefab change, and swapping earlier leaves them plain. A cage the new building can't take leaves it plain.
   Option `PipelineOptions.KeepOnLevelUp`.
+- **Saves** (`Unsquare/AssetFootprint.md`): a deformed building is saved as its base prefab plus a `SavedCage`
+  component (its `DeformSpec`, `SavedCageCodec`). In the save frame `SavedCageWriteSystem` (before
+  `BeginPrefabSerializationSystem`) writes the cage and points the building and its extension variants at their
+  bases; `SavedCageRestoreSystem` (after `SerializerSystem`) points them back. No `Updated`, no lot sync: the lot
+  keeps its deformed layout in the save. Bases that don't exist at load (Placemaker's runtime prefabs,
+  `IForeignPrefabs.IsRuntimePrefab`) stay on their variant. On load each saved (base, spec) is created once
+  (`VariantOrigin.Load`, never refused) in `VariantSystem`'s first update after `OnGameLoaded`, never in
+  `OnGameLoaded` itself: prefabs added there lose `Created` before `PrefabInitializeSystem` runs, stay without an
+  instance archetype and crash the game natively once buildings use them (`TrySwap` refuses such targets). They are
+  swapped in without lot sync; a building that left its base meanwhile (level-up) is handed to the level-up carry.
+  Without the mod, buildings load plain with the deformed lot. Saves from before 1.2 still need the manifest
+  restore at preload (`VariantOrigin.Legacy`) and convert at their next save.
+  - The manifest is legacy and frozen: edits and loads never add entries; only legacy restores complete theirs.
+    Entries used by no city for 14 days are pruned (not their assets). At each start, before the prune, every entry
+    is appended to `variants.archive.json` (never rewritten). It rebuilds a missing manifest, and the Settings buttons
+    retire the manifest (archive it, write it empty) or revive archived entries (all in `LegacyManifestStore`;
+    `VariantSystem.Saves.cs` holds the save/load side of `VariantSystem`). After a load with old-format
+    buildings (on a variant at `OnGameLoadingComplete`, convertible), `IBuildingDeformService.LegacySaveLoaded` opens
+    a popup (`LegacySavesUISystem`, `legacy-saves-dialog.tsx`) asking to resave old saves and offering the retire;
+    an old save whose variants are only archived (buildings on obsolete prefabs) instead offers to restore just those,
+    and a converted save (with `SavedCage` buildings) loaded while the manifest has entries asks to finish converting.
+  - Geometry assets are a cache: at the first preload, `VariantHousekeeper` evicts the least recently used unclaimed
+    ones (last use in `bounds.json`) beyond `PipelineOptions.GeometryCacheGigabytes`. Assets of manifest entries are
+    claimed and don't count. Never delete assets while the game runs; a missing asset is rebaked on demand.
 - Effects (`EffectSource`) are not deformed yet.
 - **Zoning and condemnation:**
   - Without `SpawnableBuilding`, a variant is initialized like a ploppable (`OverrideZone`) and overrides its lot

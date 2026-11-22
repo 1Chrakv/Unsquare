@@ -42,8 +42,10 @@ angled streets and slopes.
 - **Level-ups keep the shape.** When a deformed growable levels up, the new building gets the same lot outline;
   leans and roof changes scale with its height (option *Keep shape on level-up*).
 - **Undo / redo** of every cage edit, across all buildings.
-- **Saved with the city.** Deformed buildings are baked into variant prefabs and restored when a save is loaded.
-  Identical deformations share their baked assets.
+- **Saved with the city.** A save stores each deformed building as its normal building plus its cage; the deformed
+  geometry is rebuilt (or taken from the cache) when the save is loaded. Identical deformations share their baked
+  assets. Saves from older versions keep their shapes and switch to this format the next time they are saved
+  (over the same file). Baked geometry is a cache with a size limit (option, 2 GB by default).
 
 ## Limitations
 
@@ -63,8 +65,9 @@ angled streets and slopes.
 - **Strong twists** drop the coarsest LOD, which can't follow the bend; very distant buildings may pop.
 - **Only buildings with a lot** can be deformed. A handle can't be pushed through the opposite side, and extreme
   moves are clamped.
-- **Saves depend on the mod.** Deformed buildings are variant prefabs; without Unsquare they can't be restored.
-  Updates keep existing deformations.
+- **Shapes need the mod.** Without Unsquare a save still loads, but deformed buildings come back undeformed while
+  their paths and areas keep the deformed layout. A save made with this version and opened with Unsquare 1.1.0 or
+  older loses its shapes the same way. Updates keep existing deformations.
 
 ## Recommended mods
 
@@ -166,7 +169,23 @@ the hovered one cyan.
 ### Options
 
 Options → Unsquare → Settings holds the tunables: cage limits, which attachments follow the cage, facade alignment,
-nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, and overlay style.
+nudge step sizes, picking and gizmo sizes, neighbour alignment reach and angle, overlay style, and the geometry cache
+size.
+
+### Saves from before version 1.2
+
+Older saves reference deformed buildings that Unsquare must rebuild at every start, which slows loading. Open each
+old save you want to keep and save it over the same file: it then stores the buildings in the new format. A popup
+after loading such a save reminds you; press **I've converted all my saves** there once all are converted, or keep it
+coming with **I still have old saves I need to keep**. It also comes back on converted saves while old ones still slow
+down every start. Settings → **Hide the old-saves reminders** turns it off.
+
+- Once all are converted, press Options → Unsquare → Settings → **I've converted all my old saves**. From the next
+  start they are no longer rebuilt.
+- Old variants no save has used for 14 days are no longer rebuilt either. If an old save then shows plain or
+  missing buildings, the popup offers **Restore shapes** for that save: press it and open the save again before
+  saving it. **Restore shapes for old saves** in Settings brings back the shapes of all old saves; loading is
+  slower once.
 
 ### Coming from FlexIt
 
@@ -184,8 +203,8 @@ button, details are in the Unsquare log.
 
 ### Before uninstalling
 
-Saves with deformed buildings need the mod to restore them. Reset deformed buildings (Alt+Shift+Delete resets all)
-and save before removing the mod.
+Without the mod, deformed buildings load undeformed while their paths and areas stay as they were deformed. For a
+clean lot, reset deformed buildings (Alt+Shift+Delete resets all) and save before removing the mod.
 
 ## Building from source
 

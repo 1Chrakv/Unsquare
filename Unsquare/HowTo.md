@@ -17,10 +17,13 @@ Cage edit ─▶ IBuildingDeformService ─▶ VariantSystem (building, DeformSp
           Debouncer (PipelineOptions.RebakeDelaySeconds; BakeNow on drag release and one-shot commands)
           ─▶ VariantPrefabFactory:
               clone prefab, RenderVariantBuilder deforms meshes + LODs, GeometryAssetStore saves them,
-              attachment deformers place props/areas/lanes/nets, AddPrefab, manifest entry
+              attachment deformers place props/areas/lanes/nets, AddPrefab
           ─▶ wait until the prefab entity loses `Created` ─▶ PrepareVariantPrefab ─▶ PrefabSwapper
-Next session: OnGamePreload ─▶ VariantManifest ─▶ re-create every variant (assets + BoundsCache reused)
-              OnGameLoadingComplete ─▶ PrepareVariantPrefab ─▶ mark used variants ─▶ PrunePlanner ─▶ VariantHousekeeper
+Save:         SavedCageWriteSystem ─▶ base + SavedCage in the save ─▶ SavedCageRestoreSystem (same frame)
+Next session: first OnGamePreload ─▶ archive legacy entries ─▶ VariantHousekeeper (legacy prune, cache eviction)
+              OnGamePreload ─▶ re-create legacy manifest entries (saves from before 1.2)
+              first OnUpdate after load ─▶ RestoreSavedCages (assets + BoundsCache reused, else rebaked)
+              OnGameLoadingComplete ─▶ PrepareVariantPrefab ─▶ mark used legacy variants
 
 PrepareVariantPrefab = SimDataCopier + VariantArchetype + upgrade setup (UpgradeRegistration, UpgradeOwnership).
 On-lot upgrade extensions get their own variants with the owner's cage and swap with the owner; the UI edits a
@@ -105,7 +108,7 @@ reloads on demand). Assets land in `%LocalLow%\Colossal Order\Cities Skylines II
   the base's old IDs) and `UIObject` (keeps it out of build menus);
 * puts it in the editor category `Unsquare/Variants` and excludes it from Find It;
 * deforms attachments (`IAttachmentDeformer`: props, areas, lanes, nets), see `CLAUDE.md`;
-* registers it with `PrefabSystem.AddPrefab` and adds a manifest entry.
+* registers it with `PrefabSystem.AddPrefab` (no manifest entry since 1.2: saves hold base + cage).
 
 ---
 
@@ -130,12 +133,15 @@ queues the copy and the swap until it is gone and the simulation is ready.
 
 ## 7. Persistence
 
-Saves store each building's `PrefabRef` by name; variant prefabs exist only in memory. So every variant must be
+Since 1.2 saves hold a deformed building as its base prefab plus a `SavedCage` (see `AssetFootprint.md`); the variant
+is created after load. Saves from before 1.2 store the variant's `PrefabRef` by name, so those variants must be
 registered again before the save's entities are deserialized:
 
-* `VariantManifest` (`variants.json`) lists every variant (`ManifestEntry`: base type/name, variant name,
-  offsets, `FlatTerrain`, cities, last use, asset names), keyed `BaseType/VariantName`.
+* `VariantManifest` (`variants.json`) lists them (`ManifestEntry`: base type/name, variant name, offsets,
+  `FlatTerrain`, cities, last use, asset names), keyed `BaseType/VariantName`. It is frozen: no new entries.
 * `OnGamePreload` re-creates every entry; existing assets and cached bounds make this cheap.
+* `variants.archive.json` is an append-only copy of every entry ever seen; it rebuilds a missing manifest and backs
+  the Settings buttons that retire the manifest or bring pruned entries back.
 * Writes go through `AtomicJsonFile` (`.tmp` → replace, `.bak` fallback). An unreadable manifest is moved aside
   (`.corrupt-<time>`), never treated as empty. `FormatVersion` mismatches still drop old entries;
   the next format change must add a migration instead (saves are compatible since 1.0.0).
@@ -144,22 +150,26 @@ registered again before the save's entities are deserialized:
 
 ## 8. Housekeeping
 
-In `OnGameLoadingComplete`, `VariantSystem` collects the variants used by this city (`CityConfigurationSystem.cityName`)
-and `PrunePlanner` decides:
+In `OnGameLoadingComplete`, `VariantSystem` marks the legacy entries used by this city
+(`CityConfigurationSystem.cityName`): used here: add the city, update `LastUsedUtc`; unused here: remove the city.
+A converted save is still on its bases at that point, so its city drops out of the legacy entries.
 
-* used here: add the city, update `LastUsedUtc`; unused here: remove the city;
-* used by no city for `PipelineOptions.PruneAfterDays` (default 14, option): prune the entry and delete its
-  assets, except assets still claimed by another entry;
-* orphan sweep (`OrphanSweepPlan`): delete `UQ_` assets no entry claims, but never more than half of the own
-  files once over 10 (`MaxSweepShare`, `SweepGuardMinCount`), so a naming bug can't wipe everything.
+At the first preload of a session (before anything is created) `VariantHousekeeper` runs:
 
-`VariantHousekeeper` executes the plan. Renaming a city, or two cities with the same name, confuses the tracking.
+* `PrunePlanner`: entries used by no city for 14 days are removed from the manifest; their assets stay as cache;
+* `CacheEvictionPlanner`: `UQ_` assets no entry claims are a cache of at most `PipelineOptions.GeometryCacheGigabytes`
+  (default 2 GB); beyond it the least recently used go (last use in `bounds.json`, else the file time);
+* bounds of deleted assets are dropped.
+
+A deleted asset is rebaked when a variant needs it again. Renaming a city, or two cities with the same name, confuses
+the legacy tracking.
 
 ---
 
 ## 9. Pitfalls
 
-* **Saves depend on the mod:** a save with variant buildings needs the mod, the manifest and the assets.
+* **Saves depend on the mod:** a save from before 1.2 needs the mod and the manifest (or its archive); newer saves
+  only need the mod.
 * **Names are permanent:** changing naming, prefixes, deform-key format or GUID seeds orphans every variant.
   Bump the version parts instead, and only after confirmation.
 * **Submeshes** with `DefaultMissingMesh` or stacked meshes may need special handling.

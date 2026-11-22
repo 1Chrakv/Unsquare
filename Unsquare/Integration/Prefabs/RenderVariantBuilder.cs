@@ -21,11 +21,13 @@ namespace Unsquare.Integration.Prefabs
         private const string SkippedLodSuffix = "-fine";
 
         private readonly GeometryAssetStore _store;
+        private readonly SourceMeshCache _sources;
         private readonly Dictionary<string, Built> _cache = new(StringComparer.Ordinal);
 
-        public RenderVariantBuilder(GeometryAssetStore store)
+        public RenderVariantBuilder(GeometryAssetStore store, SourceMeshCache sources)
         {
             _store = store;
+            _sources = sources;
         }
 
         /// <summary>Replaced on every preload; lets restores skip vertex work.</summary>
@@ -90,9 +92,14 @@ namespace Unsquare.Integration.Prefabs
         {
             bool exists = _store.TryGet(hash, out var asset);
             if (exists && BoundsCache.TryGet(assetName, out bounds))
+            {
+                BoundsCache.Touch(assetName, DateTime.UtcNow); // the cache's eviction order
                 return asset;
+            }
 
-            var meshes = MeshDeformer.DeformCopies(source.ObtainMeshes(), transform, deformation, out bounds);
+            var sourceMeshes = _sources.Obtain(source)
+                               ?? throw new InvalidOperationException($"{source.name} has no geometry to deform.");
+            var meshes = MeshDeformer.DeformCopies(sourceMeshes, transform, deformation, out bounds);
             if (exists)
                 MeshDeformer.Destroy(meshes); // only needed the bounds
             else
@@ -101,6 +108,7 @@ namespace Unsquare.Integration.Prefabs
                 CreatedAssetCount++;
             }
             BoundsCache.Set(assetName, bounds);
+            BoundsCache.Touch(assetName, DateTime.UtcNow);
             return asset;
         }
 

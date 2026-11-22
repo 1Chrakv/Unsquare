@@ -328,5 +328,60 @@ namespace Unsquare.Tests.Persistence
             Assert.That(manifest.Remove("BuildingPrefab/V"), Is.True);
             Assert.That(manifest.IsDirty, Is.True);
         }
+
+        [Test]
+        public void AddMissing_AddsCopiesAndNeverChangesExistingEntries()
+        {
+            var archive = new VariantManifest();
+            archive.Register(Entry("Kept", "UQ_old"), "Archived", Now);
+            var live = new VariantManifest();
+            live.Register(Entry("Kept", "UQ_new"), "Live", Now.AddDays(1));
+            live.Register(Entry("New", "UQ_b"), "Live", Now.AddDays(1));
+
+            Assert.That(archive.AddMissing(live.Entries), Is.EqualTo(1));
+
+            archive.TryGet("BuildingPrefab/Kept", out var kept);
+            archive.TryGet("BuildingPrefab/New", out var added);
+            Assert.That(kept.Assets, Is.EqualTo(new[] { "UQ_old" }));
+            Assert.That(kept.Cities, Is.EqualTo(new[] { "Archived" }));
+            Assert.That(added.Cities, Is.EqualTo(new[] { "Live" }));
+            Assert.That(added.LastUsedUtc, Is.EqualTo(Now.AddDays(1)));
+            live.TryGet("BuildingPrefab/New", out var source);
+            Assert.That(added, Is.Not.SameAs(source));
+            Assert.That(added.Assets, Is.Not.SameAs(source.Assets));
+        }
+
+        [Test]
+        public void AddMissing_NothingNew_StaysClean()
+        {
+            using var temp = new TempDirectory();
+            var manifest = new VariantManifest();
+            manifest.Register(Entry("V"), null, Now);
+            manifest.Save(temp.File("m.json"));
+
+            Assert.That(manifest.AddMissing(new[] { Entry("V", "UQ_x") }), Is.EqualTo(0));
+            Assert.That(manifest.IsDirty, Is.False);
+        }
+
+        [Test]
+        public void Revive_AddsMissingAsFreshWithoutCities()
+        {
+            var archive = new VariantManifest();
+            archive.Register(Entry("Pruned", "UQ_a"), "OldCity", Now.AddDays(-60));
+            archive.Register(Entry("Live", "UQ_b"), "OldCity", Now.AddDays(-60));
+            var live = new VariantManifest();
+            live.Register(Entry("Live", "UQ_b"), "City", Now);
+
+            Assert.That(live.Revive(archive.Entries, Now.AddDays(1)), Is.EqualTo(1));
+
+            live.TryGet("BuildingPrefab/Pruned", out var revived);
+            live.TryGet("BuildingPrefab/Live", out var untouched);
+            Assert.That(revived.Cities, Is.Empty);
+            Assert.That(revived.LastUsedUtc, Is.EqualTo(Now.AddDays(1)));
+            Assert.That(revived.Assets, Is.EqualTo(new[] { "UQ_a" }));
+            Assert.That(untouched.Cities, Is.EqualTo(new[] { "City" }));
+            archive.TryGet("BuildingPrefab/Pruned", out var archived);
+            Assert.That(archived.Cities, Is.EqualTo(new[] { "OldCity" }));
+        }
     }
 }

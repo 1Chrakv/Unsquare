@@ -1,0 +1,56 @@
+// Centred over the city view; only the panel takes clicks, the rest still reaches the tool.
+.anchor {
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+    width: 480rem;
+    pointer-events: none;
+}
+
+.panel {
+    pointer-events: auto;
+}
+
+.content {
+    padding: 16rem 24rem 20rem;
+}
+
+.message {
+    margin-bottom: 16rem;
+    font-size: 14rem;
+}
+
+.problem {
+    margin-bottom: 14rem;
+    font-size: 13rem;
+    color: rgb(255, 120, 100);
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+.button {
+    margin-top: 10rem;
+    padding: 6rem 12rem;
+}
+
+// A sentence of the message after the first (plain classes: the game's UI may lack sibling selectors).
+.next {
+    margin-top: 6rem;
+}
+
+// The step the player should take right away.
+.highlight {
+    font-weight: bold;
+    color: rgb(255, 200, 80);
+}
+
+// Small note under the button it explains.
+.hint {
+    margin: 6rem 4rem 4rem;
+    font-size: 12rem;
+    opacity: 0.7;
+}

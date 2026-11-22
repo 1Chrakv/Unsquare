@@ -51,6 +51,22 @@ namespace Unsquare.Core.Persistence
         [JsonIgnore]
         public bool IsLotOnly => BuildingOffsets != null && IsZero(BuildingOffsets) && !IsZero(Offsets);
 
+        /// <summary>Deep copy, so the live manifest and the archive never share lists.</summary>
+        public ManifestEntry Copy() => new()
+        {
+            BaseType = BaseType,
+            BaseName = BaseName,
+            VariantName = VariantName,
+            Offsets = (int[])Offsets?.Clone(),
+            BuildingOffsets = (int[])BuildingOffsets?.Clone(),
+            FlatTerrain = FlatTerrain,
+            BlendMode = BlendMode,
+            LastUsedUtc = LastUsedUtc,
+            Cities = new List<string>(Cities ?? new List<string>()),
+            Assets = new List<string>(Assets ?? new List<string>()),
+            Extensions = new List<string>(Extensions ?? new List<string>()),
+        };
+
         public DeformSpec ToSpec()
         {
             var lot = CageOffsets.FromArray(Offsets);

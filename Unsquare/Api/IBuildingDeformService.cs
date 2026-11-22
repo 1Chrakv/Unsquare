@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unsquare.Core.Cage;
 using Unsquare.Core.Editing;
 using Unsquare.Core.Options;
+using Unsquare.Core.Persistence;
 using Unsquare.Core.Terrain;
 
 namespace Unsquare.Api
@@ -94,7 +95,25 @@ namespace Unsquare.Api
         /// </summary>
         FlexItImportResult ImportFlexIt();
 
-        /// <summary>Current tunables (limits, attachments, rebake delay, pruning, lot sync).</summary>
+        /// <summary>
+        /// For players who resaved all their old saves: archives the variants that saves from before 1.2 need, so they
+        /// are no longer restored at every start. Warns with the loaded city's buildings whose old shape failed to load.
+        /// </summary>
+        LegacySavesResult RetireLegacyManifest();
+
+        /// <summary>Brings archived variants of old saves back; they load with the next save opened.</summary>
+        LegacySavesResult RestoreLegacyShapes();
+
+        /// <summary>Brings back only the archived variants the loaded city is missing; they load when it is loaded again.</summary>
+        LegacySavesResult RestoreArchivedShapes();
+
+        /// <summary>
+        /// A city was loaded with deformed buildings in the format of saves from before 1.2: convertible ones (saving
+        /// over the same file converts them) or ones missing because their variants are only archived.
+        /// </summary>
+        event Action<LegacySaveCounts> LegacySaveLoaded;
+
+        /// <summary>Current tunables (limits, attachments, rebake delay, geometry cache size, lot sync).</summary>
         PipelineOptions Options { get; }
 
         /// <summary>Replaces the tunables; applies to later requests and new variants, not to existing ones.</summary>

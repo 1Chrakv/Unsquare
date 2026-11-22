@@ -111,6 +111,11 @@ namespace Unsquare.Integration.PlacemakerCompatibility
                    bridge.IsVariant(prefabRef.m_Prefab);
         }
 
+        // Placemaker builds its variants after loading, so a save can never reference one.
+        public bool IsRuntimePrefab(PrefabBase prefab) =>
+            PlacemakerVariantName.IsVariant(prefab.name) ||
+            (TryGetBridge(out var bridge) && _prefabSystem.TryGetEntity(prefab, out var entity) && bridge.IsVariant(entity));
+
         public bool TryGetTakenOverBase(Entity building, out ObjectGeometryPrefab basePrefab) =>
             _adopted.TryGetValue(building, out basePrefab);
 

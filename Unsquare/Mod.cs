@@ -6,6 +6,7 @@ using Game.Common;
 using Game.Modding;
 using Game.Prefabs;
 using Game.SceneFlow;
+using Game.Serialization;
 using Unsquare.Api;
 using Unsquare.Integration.Systems;
 using Unsquare.UI.Bindings;
@@ -13,6 +14,7 @@ using Unsquare.UI.Editing;
 using Unsquare.UI.Input;
 using Unsquare.UI.Overlay;
 using Unsquare.UI.PlacemakerCompatibility;
+using Unsquare.UI.Saves;
 using Unsquare.UI.Tool;
 
 namespace Unsquare
@@ -47,6 +49,10 @@ namespace Unsquare
             updateSystem.UpdateAfter<ExtensionInstallSystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
             // Level-ups are queued and finished at EndFrameBarrier, so every frame in between sees both prefabs.
             updateSystem.UpdateAfter<LevelUpCarrySystem, ModificationEndBarrier>(SystemUpdatePhase.ModificationEnd);
+            // Saves hold deformed buildings as base + cage: swap before the game picks the prefabs to save, and back
+            // right after the serializer captured the entities (same frame).
+            updateSystem.UpdateBefore<SavedCageWriteSystem, BeginPrefabSerializationSystem>(SystemUpdatePhase.Serialize);
+            updateSystem.UpdateAfter<SavedCageRestoreSystem, SerializerSystem>(SystemUpdatePhase.Serialize);
             updateSystem.UpdateAt<BaseTerrainSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<UnsquareToolSystem, CageEditorSystem>(SystemUpdatePhase.ToolUpdate);
@@ -54,12 +60,17 @@ namespace Unsquare
             updateSystem.UpdateAfter<CageOverlaySystem, CageHotkeySystem>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAt<UnsquareUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<PlacemakerUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<LegacySavesUISystem>(SystemUpdatePhase.UIUpdate);
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
             world.GetOrCreateSystemManaged<UnsquareUISystem>().Bind(_settings);
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
             _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
-            _settingsApplier = new SettingsApplier(_settings, UnsquareApi.GetDeformService(world), session,
+            var deformService = UnsquareApi.GetDeformService(world);
+            _settings.BindLegacySaves(() => deformService.RetireLegacyManifest().ToString(),
+                () => deformService.RestoreLegacyShapes().ToString());
+            world.GetOrCreateSystemManaged<LegacySavesUISystem>().Bind(_settings, deformService);
+            _settingsApplier = new SettingsApplier(_settings, deformService, session,
                 world.GetOrCreateSystemManaged<CageOverlaySystem>());
             _settingsApplier.Apply();
         }
