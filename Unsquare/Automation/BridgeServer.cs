@@ -122,7 +122,8 @@ namespace Unsquare.Automation
             if (request.HttpMethod == "OPTIONS")
                 return (405, Error("No CORS."));
 
-            var path = request.Url.AbsolutePath;
+            // The raw path keeps escapes: Url decodes %23 to '#' and drops the rest of an entity ref as a fragment.
+            var path = request.RawUrl.Split('?')[0];
             if (request.HttpMethod == "GET" && path.StartsWith("/v1/jobs/", StringComparison.Ordinal))
                 return JobStatus(path.Substring("/v1/jobs/".Length));
 

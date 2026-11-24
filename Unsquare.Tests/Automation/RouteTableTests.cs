@@ -34,6 +34,15 @@ namespace Unsquare.Tests.Automation
         }
 
         [Test]
+        public void TryMatch_EscapedEntityRef_KeepsWholeSegment()
+        {
+            Assert.That(Table().TryMatch("GET", "/v1/buildings/%2372118%3A5/cage", out var handler,
+                out var parameters, out _), Is.True);
+            Assert.That(handler, Is.EqualTo("cage"));
+            Assert.That(parameters["ref"], Is.EqualTo("#72118:5"));
+        }
+
+        [Test]
         public void TryMatch_MethodIsCaseInsensitive()
         {
             Assert.That(Table().TryMatch("get", "/v1/state", out _, out _, out _), Is.True);
