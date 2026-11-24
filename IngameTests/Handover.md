@@ -27,8 +27,8 @@ Last full fast run: run 5 (2026-11-24) on `UQTest-Spike` (no fixture city yet), 
 - **Failed:**
   - DRAG-010: a roof prop lands 0.36 m off after a whole-cage shift ([issue 002](../Issues/002-roof-prop-off-after-whole-cage-shift.md)).
   - UPGRADE-007: a nudge on the raised car-park cage can do nothing, and undo skips a step ([issue 004](../Issues/004-raised-cage-nudge-swallowed-undo-skips.md)).
-  - UPGRADE-004: a bridge bug; entity refs `#index:version` lost their `#`. Fixed in `ce0931e`; rerun result:
-    pending.
+  - UPGRADE-004: a bridge bug; entity refs `#index:version` lost their `#`. Fixed in `ce0931e`; passes in the rerun
+    (run 6, with ENV-001).
 - **Skipped (need fixture buildings):** ALIGN-001 to 004, 006, 007, 009, 010; BLEND-001; FIT-001 to 003, 005;
   LEVEL-001, 002, 004, 005; LOT-002; PROPS-001 to 005; SAVE-003.
 - **Never run:** the slow set (`specs/slow/save.spec.ts`: SAVE-001, SAVE-007, SAVE-004). It restarts the game,
