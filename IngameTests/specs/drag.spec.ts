@@ -69,12 +69,18 @@ describe("DRAG – dragging", () => {
     expect((await bridge.settled()).deformed).toBe(false);
   });
 
-  it("DRAG-009 a turn that folds the cage is refused", async (context) => {
+  it("DRAG-009 a turn that folds the cage keeps the last shape that didn't fold", async (context) => {
     await target(await building(context, "plainHouse"), "Face", Face.top);
     await bridge.drag({ rotate: { axis: 0, degrees: 175 }, frames: 10 });
-    const session = await bridge.session();
-    expect(session.problem).toBe("CageFolds");
-    expect((await bridge.settled()).deformed, "the folding turn is not applied").toBe(false);
+    expect((await bridge.session()).problem).toBe("CageFolds");
+    const cage = await bridge.settled();
+    expect(cage.status).not.toBe("Failed");
+    expect(cage.deformed, "the turn up to the fold is kept").toBe(true);
+    // Not folded: each top front corner is still in front of the top back corner above the same side.
+    const depth = cage.lotBox.max[2] - cage.lotBox.min[2];
+    const shift = offsets(cage.targetOffsets);
+    for (const x of [0, 1] as const)
+      expect(depth + shift[corner(x, 1, 1)][2] - shift[corner(x, 1, 0)][2], `top side ${x} not folded`).toBeGreaterThan(0);
   });
 
   it("DRAG-010 dragging the whole cage shifts building, props and lot together", async (context) => {
@@ -102,16 +108,17 @@ describe("DRAG – dragging", () => {
     await bridge.handle("Cage");
     await bridge.drag({ translate: [1, 0, 0], frames: 5 });
     await bridge.settled();
+    expect((await bridge.session()).cage!.lotDeformed, "Building mode leaves the lot").toBe(false);
     await bridge.editMode("Lot");
-    expect((await bridge.session()).cage!.deformed, "Building mode leaves the lot").toBe(false);
     await bridge.undo();
     await bridge.settled();
 
     await bridge.handle("Cage");
     await bridge.drag({ translate: [1, 0, 0], frames: 5 });
     await bridge.settled();
+    expect((await bridge.session()).cage!.lotDeformed, "Lot mode moves the lot").toBe(true);
     await bridge.editMode("Building");
-    expect((await bridge.session()).cage!.deformed, "Lot mode leaves the building").toBe(false);
+    for (const c of offsets((await bridge.session()).cage!.targetOffsets)) expect(c, "Lot mode leaves the building").toEqual([0, 0, 0]);
   });
 
   it("DRAG-012 the whole cage's vertical ring turns the building in place", async (context) => {

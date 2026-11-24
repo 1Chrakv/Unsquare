@@ -93,7 +93,7 @@ features add requirements and tests in the same change.
 | DRAG-006 | The yellow square moves the handle in the horizontal plane | 85 | suite |
 | DRAG-007 | Dragging the top face's green ring twists the top around its centre; one Ctrl+Z undoes the whole turn | 147 | suite |
 | DRAG-008 | Dragging the top face's red and blue rings slopes the roof around its centre without jumps, also when the rings are seen edge-on | 148 | suite, input |
-| DRAG-009 | A turn that folds the cage shows the fold problem and is not applied | 151 | suite |
+| DRAG-009 | A turn that folds the cage shows the fold problem; the folding part is not applied: the building keeps the last shape of the drag that didn't fold | 151 | suite |
 | DRAG-010 | Dragging the whole cage (arrow, square, or pressing on it) shifts the building, lot, paths and props together; one Ctrl+Z per drag | 154 | suite |
 | DRAG-011 | Whole-cage drags follow the edit mode: Building moves only the building, Lot only ground items, Both everything | 157 | suite |
 | DRAG-012 | The whole cage's green ring turns the building in place around its centre; red/blue rings tilt it | 155 | suite |
@@ -214,7 +214,7 @@ features add requirements and tests in the same change.
 | UNDO-001 | Each undo takes back one nudge (`[Edit] Undo on …`), redo repeats it; the selection stays | 49 | suite |
 | UNDO-002 | A whole drag is undone in one step | 50 | suite |
 | UNDO-003 | Undoing an edit of another building reverts it and makes it the target; the current selection is dropped | 51 | suite |
-| UNDO-004 | Edits of a bulldozed building are skipped silently; the next older edit is undone | 52 | suite |
+| UNDO-004 | Edits of a bulldozed building are skipped silently; the next older edit is undone | 52 | suite, input |
 | UNDO-005 | After reset-all or after loading another save there is nothing to undo (`[Edit] Nothing to undo`) | 53 | suite |
 | UNDO-006 | A handle reset is undone in one step | 57 | suite |
 
