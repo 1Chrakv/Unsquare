@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bridge } from "../src/bridge.js";
 import { Face, offsets } from "../src/expect.js";
-import { building } from "../src/fixture.js";
+import { building, loadFixture } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { target, twoOfAKind, useCity } from "../src/setup.js";
 
@@ -51,6 +51,27 @@ describe("UNDO – undo and redo", () => {
     expect(session.target?.ref).toBe(a.ref);
     expect(session.handle).toBeNull();
     expect((await bridge.settled(a.ref)).deformed).toBe(false);
+  });
+
+  it("UNDO-004 edits of a bulldozed building are skipped; the older edit is undone", async (context) => {
+    const pair = await twoOfAKind();
+    if (!pair) return context.skip();
+    const [a, b] = pair;
+    for (const house of [a, b]) {
+      await target(house.ref, "Face", Face.top);
+      await bridge.nudge([0, 1, 0]);
+      await bridge.settled();
+      await bridge.stepBack();
+      await bridge.stepBack();
+    }
+    await bridge.bulldoze(b.ref);
+    await bridge.frames(10);
+    await bridge.undo();
+    const session = await bridge.session();
+    expect(session.target?.ref).toBe(a.ref);
+    expect((await bridge.settled(a.ref)).deformed).toBe(false);
+    // The fixture lost a building: reload it for the next spec file.
+    await loadFixture({ fresh: true });
   });
 
   it("UNDO-005 after reset all there is nothing to undo", async (context) => {

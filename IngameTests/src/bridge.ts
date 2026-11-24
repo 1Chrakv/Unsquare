@@ -193,8 +193,16 @@ export class Bridge {
   /** Moves the selected handle by `direction` × the current step (building space: x width, y up, z street side). */
   nudge = (direction: Vec3) => this.call<{ result: string }>("POST", "session/nudge", { direction });
   cycleStep = () => this.call<{ result: string }>("POST", "session/step", {});
-  drag = (body: { translate?: Vec3; rotate?: { axis: number; degrees: number }; frames?: number; cancelAt?: number; part?: number }) =>
-    this.call<{ result?: string; cancelled?: boolean; frames: number }>("POST", "session/drag", body);
+  /** A drag over `frames` frames; `hold` keeps it active until {@link dragEnd}, `cancelAt` right-clicks at that frame. */
+  drag = (body: {
+    translate?: Vec3;
+    rotate?: { axis: number; degrees: number };
+    frames?: number;
+    cancelAt?: number;
+    hold?: boolean;
+    part?: number;
+  }) => this.call<{ result?: string; cancelled?: boolean; held?: boolean; frames: number }>("POST", "session/drag", body);
+  dragEnd = (cancel = false) => this.call("POST", "session/dragEnd", { cancel });
   undo = () => this.call("POST", "session/undo", {});
   redo = () => this.call("POST", "session/redo", {});
   reset = () => this.call<{ result: string }>("POST", "session/reset", {});

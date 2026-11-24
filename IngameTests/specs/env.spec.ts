@@ -11,13 +11,15 @@ describe("ENV – test environment", () => {
   it("ENV-001 the running build is the commit under test", async () => {
     await game.ensureRunning();
     const { version, configuration } = (await bridge.ping()).result;
-    // The newest commit that changed the mod; commits that only touch tests or docs need no redeploy.
-    const expected = execFileSync("git", ["log", "-1", "--format=%h", "--abbrev=7", "--", "Unsquare", "UiModule"], {
+    expect(configuration).toBe("Debug");
+    // The deployed commit's mod sources must equal the working tree's; tests and docs may differ.
+    const deployed = /\+([0-9a-f]{7})/.exec(version)?.[1];
+    expect(deployed, `version ${version} names its commit`).toBeTruthy();
+    const changed = execFileSync("git", ["diff", "--name-only", deployed!, "--", "Unsquare", "UiModule", ":!*.md"], {
       cwd: repoDir,
       encoding: "utf8",
     }).trim();
-    expect(configuration).toBe("Debug");
-    expect(version, "deployed build is older than the mod sources: run dotnet build Unsquare.sln").toContain(`+${expected}`);
+    expect(changed, "mod sources changed since the deployed build: run dotnet build Unsquare.sln").toBe("");
     expect(fs.readFileSync(modLog, "utf8").split(/\r?\n/)[0]).toContain(`Unsquare ${version} (Debug, built`);
   });
 

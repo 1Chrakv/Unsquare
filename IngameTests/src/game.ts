@@ -29,10 +29,8 @@ export const game = {
   async start(timeoutMs = 400_000) {
     if (this.isRunning()) throw new Error("The game is already running.");
     this.enableBridge();
-    const appId = path.join(gameDir, "steam_appid.txt");
-    if (!fs.existsSync(appId)) fs.writeFileSync(appId, "949230");
     const started = Date.now();
-    spawn(gameExe, ["-developerMode", "-uiDeveloperMode"], { cwd: gameDir, detached: true, stdio: "ignore" }).unref();
+    this.launch();
     // The log is rewritten at each start; wait for this start's bridge line before talking to it.
     await waitUntil(
       () => fs.existsSync(modLog) && fs.statSync(modLog).mtimeMs > started && /\[Auto\] Automation bridge/.test(fs.readFileSync(modLog, "utf8")),
@@ -40,6 +38,20 @@ export const game = {
       "the mod's automation bridge to start (Debug build deployed?)",
     );
     await this.waitReady(timeoutMs);
+  },
+
+  /** Starts Cities2.exe directly (no Steam relaunch, no launcher) with extra arguments; doesn't wait. */
+  launch(extraArgs: string[] = []) {
+    const appId = path.join(gameDir, "steam_appid.txt");
+    if (!fs.existsSync(appId)) fs.writeFileSync(appId, "949230");
+    spawn(gameExe, ["-developerMode", "-uiDeveloperMode", ...extraArgs], { cwd: gameDir, detached: true, stdio: "ignore" }).unref();
+  },
+
+  /** Ends the game process; only for runs without the bridge (nothing is saved). */
+  async kill() {
+    if (!this.isRunning()) return;
+    execFileSync("taskkill", ["/IM", "Cities2.exe", "/F"]);
+    await waitUntil(() => !this.isRunning(), 30_000, "the game to be killed");
   },
 
   /** Waits until the game has reached the main menu or a city (it answers the bridge earlier, while starting). */

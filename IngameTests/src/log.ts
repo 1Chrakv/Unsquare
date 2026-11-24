@@ -18,6 +18,13 @@ export class LogWatch {
     return new LogWatch(file);
   }
 
+  /** Everything since the game started (the log is rewritten at each start). */
+  static fromStart(file = modLog) {
+    const watch = new LogWatch(file);
+    watch.offset = 0;
+    return watch;
+  }
+
   /** Every line written since the mark. */
   lines(): string[] {
     if (!fs.existsSync(this.file)) return [];
