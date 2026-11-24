@@ -52,6 +52,16 @@ namespace Unsquare.Tests.Automation
         }
 
         [Test]
+        public void Points_PairList_ReadsGroundPoints_AndRejectsTriples()
+        {
+            var args = new BridgeArgs(JObject.Parse("{\"p\": [[1, 2], [3.5, -4]], \"bad\": [[1, 2, 3]]}"));
+            var points = args.Points("p");
+            Assert.That(points, Has.Count.EqualTo(2));
+            Assert.That(points[1].y, Is.EqualTo(-4f));
+            Assert.Throws<BridgeArgumentException>(() => args.Points("bad"));
+        }
+
+        [Test]
         public void Int_WrongType_ThrowsArgumentError()
         {
             var args = new BridgeArgs(JObject.Parse("{\"frames\": \"many\"}"));

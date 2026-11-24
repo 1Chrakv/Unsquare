@@ -69,6 +69,21 @@ namespace Unsquare.Core.Automation
 
         public T Enum<T>(string name, T fallback) where T : struct => Has(name) ? Enum<T>(name) : fallback;
 
+        /// <summary>Ground points as [[x, z], …].</summary>
+        public List<float2> Points(string name)
+        {
+            if (Raw(name) is not JArray array)
+                throw new BridgeArgumentException($"'{name}' must be [[x, z], …].");
+            var points = new List<float2>(array.Count);
+            foreach (var item in array)
+            {
+                if (item is not JArray pair || pair.Count != 2)
+                    throw new BridgeArgumentException($"'{name}' must be [[x, z], …], not {item}.");
+                points.Add(new float2(pair[0].Value<float>(), pair[1].Value<float>()));
+            }
+            return points;
+        }
+
         /// <summary>A nested JSON object, e.g. {"rotate": {"axis": 1, "degrees": 30}}.</summary>
         public BridgeArgs Object(string name) =>
             Raw(name) is JObject nested

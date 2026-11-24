@@ -68,6 +68,9 @@ namespace Unsquare
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
             world.GetOrCreateSystemManaged<UnsquareUISystem>().Bind(_settings);
+#if UNSQUARE_AUTOMATION
+            world.GetOrCreateSystemManaged<Automation.AutomationBridgeSystem>().Bind(_settings);
+#endif
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
             _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
             var deformService = UnsquareApi.GetDeformService(world);

@@ -33,6 +33,7 @@ namespace Unsquare.Automation
             new BuildingCommands(_context).Register(_routes);
             new SessionCommands(_context).Register(_routes);
             new WaitCommands(_context).Register(_routes);
+            new ProbeCommands(_context).Register(_routes);
             try
             {
                 _server = new BridgeServer(config.Port, config.Token);
@@ -45,6 +46,13 @@ namespace Unsquare.Automation
                 _server = null;
                 Enabled = false;
             }
+        }
+
+        /// <summary>Gives the bridge the options page's settings (they are created after the systems).</summary>
+        internal void Bind(UI.Input.UnsquareSettings settings)
+        {
+            if (_context != null)
+                new SettingsCommands(settings).Register(_routes);
         }
 
         protected override void OnDestroy()

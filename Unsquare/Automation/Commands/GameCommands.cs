@@ -46,6 +46,11 @@ namespace Unsquare.Automation.Commands
             routes.Add("POST log/mark", Mark);
         }
 
+        // The bridge answers while the game still starts; a load then would be replaced by its main menu.
+        private static bool IsReady =>
+            !GameManager.instance.isGameLoading &&
+            (GameManager.instance.gameMode == GameMode.MainMenu || GameManager.instance.gameMode.IsGame());
+
         private CommandRun Ping(BridgeArgs args) => CommandRun.Done(new JObject
         {
             ["mod"] = "Unsquare",
@@ -62,6 +67,7 @@ namespace Unsquare.Automation.Commands
             {
                 ["gameMode"] = manager.gameMode.ToString(),
                 ["loading"] = manager.isGameLoading,
+                ["ready"] = IsReady,
                 ["inGame"] = BridgeContext.InGame,
                 ["save"] = _loadedSave,
                 ["frame"] = Time.frameCount,
@@ -73,8 +79,8 @@ namespace Unsquare.Automation.Commands
         private CommandRun Load(BridgeArgs args)
         {
             var name = args.String("save");
-            if (GameManager.instance.isGameLoading)
-                return CommandRun.Fail(409, "A load is already running.");
+            if (!IsReady)
+                return CommandRun.Fail(409, "The game is still starting or loading; wait until state.ready.");
             if (!TryFindSave(name, out var save))
                 return CommandRun.Fail(404, $"No save named '{name}'.");
 
