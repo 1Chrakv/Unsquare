@@ -86,6 +86,15 @@
         </Reference>
     </ItemGroup>
 
+    <!--The automation bridge for the in-game test suite (IngameTests/) exists only in Debug builds; published
+        (Release) builds never contain it.-->
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <DefineConstants>$(DefineConstants);UNSQUARE_AUTOMATION</DefineConstants>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+        <Compile Remove="Automation\**" />
+    </ItemGroup>
+
     <ItemGroup>
         <Reference Update="System">
             <Private>false</Private>
