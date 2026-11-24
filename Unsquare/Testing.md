@@ -1,11 +1,13 @@
-# In-game test protocol
+# In-game testing
 
-How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys, cage overlay).
+How to verify Unsquare in a running game. What the mod must do is listed in [Requirements.md](Requirements.md), each
+requirement with a stable ID. Most are checked by the automated suite in `IngameTests/`; the rest by Claude
+(review packs and charters). This file covers setup, running both, and the controls for testing by hand.
 
 ## Setup
 
-1. **Close the game**, then `dotnet build Unsquare.sln` – the toolchain replaces `Mods\Unsquare` with the build.
-   While the game runs the DLLs are locked: the deploy fails *and* leaves `Mods\Unsquare` half-deleted.
+1. **Close the game**, then `dotnet build Unsquare.sln` (Debug): the toolchain replaces `Mods\Unsquare` with the
+   build. While the game runs the DLLs are locked: the deploy fails *and* leaves `Mods\Unsquare` half-deleted.
 2. Start the game, open Options → Unsquare → Key bindings and check the bindings (rebind any that clash).
 3. Follow the log live:
 
@@ -14,13 +16,48 @@ How to verify Unsquare in a running city with Unsquare mode (mouse tool, hotkeys
    ```
 
    The first line, e.g. `Unsquare 0.1.0+abc1234 (Debug, built 2026-10-08 20:05:21 UTC) loading`, must show the
-   commit and build time you expect; otherwise the game runs an older build.
-   `Mods\Unsquare` must also contain `Unsquare.mjs`, `Unsquare.css` and `images\` (toolbar button, tool window).
+   commit and build time you expect; otherwise the game runs an older build (ENV-001).
 4. Load a city, turn on Unsquare mode (button next to the Underground toggle, or Alt+U) and click a building: it
    becomes the edit target. A building selected in the info panel before entering the mode is taken over.
-5. After an update that bumps the manifest format, load an older save: its deformed buildings are migrated and
-   keep their shapes (rows 105, 126). Only pre-release manifests are discarded (log `Variant manifest has an old format …`).
 
+## Automated tests
+
+The suite drives the game through the automation bridge, a REST endpoint inside Debug builds of the mod
+(`Unsquare/Automation/`, off unless enabled). See `IngameTests/README.md` for details.
+
+1. Once: build the test city from `IngameTests/Fixture.md` and save it as `UQTest-Fixture`; `npm install` in
+   `IngameTests/`.
+2. Enable the bridge (creates `ModsData\Unsquare\automation\enabled`), deploy a Debug build and start the game:
+
+   ```powershell
+   cd IngameTests; npm run bridge:enable
+   ```
+
+3. Run the tests (the game must be running; tests load the fixture themselves):
+
+   ```powershell
+   npm test
+   ```
+
+   - `npm run test:slow`: tests that restart the game, move files or simulate days.
+   - `npm test -- -t UNDO-`: one requirement group.
+   - `npm run fixture:check`: what the fixture city is missing.
+   - `npm run coverage:req`: which requirements have tests, and that every old checklist row is mapped.
+4. Results are in `.testruns\<timestamp>\report.md` (requirement ID → pass, fail or skip, with log excerpts).
+   Tests flagged `needs-mod` or `needs-save` are skipped when their mod or save is missing.
+
+## Claude's part
+
+Requirements the suite can't judge alone (Check `suite+review:<pack>` or `claude:<charter>` in Requirements.md):
+
+- `/ingame-review`: Claude judges the evidence packs of the last run (screenshots, probes, log) and records a
+  verdict per requirement. Unchanged packs reuse their last verdict.
+- `/ingame-explore <charter>`: Claude drives the game along a charter (options page, upgrade naming, placement tools,
+  missing manifest).
+- `/ingame-triage <test>`: Claude replays a failing test step by step and narrows down the cause.
+
+Claude reaches the game through the `unsquare-game` MCP server (`IngameTests/mcp/`), the same bridge the suite
+uses.
 ## Mouse (in Unsquare mode)
 
 | Action | Input |
@@ -87,234 +124,12 @@ dot, or corner dot), cyan = hovered handle of the pick mode; gizmo (only with a 
 Y (green), Z (blue) and a yellow square between X and Z for horizontal moves, or in Rotate mode rings around those axes
 through the handle's centre; the hovered or dragged part is brighter and thicker.
 
-## Checklist
-
-| # | Test | Expected |
-|---|---|---|
-| 1 | Select a zoned building, rotate the camera | Box and cage line up with the building at any building rotation |
-| 2 | Alt+1/2/3, Alt+Q/E | The selection visits every corner, edge and face; gizmo arrows match the move keys |
-| 3 | Alt+3, select the top face (Face 3), Alt+PageUp ×4 | Cage turns yellow; ~0.2 s after the last press the building rises and the cage turns green; one `Bake …` log line |
-| 4 | Zoom far out | Shape stays deformed (LODs deformed too) |
-| 5 | Move single corners and edges | Taper, skew and twist look smooth; lighting/normals look right |
-| 6 | Push a face through the opposite face | Log `-> Rejected`, shape unchanged |
-| 7 | Push a handle far beyond the box | Log `-> Clamped` |
-| 8 | Info panel, then run a few in-game days | Residents/jobs/level unchanged; no condition or abandonment problems |
-| 9 | Same offsets on a second building of the same type | `Bake …` shows `0 new assets` |
-| 10 | Save, quit to menu, reload; then restart the game and load | Still deformed; log `Restored N variants, 0 failed` |
-| 11 | Look into `…\Cities Skylines II\ModsData\Unsquare\` | `variants.json`, `bounds.json`, `UQ_*.Geometry` files |
-| 12 | Alt+Backspace, then Alt+Shift+Delete | Original shape, white cage; reset-all logs a count |
-| 13 | Zone a large area with the base building's zone | No deformed variant ever spawns |
-| 14 | With a 1.1 manifest: set an entry's `LastUsedUtc` in `variants.json` > 14 days back and clear its `Cities`, restart | Housekeeping log: 1 legacy variant pruned; its assets are still on disk (cache) and the entry is still in `variants.archive.json` |
-| 15 | Delete `variants.json`, load a save with deformed buildings | Document what breaks (see `HowTo.md` §13.7) |
-| 16 | On a building with roof props and a storefront: raise the top face, lean it sideways, pull a bottom front corner out | Roof props rise, move and tilt with the roof; the storefront follows its corner and stays on the ground; reset puts all props back |
-| 17 | House with garden (shed, trees, paving, fences): skew/taper the lot inside its plot | Cage spans the fence rectangle; `Attachments of …` log lists props/areas/lanes/nets; paving, grass, fences, paths, shed and trees follow; trees stay upright; `Lot sync …` log shows moved areas/net edges |
-| 18 | Push a lot bottom corner outside the plot | Cage turns magenta, log warns once; the edit still applies |
-| 19 | Save, reload, cold restart | Deformed buildings restore; lot areas/paths stay deformed |
-| 20 | Reset a lot-deformed building | House, props, fences, areas and paths return to the original layout |
-| 21 | Building with a storefront: pull a bottom front corner in | Storefront turns with the facade and stays parallel to it; props deep inside the lot keep a smooth average turn; roof props near the eaves follow the roof |
-| 22 | Options → Unsquare: Settings is the first tab, Key bindings the second | All groups shown with defaults; every change logs `Options: …` once |
-| 23 | Facade alignment reach 0, deform a new building with a storefront | Storefront takes the average turn, not the facade's |
-| 24 | Turn off "Deform ground areas", lot-deform a fresh house | Paving and grass stay rectangular; `Attachments of …` log shows `Areas off` |
-| 25 | Change nudge step sizes, press Alt+S repeatedly | Steps cycle through the new sizes (snapped to 0.1 m) |
-| 26 | Change line thickness / handle sizes / axis length | Overlay updates immediately |
-| 27 | Change a key binding, press Reset settings, restart the game | Settings defaults restored and kept after the restart; the key binding is kept |
-| 28 | Deform a building, select another one, reselect it and nudge again | The cage shows the current shape; the nudge continues from it (never from undeformed) |
-| 29 | Click the Unsquare button, then Alt+U, then the button again | Button highlighted while the mode is on; log `[Edit] Unsquare mode on/off` each time |
-| 30 | Mode off: press Alt+→, Alt+Shift+Delete, click buildings | Nothing happens (no `[Edit]` log, no overlay); buildings open the info panel as usual |
-| 31 | Mode on: click a house, then another house, then empty ground | Cage moves to the second house; empty ground changes nothing; log `[Edit] Target …` per switch |
-| 32 | Hover the cage in each pick mode (Alt+W) | Edge mode: edges turn cyan near the mouse; face mode: faces; corner mode: corners; log `[Edit] Pick mode …` |
-| 33 | Click an edge, then a face (Alt+W), then a corner | First click of a house selects nothing; each later click moves the orange selection and gizmo; log `[Edit] Selected …` |
-| 34 | Select the top face, drag the green arrow up | Roof follows the mouse; cage yellow while dragging, rebake right at release; one `Drag of Face3 ended -> …` line |
-| 35 | Select a front edge, drag the red and blue arrows | Both corners of the edge move together along X / Z |
-| 36 | Start a drag, right-click while holding the mouse | Shape snaps back to before the drag; log `Drag … cancelled` |
-| 37 | With a handle selected, click a neighbour next to the cage; then right-click and click the neighbour | Locked: nothing changes; after the right-click (log `Selection cleared`) the neighbour becomes the target |
-| 38 | Right-click repeatedly | Selection cleared, then target cleared (cage gone), then nothing more; the mode stays on |
-| 39 | Select an edge and click just beside it (on the ground or a neighbour) | Cage and gizmo stay; nothing changes |
-| 40 | Zoom far out and close in with a selection | Gizmo keeps its screen size (never shorter than the min gizmo length); arrows stay grabbable |
-| 41 | Look straight down the Y arrow and drag it | No jumps: frames where the ray runs along the arrow are skipped |
-| 42 | Options → Settings: change pick radius, far-click margin and gizmo size | Picking gets easier/harder, far clicks need more/less distance, gizmo resizes immediately |
-| 43 | Leave the mode during a drag (Alt+U) | Drag cancelled, cage and gizmo hidden |
-| 44 | Mode on, no building selected: move the mouse over several houses and the ground | Each house shows a dim cage while hovered; none over the ground |
-| 45 | Select a house (no handle): hover other houses; then select an edge and hover them again | Other houses are previewed; with the edge selected no preview appears |
-| 46 | With an edge selected, click ~1 m beside the cage, then a few metres away, then again far away on the ground | Near click: nothing; far click: `Selection cleared` (cage stays); second far click: `Target cleared` (cage gone) |
-| 47 | Options → Settings → Reset settings, select a handle | Gizmo about half its previous size (6 % of the view height, at least 1 m) |
-| 48 | Select a handle, press Esc; press it again; right-click in the mode | Esc behaves as in the game's own tools (no step back): first it leaves the mode (`Unsquare mode off`), then it opens the pause menu. Right-click still steps back |
-| 49 | Select a face, Alt+PageUp ×3, Ctrl+Z ×3, Ctrl+Y ×1 | Each undo takes back one nudge (`[Edit] Undo on …`), redo repeats the first; selection stays |
-| 50 | Drag an arrow over several metres, Ctrl+Z | The whole drag is undone in one step |
-| 51 | Deform house A, select house B (lock it on a handle), Ctrl+Z | House A is reverted and becomes the target; B's selection is dropped |
-| 52 | Deform house A, then house B, bulldoze B, Ctrl+Z | B's edit is skipped silently; A's edit is undone |
-| 53 | Ctrl+Z after Alt+Shift+Delete or after loading another save | `[Edit] Nothing to undo` |
-| 54 | Mode off: press Ctrl+Z / Ctrl+Y | Nothing happens (no `[Edit]` log) |
-| 55 | Raise the top face, select one of its corners (Alt+1), Alt+R | Only that corner drops back; the other three stay raised; log `Reset Corner… -> Accepted` |
-| 56 | Building selected without a handle, Alt+R | Log `No handle selected`; nothing changes |
-| 57 | After a handle reset, Ctrl+Z | The corner/edge/face returns to where it was in one step |
-| 58 | Enter the mode without a building, then click one | No window at first; then it appears centred above the roof |
-| 59 | Pan, rotate and zoom the camera; raise one top corner | The window follows the roof and stays above the highest corner; at the screen border it stops at the edge; with the building behind the camera it hides |
-| 60 | Click the corner / edge / face buttons, then press Alt+1/2/3 | Pick mode switches (`[Edit] Pick mode …`); the highlighted button always matches the mode |
-| 61 | Window: reset-part button without and with a selected handle | Greyed out without a handle; with one it resets only that handle (`Reset …`), Ctrl+Z restores it |
-| 62 | Window: reset-building button on a deformed building | Original shape (`[Edit] Reset -> …`); undoable with Ctrl+Z |
-| 63 | Click a window button while a handle is selected | Selection and target stay; the click reaches neither the building nor the ground |
-| 64 | Right-click until the target is cleared, then leave the mode | The window hides with the target and stays hidden outside the mode |
-| 65 | Raise the front bottom edge of a building by ~10 m | Ground rises from back to front across the whole lot, no ridge at the lot border; log `Terrain slope for prefab …` |
-| 66 | Raise only one bottom corner by 4 m | Ground slopes up towards that corner; the other corners stay at ground level |
-| 67 | Raise the whole bottom face by 3 m | The ground under the whole lot rises evenly by 3 m |
-| 68 | Lower a bottom corner by 2 m | Ground sinks towards that corner |
-| 69 | Reset a lifted building; save and reload a lifted one | Flat again after reset; the slope comes back after the reload |
-| 70 | Next to a sloped building, build or remove a road | The slope stays; the lot edge still blends to the road |
-| 71 | Deform a building, then press Alt+T (or the terrain button) twice | Button highlighted after the deform; first press flattens the lot (`[Edit] Terrain lift off`, bake with 0 new assets), second lifts it again |
-| 72 | Two buildings with the same deformation, terrain lift off on one; save and reload | Only that one stays flat, also after the reload; Ctrl+Z / Ctrl+Y step through the toggles |
-| 73 | Alt+T on an undeformed building | Button greyed out; log `[Edit] Terrain lift on -> Rejected` |
-| 74 | On a slope falling away from the road, select a placed building and press Alt+G (or the fit button) | A frame later the back corners sit on the original slope and the street side at road level, building height unchanged; log `[Fit] Building …: original ground at the corners …` and `[Edit] Fit to ground on … -> Accepted` |
-| 75 | Compare the `[Fit]` corner heights with the visible slope (e.g. a corner on a hillside) | Higher corners get the larger values; the fitted corners touch the natural ground |
-| 76 | After a fit, Ctrl+Z | The shape before the fit returns in one step |
-| 77 | Fit with terrain lift on, then Alt+T | Lifted: the lot follows the slope; flat: the pad stays level |
-| 78 | Press Alt+F (or click the "all corners" toggle), then Alt+G on the same building; raise its front corners, Alt+F back to "back only", Alt+G | Toggle follows (`[Edit] Ground fit mode AllCorners`), all four corners follow the original ground (`Fit to ground (all corners)`); after switching back, Alt+G brings the street side back to road level. The mode stays when selecting another building |
-| 79 | Mode on: hover and click a park's grass, raise a top edge, pull a bottom corner out | Park previewed and selected from its lot; cage about 8 m tall, vertical edges easy to pick; benches, trees and paths follow the cage; no `has no lot cage` log |
-| 80 | Click a house's garden (away from the house mesh) | The house is selected |
-| 81 | Freshly placed park with curved paths: deform it twice, then Reset | Paths stay connected and bend smoothly, the road entrance stays attached; after Reset the layout equals a fresh park; `Lot sync … N net edges moved` without unmapped parts |
-| 82 | Park at a road: drag a street-side corner or edge sideways, then Reset | Path ends slide along the sidewalk and stay connected (pedestrians still walk in); Reset brings them back; log `… M road ends slid`, no warnings |
-| 83 | Edge pick mode: press on an unselected vertical edge and drag | Edge is selected and follows the mouse sideways; its height never changes; one Ctrl+Z restores it |
-| 84 | Click an edge without moving the mouse | Only selects it; no drag log, nothing to undo |
-| 85 | With a handle selected, hover and drag the yellow gizmo square; right-click mid-drag | Square brighter on hover; handle moves in the horizontal plane; right-click snaps back |
-| 86 | Repeat 83 with a corner and a face (Alt+W), also at a flat camera angle | Same horizontal move; no jumps when the view is nearly level |
-| 87 | Options → Settings: raise the drag threshold to 20 px | Small mouse jitter on a press no longer drags |
-| 88 | Building next to a turned neighbour lot, angle mode: Alt+Shift+← (or the left align button) | The left side (seen from the street) turns parallel to the neighbour's edge; the corner nearer the neighbour stays, the other slides along its front or back edge; log `Aligning Left of building … to lot …` |
-| 89 | Alt+A to flush, Ctrl+Z, align again | Tool window icon changes; the side turns parallel and moves onto the neighbour's edge (gap closed, depth line kept) |
-| 90 | Alt+A to full, align toward a lot | The side's corners sit on the neighbour lot's corners (shared edge), even if the side gets longer or shorter |
-| 91 | Back of a lot near a road (any mode), Alt+Shift+↑ | Back face turns to the road edge (sidewalk outline), full behaves like flush |
-| 92 | Align a side with nothing within the align reach | Nothing changes; log `[Edit] Align … -> Rejected` |
-| 93 | Undo / redo after each align | One step each; the target building stays selected |
-| 94 | Drag the left side a few metres into the neighbour lot, then align left (each mode) | The side goes back out onto the neighbour's facing edge, not to the neighbour's far side |
-| 95 | Building next to a lot standing higher (or on a slope), Ctrl+Alt+← (or the left level button) | Only the left side's bottom corners move to the neighbour lot's ground; the building height and the other corners stay; log `Levelling Left of building … with lot …` |
-| 96 | Back of a lot at a sloped road, Ctrl+Alt+↑ | Each back corner goes to the road surface height next to it |
-| 97 | Level a side with nothing in reach; then Ctrl+Z after a level | Rejected with the `no neighbour within …` log line; undo restores the heights in one step |
-| 98 | Without FlexIt, open Options → Settings in a loaded city and press Import FlexIt buildings | Last import: `FlexIt is not running`; nothing changes. In the main menu the button is greyed out |
-| 99 | With FlexIt active, load a save with a taper, a "square end" (taper + skew), a skew-only, an arch and a corner building; press Import | The first three look as before, now with props and paths following; the corner building gets the closest straight shape, the arch is rectangular again; no skew is left; log `FlexIt import done: 4 converted (1 approximated, …), 1 curved reset, 0 failed` |
-| 100 | After 99, select an imported building with the Unsquare tool | Green cage with the FlexIt shape; it can be edited and reset like any Unsquare building |
-| 101 | After 99, save; remove FlexIt; reload | All imported buildings look the same; no `Unknown prefab ID` for them in the game log |
-| 102 | Corner fits at about 10° and 30°, import | Both keep their far end facing the turned street; the 10° one looks close to FlexIt, the 30° one visibly straighter; log `approximated corner fit … (max deviation X m)` per building |
-| 103 | Without other mods: deform a growable that spawned from zoning, then rezone a cell next to it and run a few in-game days; reset it | No condemned icon; the zone overlay still shows the zone under it; it stays with its residents; after the reset no condemned icon and it still stands |
-| 104 | With Plop the Growables (its zone despawn setting on, then off): deform a plopped and a zoned growable, run a few days, reset both | Both stay; PTG's plopped/level-lock info is unchanged; undeformed buildings follow PTG's setting; no errors in either log |
-| 105 | Load a save with growables deformed under 1.0.0 (with plopped ones too) | No zoning appears under any building; resetting a zoned one and painting its zone again leaves it standing |
-| 106 | Multi-storey car park with the extra storey upgrade: deform it (move a top corner) | The storey bends with the car park and sits on its roof; ramps between them stay connected; log `Upgrades of building …` lists the storey as extension, then `Lot sync … 1 extensions` |
-| 107 | After 106, let the game run a few minutes, then Reset and Ctrl+Z | No crash; Reset puts the storey back to its plain prefab, undo deforms it again |
-| 108 | After 106, save and reload | Storey still deformed; log `Restored … variants (+N upgrade extensions)`; the base car park's upgrade menu shows no extra entries |
-| 109 | Elementary school with the classroom extension wing (an upgrade building): deform the school, let the game run a few minutes, then Reset | No crash; the wing stays undeformed and its paths stay connected |
-| 110 | Deform only the classroom wing (its own cage), run a few minutes | No crash, also when hovering the wing and the school; the wing's paths stay connected to the school's |
-| 111 | Repeat 106 and 107 (car park storey) | Still no crash |
-| 112 | After deforming the school with the wing (109) and the car park with the storey (106): leave Unsquare mode, hover and click each building and its upgrade, also paused | No crash; log `Copied sim data to … variants (N archetypes completed)` with N ≥ 1 |
-| 113 | Car park with the extra storey: select it in Unsquare mode | Green cage and dashed rest box reach the storey's top, not the base roof; the tool window sits above it |
-| 114 | After 113, drag a top corner, with the 0.1 m step nudge it up and sideways a few times (Alt+PageUp, Alt+arrows), then Ctrl+Z and Ctrl+Y | The storey's roof follows the cage corner; every nudge moves the corner; undo and redo restore each step; Reset brings back the plain building and storey |
-| 115 | A building without upgrades, and the car park before the storey is added | Cage ends at the roof as before |
-| 116 | After 114, save and reload | Same shape; the cage again reaches the storey's top |
-| 117 | Unsquare mode: hover the school's classroom wing, then click it | The dim hover cage and then the green cage are the wing's own; clicking the school or its lot still picks the school |
-| 118 | Unsquare mode: click the car park's extra storey | Picks the car park, with the cage reaching the storey's top |
-| 119 | Deform the wing alone, then hover the wing and the school; Reset, Ctrl+Z, save and reload | No crash; the wing's paths stay connected to the school's; reset, undo and reload restore the shapes |
-| 120 | Select the deformed school (with deformed and undeformed wings) | Normal name in the title; Upgrades section shown, listing every wing under its name; upkeep lines named (e.g. "Extension Wing Maintenance") |
-| 121 | Select the deformed hospital and the deformed car park | Their deformed extensions (Special Ward, Helipad, …, Additional Floors) are listed under Upgrades |
-| 122 | Open the upgrade menu of the deformed school; also check the build menus, Find It and the milestone screen | The usual upgrades are offered; no variant (no `__uq` name, no duplicate) appears anywhere |
-| 123 | Add another storey to a deformed car park | The new storey is deformed with the car park's cage right away (log `New upgrade on deformed building …`, then `Bake for building …`); hovering doesn't crash |
-| 124 | Add a wing to the deformed school | The wing is placed as usual and stays undeformed with its own cage |
-| 125 | Switch the game language in the options and back | Deformed buildings keep their normal names |
-| 126 | Load a save with buildings deformed before split cages | Same shapes; the log lists the same variant names as before (`Restored … variants`); the manifest is rewritten as version 3 |
-| 127 | Select a deformed building in Both mode; drag and nudge as before | Behaves exactly as before: lot box (raised over storeys), no violet cage, Link disabled |
-| 128 | Switch to Building (Alt+D or the toggle) on a house with a garden | The cage hugs the building; dragging a top corner leans only the building; garden props, paths, grass and the terrain stay; a violet dashed lot cage appears |
-| 129 | After 128, widen the building 3 m over its garden (face drag) | Paths and lanes into the doors stay connected and bend smoothly in a ring around the building; steps and bins at the walls move with them; trees further out stay |
-| 130 | Switch to Lot on a deformed building and drag a lot corner | Ground, paths, ground props and terrain follow; the building stays as it is; a violet building cage appears |
-| 131 | After 130, raise the back of the lot | The hint `The building is not on its ground` appears; in Building mode Fit to ground (Alt+G) sets the building onto the lifted ground and the hint goes away; the terrain toggle and fit mode are greyed in Building mode |
-| 132 | Split a building (130), then Both mode and drag a lot corner | The building is carried along and keeps its own lean; Link (Alt+K) makes it follow the lot exactly and the violet cage disappears |
-| 133 | In each mode press Reset building, then Ctrl+Z | Building mode resets only the building, Lot only the lot, Both everything; undo restores each step |
-| 134 | Nudge the building cage up and back down with the 0.1 m step (Building mode), then Ctrl+Z several times | The building returns exactly; no violet cage remains; undo steps through every nudge |
-| 135 | Row houses: Building mode, align the left side (Alt+Shift+←) to the neighbour house | The wall moves onto the neighbour's wall (its building cage), the gardens stay; a park next door falls back to its lot edge |
-| 136 | Lot only: deform a lot but not the building, save, reload, restart | Shape kept; the housekeeping line evicts nothing it shouldn't (no rebake on the next load) |
-| 137 | Car park with a storey and a separate ground-level extension: Building mode, lean the building | The storey leans with the building; the ground-level extension follows the lot (stays unless the lot changes) |
-| 138 | Switch modes, restart the game | The last chosen mode is active again |
-| 139 | Hospital with gardens: Building mode, pull the front-right column inwards (red arrow) | Blend toggle shows None: everything on the ground stays, paths may end at the old wall |
-| 140 | After 139, blend mode All (Alt+B) | Gardens next to the moved wall stay flush against it, the movement fades out; nothing bends into arcs or leaves the lot; benches and trees move with the paths and hedges around them |
-| 141 | After 140, Ctrl+Z; save and reload | Undo goes back to None; after reload the mode and shapes are kept |
-| 142 | Split a building (lean it in Building mode), then press "lot follows the building" (Alt+Shift+K) | The lot, paths and gardens take the building's shape, the violet cage disappears, both Link buttons grey out; Ctrl+Z restores the split |
-| 143 | Hospital with a ward wing beside the main block: Building mode, then move the wing's side face and a top corner | The cage encloses the wing; the wing bends with the building; the violet lot cage and paths stay; Lot mode shows the larger building box as ghost; save and reload keep the shape |
-| 144 | Car park with the extra storey and a hospital helipad in Building mode | The storey is enclosed as before; a flat helipad beside the building doesn't enlarge the cage and follows the lot cage |
-| 145 | Select the top face, tap Ctrl | Arrows and square give way to three rings; tool window shows Rotate; log `[Edit] Gizmo mode Rotate`; another tap brings the arrows back |
-| 146 | In Rotate mode press Ctrl+Z, Ctrl+Y and Ctrl+Alt+arrows | Undo/redo/level work as before; the gizmo mode does not change |
-| 147 | Top face, drag the green ring | The top twists around its centre and follows the mouse; one `Drag of Face3 ended` line; one Ctrl+Z undoes the whole turn |
-| 148 | Top face, look steeply down, drag the red and blue rings | The roof slopes around its centre without jumps (edge-on rings slide along the mouse) |
-| 149 | Select a horizontal edge, then a vertical edge in Rotate mode | Each shows only the two rings it can turn around (no ring around its own direction) |
-| 150 | Select a corner in Rotate mode | The move arrows and square are shown; dragging them moves the corner |
-| 151 | Right-click during a ring drag; turn a face until the cage folds | Right-click snaps back; a folding turn shows the fold problem and is not applied |
-| 152 | Switch Move/Rotate with the tool-window toggle, then tap Ctrl | Toggle and Ctrl stay in sync; switching during a drag does nothing |
-| 153 | Alt+4 (or the cage button), hover the building, click it | Hovering anywhere on or inside the cage turns all edges cyan; the click selects them all (orange) with the gizmo at the cage centre; log `Selected Cage0` |
-| 154 | Cage selected: drag the red arrow, the yellow square, then press on the cage and drag | The whole building, its lot, paths and props shift together; one Ctrl+Z per drag |
-| 155 | Cage selected, tap Ctrl, drag the green ring | The building turns in place around its centre; the red/blue rings tilt it |
-| 156 | Cage selected: Alt+arrows, then Alt+R | Each nudge moves the whole cage one step; Alt+R puts every corner back |
-| 157 | Repeat 154 in Building, Lot and Both edit mode | Building: only the building moves (lot stays); Lot: only ground items; Both: everything |
-| 158 | Drag the whole cage far away | Stops at the max corner offset (clamped, cage yellow), never relocates beyond it |
-| 159 | Deform a level-1 growable (taper the plan, lean the top), let it level up | Right after the level-up the new building takes the shape: same lot outline, lean scaled to the new height, paths on the deformed lot; log `levelled up: carrying its cage over` |
-| 160 | After 159 save, reload; then turn off Keep shape on level-up and let another deformed building level up | The carried shape is kept after reload; with the option off the next level-up comes back undeformed |
-| 161 | Deform a zoned house, pick it with the eyedropper (or Find It's picker) and place the copy; wait, then hover and click the copy with the normal tool. Repeat with an office | No crash; the copy has the deformed shape and its info panel opens |
-| 162 | Load a save holding copies placed before this fix, then click them | Log `Repaired N copies of variants missing instance components` with N ≥ 1; no crash |
-| 163 | Copy a deformed service building that has an upgrade; hover and click the copy | No crash |
-| 164 | Let the game run with the copies of 161 | Residents or companies move in; no condemnation; Reset in Unsquare mode gives the plain building |
-| 165 | With Placemaker (row joining on), hover a row house it bent, then click it | Hover: preview cage in the bent shape, as for any building. Click: dialog "Building shaped by Placemaker"; no cage, tool window hidden; clicking other buildings does nothing |
-| 166 | In 165 press Cancel (or right-click); then use hotkeys and Ctrl+Z | Nothing selected; the building can't be edited or picked as an undo target; clicking it again asks again |
-| 167 | In 165 press Convert only this building | Cage in the bent shape at once; after the bake the house looks the same; log `adopting … exact` or `fitted (max deviation X m)`; Placemaker's log counts it under "on a model another mod made" |
-| 168 | After 167 edit the house, save, reload | Restored as an Unsquare variant on the plain model, no missing prefab; clicking it opens no dialog |
-| 169 | After 167 press Reset | Plain building; Placemaker may bend it again on its next plan |
-| 170 | In 165 look at the dialog's buttons | Convert only this building and Cancel; in a joined row also Convert whole row (N houses) first. No Deform on top |
-| 171 | Without Placemaker, click any building | No dialog; selection as usual |
-| 172 | In a row of 3+ houses Placemaker joined, click one | Dialog offers "Convert whole row (N houses)" with N = the joined houses; a house on its own shows only Convert only this building |
-| 173 | In 172 press Convert whole row | All N houses swap in the same frame and keep their shape; neighbours stay joined; log `Row conversion of building …: N of N converted`; Placemaker's next plan moves none of them |
-| 174 | In 172 press Convert only this building (one house only) | That house converts; Placemaker straightens its neighbours (known; the row button avoids it) |
-| 175 | After 173 press Reset on one house | Only that house turns plain; the other converted houses keep their shape |
-| 176 | Load a save with Placemaker | Log `Placemaker <version> (tested with <TestedWith>): detect ok, convert ok, rows ok.` once per load; any "missing …" means Placemaker changed |
-| 177 | After 173 press Reset on every house; wait until Placemaker bends them again, then click one | Dialog "Building shaped by Placemaker" opens again (row button included) |
-| 178 | Tool window: Pick section | Gizmo move/rotate toggle sits under the pick toggle and switches like tapping Ctrl |
-| 179 | Pull the street side of a lot back from the road, then Alt+Shift+↓ (or the street-side align button), flush | The street side moves back onto the road edge; log `Aligning Front of building … to road …` |
-| 180 | Street at a slope: Ctrl+Alt+↓ | Both front bottom corners go to the road surface height next to them; the back stays |
-| 181 | Align section: switch the toggle to height | The four side buttons show the level icons and level (log `Levelling …`); the align mode toggle is dimmed; switch back and they align again |
-| 182 | Nudge a handle, then the window's undo and redo buttons | Undo takes the nudge back, redo repeats it; each button is greyed out when there is nothing to undo or redo |
-| 183 | Options → Interface: set the Unsquare button position to Top left, Top right, then Bottom toolbar | The button moves at once to the top left, top right and back next to the photo mode toggle; it is never shown twice, highlights while the mode is on and toggles it in every place |
 
 ## Reporting problems
 
-Note the checklist number, press Alt+L on the affected building and attach the log lines starting at the last
-`[Edit]` command (include any `Bake`, `Restored` or error lines).
+Note the requirement ID, press Alt+L on the affected building and attach the log lines starting at the last
+`[Edit]` command (include any `Bake`, `Restored` or error lines). For a failing automated test, attach its section
+of `report.md`.
 
 Known risks to watch: Alt+arrow keys may also pan the camera (rebind if so); baking fails with "not CPU readable" if
 render meshes cannot be read; if buildings come back undeformed after reload, variant restore at preload did not run.
-| 184 | Building beside a free-standing footpath, align that side (angle, then flush) | The side turns parallel to the path and moves onto its near edge; log `Aligning … to path …` |
-| 185 | Same side, Ctrl+Alt+arrow toward the path | That side's bottom corners go to the path surface height next to them |
-| 186 | Draw a footpath through the lot parallel to a side, a road beyond it; align that side | The path inside the lot is ignored, the side goes to the road; the lot's own paths and neighbours' lot paths never count |
-| 187 | Building with a lifted lot (log `Terrain slope … pad` > 5 m): load, save, load again without restarting, then restart and load | The terrain looks the same all three times (no high flat plateau over the lot); each load logs the same pad |
-| 188 | Deform a few buildings (linked, split with blend, flat terrain), save, reload | Same shapes, paths and areas; log `Save: N deformed buildings as base + cage …`, `Save: N buildings back on their variants`, then on load `Saved cages: N buildings on M variants …, 0 failed`; no `Unknown prefab ID` for `__uq` names |
-| 189 | After 188, save and reload five times | Paths, areas and lot props don't drift or move |
-| 190 | Wait for an autosave while dragging a cage corner | No flicker or hitch at the autosave; the drag continues; the autosave loads with the shape at the moment of saving |
-| 191 | Save a city with deformed buildings, remove Unsquare, load | The save loads; buildings are undeformed, paths and areas keep their deformed layout; game log `Not serializable type …SavedCage`, no errors |
-| 192 | Load a save made with 1.1.0 (deformed buildings), save it, close the game, move `ModsData/Unsquare/variants.json`, `.bak` and `variants.archive.json` aside (never delete them), start and load it; then close the game and move all back | Shapes kept both times; the second load builds them from the save (`Saved cages: …`). Without the manifest, other old saves show white boxes: don't load them before the files are back |
-| 193 | Deformed growable under construction (levelling up): save, reload, let the level-up finish | The new level keeps the shape (log `levelled up before its saved shape was restored` if it finished first); no reset to plain |
-| 194 | Car park with a deformed extra storey and the school with a deformed wing: save, reload | Storey and wing keep their shapes; the wing keeps its own cage; no crash when hovering both |
-| 195 | Move It copy (and an eyedropper copy) of a deformed building: save, reload | Copies keep the shape |
-| 196 | Placemaker row: convert one house, convert a whole row, save at once, reload | Converted houses keep their Unsquare shapes, undecided ones are bent by Placemaker again; no house switching shape after the load |
-| 197 | Save, raise `<Version>` locally (no publish), rebuild, load that save | Shapes restored: the `SavedCage` type still resolves |
-| 198 | After 188, close the game, move `ModsData/Unsquare/variants.json`, `.bak` and `variants.archive.json` aside (never delete them), start, wait in the menu until mods are loaded, load the save; afterwards close the game and move all back over the new ones | No crash; `Restored 0 variants`, then `Saved cages: N buildings on M variants …, 0 failed`; no `has no instance archetype` or `Not swapping to …` lines; all shapes back |
-| 199 | First start with PR B (manifest from 1.1 present) | `variants.archive.json` appears with the manifest's entry count (`Legacy manifest archive holds N variants`); housekeeping line names pruned, evicted, cache and legacy-claimed MB |
-| 200 | Set *Geometry cache size* to 0.5 GB, restart | Housekeeping evicts assets (count and MB in the log); the folder holds about 0.5 GB plus the legacy-claimed assets |
-| 201 | After 200, load a new-format save whose shapes were evicted; then evict again (restart) and load it a second time in one session after loading another save | Shapes rebaked (`Saved cages: … new assets`), none lost; no asset errors |
-| 202 | Load a 1.1 save after 200 | Its shapes are intact: legacy-claimed assets were not evicted |
-| 203 | Note the entry count of `variants.json`, deform a new building, save, restart | The entry count is unchanged |
-| 204 | Load a 1.1 save, save over it, load it again, close the game | That city is gone from its entries' `Cities` in `variants.json` |
-| 205 | Close the game, move `variants.json` and `.bak` aside (keep the archive), start | Log `Variant manifest rebuilt from the legacy archive`; a 1.1 save loads with its shapes; afterwards move the files back |
-| 206 | Settings → *I've converted all my old saves*, restart, load a converted save, then a 1.1 save that was not converted | `variants.json` is empty, no legacy restore at start (`Restored 0 variants`); the converted save is fine, the old one shows white boxes |
-| 207 | After 206, Settings → *Restore shapes for old saves*, load that 1.1 save again | Status shows the restored count; the old save loads with its shapes (slower once) |
-| 208 | Load a city whose legacy restore had failures (e.g. a Placemaker-base entry it uses), press *I've converted all my old saves* (and, in a second run, the popup's button) | Retired: the status (popup: a red line under the result) names the failed buildings of this city, at most 5 plus "and N more", and asks to deform them again; the log lists all; `variants.json` is empty afterwards |
-| 209 | Load a 1.1 save with deformed buildings | Popup "Changes in how Unsquare saves its deformations" names the count (log `N deformed buildings were loaded in the old save format`), the hint sits under the green *I've converted all my saves*; *I still have old saves I need to keep* closes it; loading again shows it again |
-| 210 | Settings → *Hide the old-saves reminders* on; load the 1.1 save again; then Settings → *Reset settings* and load it once more | No popup the second time; it is back after the reset |
-| 211 | In the popup, *I've converted all my saves* (no confirm step); save over the same file, restart | The popup shows the result (and a warning naming failed buildings of this city, if any); after the restart `variants.json` is empty and the save loads with its shapes |
-| 212 | Load a new-format save, a 1.1 save after saving it over the same file, and a new city | No popup in any of them |
-| 213 | Deform 15 different large buildings in a row (hospitals, offices); watch the private working set in Task Manager | Each `Bake for building …` line shows `sources held N (M vertices)` with M near or below 1,000,000 (one building alone may exceed it); memory levels off instead of rising with every building |
-| 214 | Nudge one building repeatedly | Bake times as before (about 30–40 ms for a row house, 60–90 ms for a hospital): its sources stay held, nothing is reloaded per nudge |
-| 215 | After 213, look at plain buildings of the bases edited first (their sources were released), from near to far | They render at every LOD; no missing, pink or flickering meshes; no asset errors in the log |
-| 216 | Load a save, then load another city | Log `Released source meshes of N render prefabs (M vertices)` after the restore at load (if anything was rebaked) and when leaving the city |
-| 217 | Compare a bake line with BakeSpeed.md (row house 33 ms, `FR_Hospital` 90 ms, both before the manifest froze) | Bakes are faster by about the 33–45 ms manifest write that edits no longer do |
-| 218 | After 211, load a 1.1 save that was not converted (also with *Hide the old-saves reminders* on) | White boxes; popup with the restore text names the count (log `N deformed buildings of an old save are missing …`); *Restore shapes* shows "Shapes restored …"; load the save again: shapes back (log `Restored N archived variants …` with only this city's variants), and the convert popup appears instead |
-| 219 | With entries in `variants.json`, load a converted save that has deformed buildings; then a plain city and a new game; then turn *Hide the old-saves reminders* on and load the converted save again | Popup "This save already uses the new format …" names the manifest entry count (log `Converted save loaded; N legacy variants …`), *Open and save each old save you want to keep* highlighted, same buttons as the convert popup; no popup in the plain city, the new game, or with the toggle on |

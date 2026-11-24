@@ -298,7 +298,7 @@ All Placemaker code lives in `PlacemakerCompatibility/` folders, one per layer (
   `PlacemakerBridge` and checked at load with `ReflectionContract`. One log line gives the version (`TestedWith`) and
   the features detect, convert and rows; a missing member or a runtime exception turns off only its feature.
   Read shapes must be `PlacemakerCage.IsPlausible`, and a base that is an Unsquare variant is refused (that would
-  mean Placemaker no longer skips ours). After a Placemaker update: check that line, run Testing rows 165–177, then
+  mean Placemaker no longer skips ours). After a Placemaker update: check that line, run the PLACEMAKER requirements' tests, then
   raise `TestedWith`.
 
 ## Props: rigid placement, full deformation later
