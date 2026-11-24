@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Open, suspected bug |
+| Status | Open, suspected bug; reproduced with the same 0.36 m in run 5 |
 | Found by | In-game test DRAG-010, run 3 (2026-11-24, save `UQTest-Spike`) |
 | Severity | Low to medium: visible offset of roof props on moved buildings |
 | Requirement | DRAG-010 (old checklist row 154) |
