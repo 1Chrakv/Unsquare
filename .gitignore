@@ -9,3 +9,5 @@ Logs/
 TestResults/
 
 UiModule/node_modules/
+IngameTests/node_modules/
+.testruns/
