@@ -168,7 +168,7 @@ features add requirements and tests in the same change.
 | TERRAIN-006 | Building or removing a road next to a sloped building keeps the slope; the lot edge still blends to the road | 70 | claude:placement |
 | TERRAIN-007 | The terrain toggle is on after a deform; toggling flattens the lot (`[Edit] Terrain lift off`, bake with 0 new assets) and lifts it again | 71 | suite |
 | TERRAIN-008 | Terrain lift is per building: of two buildings with the same deformation only the toggled one stays flat, also after a reload; Ctrl+Z/Y step through the toggles | 72 | suite |
-| TERRAIN-009 | On an undeformed building the toggle is disabled and `[Edit] Terrain lift on -> Rejected` | 73 | suite |
+| TERRAIN-009 | On an undeformed building the toggle is disabled and refused: `[Edit] Terrain lift on -> LotUndeformed` | 73 | suite |
 | TERRAIN-010 | A lifted lot (pad > 5 m) looks the same after load, save + load, and restart + load; each load logs the same pad | 187 | suite-slow |
 
 ## FIT – Fit to ground (`specs/fit.spec.ts`)

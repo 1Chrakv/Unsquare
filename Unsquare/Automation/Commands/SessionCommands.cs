@@ -40,6 +40,7 @@ namespace Unsquare.Automation.Commands
                 return Session.Step.Meters.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }));
             routes.Add("POST session/drag", Drag);
+            routes.Add("POST session/dragEnd", DragEnd);
             routes.Add("POST session/undo", InMode(_ => Session.Undo()));
             routes.Add("POST session/redo", InMode(_ => Session.Redo()));
             routes.Add("POST session/reset", InModeEdit(_ => Session.Reset()));
@@ -131,9 +132,22 @@ namespace Unsquare.Automation.Commands
             return CommandRun.Done(new JObject { ["handle"] = Session.Selection.Handle.ToString() });
         }
 
+        /// <summary>Releases (or with cancel: right-clicks) a drag started with hold.</summary>
+        private CommandRun DragEnd(BridgeArgs args)
+        {
+            if (Session.ActiveDrag == null)
+                return CommandRun.Fail(409, "No drag is active.");
+            if (args.Bool("cancel", false))
+                Session.CancelDrag();
+            else
+                Session.EndDrag();
+            return CommandRun.Done();
+        }
+
         /// <summary>
         /// Body: translate [x,y,z] (metres, building space) or rotate {axis 0..2, degrees}; frames (default 10);
-        /// cancelAt (frame that right-clicks instead); part (gizmo part, only for highlighting).
+        /// cancelAt (frame that right-clicks instead); hold (keep the mouse pressed: end with session/dragEnd);
+        /// part (gizmo part, only for highlighting).
         /// </summary>
         private CommandRun Drag(BridgeArgs args)
         {
@@ -143,6 +157,7 @@ namespace Unsquare.Automation.Commands
                 return CommandRun.Fail(409, "No handle selected.");
             var frames = args.Int("frames", 10);
             var cancelAt = args.Int("cancelAt", -1);
+            var hold = args.Bool("hold", false);
             ScriptedDrag drag;
             try
             {
@@ -174,6 +189,8 @@ namespace Unsquare.Automation.Commands
                 last = Session.UpdateDrag(drag.MotionAt(frame));
                 if (frame < drag.Frames)
                     return null;
+                if (hold)
+                    return CommandRun.Done(new JObject { ["result"] = last?.ToString(), ["frames"] = frame, ["held"] = true });
                 Session.EndDrag();
                 return CommandRun.Done(new JObject { ["result"] = last?.ToString(), ["frames"] = frame });
             });
