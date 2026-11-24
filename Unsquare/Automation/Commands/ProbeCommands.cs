@@ -40,7 +40,6 @@ namespace Unsquare.Automation.Commands
             routes.Add("GET buildings/{ref}/nets", Nets);
             routes.Add("GET buildings/{ref}/lot", Lot);
             routes.Add("POST terrain/heights", TerrainHeights);
-            routes.Add("POST buildings/{ref}/bulldoze", Bulldoze);
         }
 
         private CommandRun Info(BridgeArgs args) => WithBuilding(args, building =>
@@ -204,13 +203,6 @@ namespace Unsquare.Automation.Commands
             }
             return CommandRun.Done(new JObject { ["heights"] = heights });
         }
-
-        /// <summary>Test-only: removes a building like the bulldozer (marks it deleted; the game cleans up).</summary>
-        private CommandRun Bulldoze(BridgeArgs args) => WithBuilding(args, building =>
-        {
-            Entities.AddComponent<Deleted>(building);
-            return new JObject { ["deleted"] = BridgeContext.Id(building) };
-        });
 
         private CommandRun WithBuilding(BridgeArgs args, System.Func<Entity, JToken> probe)
         {

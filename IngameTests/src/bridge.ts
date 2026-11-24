@@ -234,7 +234,6 @@ export class Bridge {
   /** Terrain heights at building-space ground points, relative to the building's ground (or world with no building). */
   heights = async (points: [number, number][], building?: string) =>
     (await this.call<{ heights: number[] }>("POST", "terrain/heights", { points, building })).result.heights;
-  bulldoze = (ref: string) => this.call("POST", `buildings/${encodeURIComponent(ref)}/bulldoze`, {});
   settings = async () => (await this.call<Record<string, unknown>>("GET", "settings")).result;
   setSettings = async (values: Record<string, unknown>) => (await this.call<Record<string, unknown>>("POST", "settings", { values })).result;
   defaultSettings = async () => (await this.call<Record<string, unknown>>("POST", "settings/defaults", {})).result;
