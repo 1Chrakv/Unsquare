@@ -5,6 +5,10 @@
     "risingSlopeHouse": "FR_ResidentialMedium01_L1_3x3@-1256.3,380.0",
     "footpathHouse": "WastewaterTreatmentPlant01@-1200.2,67.1",
     "turnedNeighbour": "GER_ResidentialMedium07_L1_3x6@-894.4,422.2",
-    "raisedNeighbour": "FR_ResidentialMedium01_L1_3x3@-1313.7,264.5"
+    "raisedNeighbour": "FR_ResidentialMedium01_L1_3x3@-1313.7,264.5",
+    "hospital": "Hospital01@-1096.5,37.8",
+    "school": "ElementarySchool02@-1105.2,622.0",
+    "carPark": "ParkingHall03@-1179.2,466.9",
+    "park": "CityPark07@-1070.8,177.5"
   }
 }
