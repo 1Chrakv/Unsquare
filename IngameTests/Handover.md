@@ -19,18 +19,20 @@ This file says what was learned, where things stand, and what comes next. How to
 
 ## State
 
-Last full fast run: run 5 (2026-11-24) on `UnsquareTest-Spike` (no fixture city yet), Debug build of `0696caa`:
-**62 passed, 3 failed, 24 skipped** of 89 tests, about 10 minutes.
+Last full fast run: run 9 (2026-11-25) on the fixture city `UnsquareTest-Fixture` (all 18 buildings recorded,
+`npm run fixture:check` complete): **86 passed, 5 failed, 0 skipped** of 91 tests, about 13 minutes. After it, the
+SAVE-003 test was fixed (area order) and has not run again.
 
-- **Coverage** (`npm run coverage:req`): 215 requirements; 203 for the suite, 12 Claude charters. 92 of the 203
-  have tests, and every old checklist row is mapped.
-- **Failed:**
-  - DRAG-010: a roof prop lands 0.36 m off after a whole-cage shift ([issue 002](../Issues/002-roof-prop-off-after-whole-cage-shift.md)).
-  - UPGRADE-007: a nudge on the raised car-park cage can do nothing, and undo skips a step ([issue 004](../Issues/004-raised-cage-nudge-swallowed-undo-skips.md)).
-  - UPGRADE-004: a bridge bug; entity refs `#index:version` lost their `#`. Fixed in `ce0931e`; passes in the rerun
-    (run 6, with ENV-001).
-- **Skipped (need fixture buildings):** ALIGN-001 to 004, 006, 007, 009, 010; BLEND-001; FIT-001 to 003, 005;
-  LEVEL-001, 002, 004, 005; LOT-002; PROPS-001 to 005; SAVE-003.
+- **Coverage** (`npm run coverage:req`): 217 requirements; 205 for the suite, 12 Claude charters. 94 of the 205
+  have tests, and every old checklist row is mapped. New since phase 2: FIT-006 (ground rising behind), RESET-004
+  (layout after Reset all).
+- **Failed, all filed in `Issues/`:**
+  - RESET-004: Reset all leaves props where the variant had them (issue 005, confirmed).
+  - BLEND-001: in Building mode without blending, ground areas move with the building (issue 007, confirmed).
+  - DRAG-010: utility connection nodes stay at the building's old place on a whole-cage move (issue 006).
+  - UPGRADE-007: on the raised car-park cage a nudge can do nothing and undo skips a step (issue 004).
+  - SAVE-003: test mistake (areas come back in another order after a load), fixed since.
+- **Open issues:** 001 (crash after a raw delete, not confirmed), 002 (probably a symptom of 005), 004–007.
 - **Never run:** the slow set (`specs/slow/save.spec.ts`: SAVE-001, SAVE-007, SAVE-004). It restarts the game,
   moves manifest files aside and, for SAVE-004, the deployed mod folder.
 - **Without tests:** 111 suite requirements (`npm run coverage:req` lists them):
@@ -38,20 +40,15 @@ Last full fast run: run 5 (2026-11-24) on `UnsquareTest-Spike` (no fixture city 
   - slow ones need simulation days, restarts or old saves (LEVELUP, ZONING, LEGACY, CACHE);
   - `suite+review` ones wait for the review packs;
   - other mods (FLEXIT, PLACEMAKER, COPY) wait for phase 4.
-- **Open issues:** `Issues/` (workflow in its README). Issue 001, a native crash after removing a deformed
-  building, is not confirmed: it came from a raw delete that skips the bulldoze tool's clean-up.
 
 ## Next steps (in order)
 
-1. **Fixture city.** The user builds `UnsquareTest-Fixture` from [Fixture.md](Fixture.md) and records it
-   (select each building in Unsquare mode, `npm run fixture:record <name>`; see Fixture.md). Then `npm test`
-   without `UNSQUARE_SAVE`, and fix what the fixture-dependent specs turn up: they were written against the code but have
-   never run on real fixture buildings.
-2. **Slow set and open issues:**
+1. **Fix the confirmed issues**, each on its own `fix/…` branch, and rerun its requirement's tests:
+   005 (Reset all, also makes the test clean-up simpler again), 007 (Building mode areas), 004 (raised cage nudge),
+   006 (utility nodes; check the simulation impact first). Then rerun DRAG-010 to close issue 002.
+2. **Slow set and issue 001:**
    - Run `npm run test:slow` once; it has never run.
    - Settle issue 001 with the comparison in its file.
-   - Decide and fix issue 004.
-   - Look into issue 002.
 3. **Remaining phase 0 spikes** with a throw-away Debug build: synthetic InputSystem events (`InputSystem.QueueStateEvent`
    on `Mouse.current`/`Keyboard.current`, or the game's `InputManager`), `ScreenCapture.CaptureScreenshotAsTexture`
    with and without UI, and `http://127.0.0.1:9444` in the in-app browser.
