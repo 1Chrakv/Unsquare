@@ -64,7 +64,8 @@ describe("SAVE – saving and loading", () => {
     await move("Corner", corner(1, 0, 1), [1.5, 0, 0]);
     await move("Corner", corner(0, 0, 1), [-1, 0, 0]);
     const snapshot = async () => ({
-      areas: flatten((await bridge.areas(house)).map((a) => a.local)),
+      // Area entities come back in another order after a load; each area keeps its points in order.
+      areas: (await bridge.areas(house)).map((a) => flatten([a.local]).join(" ")).sort(),
       nets: flatten([(await bridge.nets(house)).nodes.map((n) => n.local)]).sort(),
       props: flatten([(await bridge.subObjects(house)).map((s) => s.local)]).sort(),
     });
