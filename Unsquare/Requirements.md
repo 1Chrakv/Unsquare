@@ -226,6 +226,7 @@ features add requirements and tests in the same change.
 | RESET-001 | Alt+Backspace resets the building to its original shape (undeformed cage); Alt+Shift+Delete resets all and logs a count | 12 | suite |
 | RESET-002 | Resetting a selected corner drops only that corner back; log `Reset Corner… -> Accepted` | 55 | suite |
 | RESET-003 | Reset handle without a selected handle logs `No handle selected` and changes nothing | 56 | suite |
+| RESET-004 | After Reset all, every building's props, areas and paths stand exactly where they stood before it was deformed, as after a single reset | – | suite |
 
 ## SPLIT – Edit modes and split cages (`specs/split.spec.ts`)
 

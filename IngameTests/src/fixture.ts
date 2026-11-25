@@ -65,6 +65,17 @@ export async function cleanUp() {
   const session = await bridge.session();
   if (!session.mode) await bridge.mode(true);
   for (let i = 0; i < 4 && (await bridge.session()).target; i++) await bridge.stepBack();
+  // Reset each deformed building on its own first: Reset all leaves props displaced (issue 005).
+  for (const deformed of await bridge.find({ variant: true, limit: 50 })) {
+    try {
+      await bridge.select(deformed.ref);
+      await bridge.reset();
+      await bridge.settled();
+    } catch {
+      // not selectable on its own (e.g. an extension): Reset all below takes it
+    }
+    for (let i = 0; i < 4 && (await bridge.session()).target; i++) await bridge.stepBack();
+  }
   await bridge.resetAll();
   await bridge.clearHistory();
   await bridge.editMode("Both");

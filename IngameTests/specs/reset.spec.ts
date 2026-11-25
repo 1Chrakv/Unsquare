@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bridge } from "../src/bridge.js";
-import { expectUndeformed, Face, offsets } from "../src/expect.js";
+import { corner, distanceXZ, expectUndeformed, Face, offsets } from "../src/expect.js";
 import { building } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { refused, target, twoOfAKind, useCity } from "../src/setup.js";
@@ -49,5 +49,30 @@ describe("RESET – resets", () => {
     expect(await refused(bridge.resetHandle())).toBe("NotDeformable");
     await log.waitFor(/\[Edit\] No handle selected/);
     expect((await bridge.session()).cage!.deformed).toBe(false);
+  });
+
+  it("RESET-004 reset all puts props, areas and paths back where they were", async (context) => {
+    const house = await building(context, "gardenHouse");
+    const layout = async () => ({
+      props: await bridge.subObjects(house),
+      areas: (await bridge.areas(house)).flatMap((a) => a.local),
+      nodes: (await bridge.nets(house)).nodes.map((n) => n.local),
+    });
+    const before = await layout();
+    await target(house, "Corner", corner(1, 0, 1));
+    await bridge.drag({ translate: [-1.3, 0, 0], frames: 3 });
+    await bridge.settled();
+    await bridge.stepBack();
+    await bridge.stepBack();
+    await bridge.resetAll();
+    await bridge.settled(house);
+    await bridge.frames(30);
+    const after = await layout();
+    const off = before.props
+      .map((p) => ({ prefab: p.prefab, d: Math.min(...after.props.filter((q) => q.prefab === p.prefab).map((q) => distanceXZ(p.local, q.local))) }))
+      .filter((p) => p.d > 0.05);
+    expect(off.map((p) => `${p.prefab} ${p.d.toFixed(2)} m`), "props back in place").toEqual([]);
+    before.areas.forEach((p, i) => expect(distanceXZ(after.areas[i], p), `area point ${i}`).toBeLessThan(0.05));
+    before.nodes.forEach((p, i) => expect(distanceXZ(after.nodes[i], p), `path node ${i}`).toBeLessThan(0.05));
   });
 });
