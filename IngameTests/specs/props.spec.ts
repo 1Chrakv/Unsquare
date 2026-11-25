@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { bridge, type CageJson, type SubObjectJson, type Vec3 } from "../src/bridge.js";
-import { angleDiff, cageMap, corner, Face, yaw } from "../src/expect.js";
+import { angleDiff, cageMap, corner, expectSamePlan, Face, yaw } from "../src/expect.js";
 import { building } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { move, target, useCity } from "../src/setup.js";
@@ -116,7 +116,7 @@ describe("PROPS – props and ground items", () => {
     const log = LogWatch.fromNow();
     await move("Corner", corner(1, 0, 1), [-1.3, 0, 0]);
     await log.waitFor(/Attachments of .*Areas off/);
-    expect((await bridge.areas(house)).map((a) => a.local)).toEqual(before.map((a) => a.local));
+    expectSamePlan(await bridge.areas(house), before);
   });
 });
 

@@ -76,12 +76,15 @@ describe("ALIGN – align to neighbour", () => {
 
   it("ALIGN-007 a side dragged into the neighbour lot aligns back onto the facing edge", async (context) => {
     await target(await building(context, "turnedNeighbour"));
-    const plain = (await bridge.session()).cage!;
+    // Where the side goes from its own place: the neighbour's facing edge.
+    const { after: facing } = await alignLeft("Flush");
+    await bridge.undo();
+    await bridge.settled();
     await move("Face", 1, [3, 0, 0]); // 3 m into the left neighbour
     const { after } = await alignLeft("Flush");
-    // Back near the original side, not 3 m or more further on the neighbour's far side.
+    // From inside the neighbour lot it must land on the same edge, not on the neighbour's far side.
     for (const c of [LeftBack, LeftFront])
-      expect(Math.abs(after.corners[c][0] - plain.corners[c][0]), `corner ${c}`).toBeLessThan(3);
+      expect(distanceXZ(after.corners[c], facing.corners[c]), `corner ${c}`).toBeLessThan(0.2);
   });
 
   it("ALIGN-009 a side next to a free footpath aligns to the path", async (context) => {

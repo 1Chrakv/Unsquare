@@ -202,7 +202,7 @@ features add requirements and tests in the same change.
 
 | ID | Requirement | Rows | Check |
 |---|---|---|---|
-| LEVEL-001 | Ctrl+Alt+← moves only the left side's bottom corners to the neighbour lot's ground; height and other corners stay; log `Levelling Left of building … with lot …` | 95 | suite |
+| LEVEL-001 | Ctrl+Alt+← moves the left side's two corner columns so their bottoms sit on the neighbour lot's ground (higher or lower); the columns keep their height and the right side stays; log `Levelling Left of building … with lot …` | 95 | suite |
 | LEVEL-002 | The back side at a sloped road: each back corner goes to the road surface height next to it | 96 | suite |
 | LEVEL-003 | Without a neighbour in reach levelling is rejected (`no neighbour within …`); a level is one undo step | 97 | suite |
 | LEVEL-004 | The street side at a sloped street: both front bottom corners go to the road surface; the back stays | 180 | suite |

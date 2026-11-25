@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bridge } from "../src/bridge.js";
-import { corner } from "../src/expect.js";
+import { corner, expectSamePlan } from "../src/expect.js";
 import { building } from "../src/fixture.js";
 import { move, target, useCity } from "../src/setup.js";
 
@@ -16,7 +16,7 @@ describe("BLEND – ground blending", () => {
     await move("Corner", corner(1, 0, 1), [-1.5, 0, 0]);
     await move("Corner", corner(1, 1, 1), [-1.5, 0, 0]);
     const areasAfter = await bridge.areas(house);
-    expect(areasAfter.map((a) => a.local)).toEqual(areasBefore.map((a) => a.local));
+    expectSamePlan(areasAfter, areasBefore);
   });
 
   it("BLEND-003 blending is undoable", async (context) => {

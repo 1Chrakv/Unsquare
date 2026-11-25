@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Open, suspected bug; reproduced with the same 0.36 m in run 5 |
+| Status | Open, likely a bug: reproduced on a second building, 1.5 m off (run 7) |
 | Found by | In-game test DRAG-010, run 3 (2026-11-24, save `UnsquareTest-Spike`) |
 | Severity | Low to medium: visible offset of roof props on moved buildings |
 | Requirement | DRAG-010 (old checklist row 154) |
@@ -28,6 +28,12 @@ Each prop moved by `[3, 0, 0]` in building space (tolerance 0.3 m; with a pure t
 
 `prop SatelliteDishRoof03: expected 0.36 to be less than 0.3` — the nearest dish of that prefab to the expected
 position is 0.36 m away from it in plan.
+
+## Second case (run 7, fixture `plainHouse`)
+
+On `CN_HighOffice01_L1_4x4` (office tower, fixture `plainHouse`) the same 3 m whole-cage shift left the roof prop
+`RooftopAccess05` **1.545 m** away from its shifted position in plan. Two different buildings and prop types make a
+test mistake (matching the wrong prop) unlikely.
 
 ## Analysis
 

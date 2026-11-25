@@ -13,6 +13,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Api;
 using Unsquare.Core.Automation;
+using Unsquare.Core.Naming;
 using Unsquare.UI.Editing;
 using Unsquare.UI.Tool;
 using Transform = Game.Objects.Transform;
@@ -53,8 +54,10 @@ namespace Unsquare.Automation
 
         public BuildingRef RefOf(Entity building)
         {
+            // Refs name the base prefab, so a building keeps its ref while its variant changes.
             var position = EntityManager.GetComponentData<Transform>(building).m_Position;
-            return new BuildingRef(PrefabName(building) ?? "?", position.xz);
+            var name = PrefabName(building) ?? "?";
+            return new BuildingRef(VariantNaming.TryParse(name, out var baseName) ? baseName : name, position.xz);
         }
 
         /// <summary>Every placed building (no previews, nothing deleted).</summary>

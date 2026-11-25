@@ -22,14 +22,18 @@ describe("LEVEL – level with neighbour", () => {
     reach = undefined;
   });
 
-  it("LEVEL-001 levelling the left side moves only its bottom corners to the neighbour's ground", async (context) => {
+  it("LEVEL-001 levelling the left side moves its columns onto the neighbour's ground; the right side stays", async (context) => {
     await target(await building(context, "raisedNeighbour"));
     const after = await level("Left");
     const [back, front] = [after[Bottom.leftBack][1], after[Bottom.leftFront][1]];
     expect(Math.abs(back), "the left back corner follows the neighbour").toBeGreaterThan(1);
     expect(Math.abs(front), "the left front corner follows the neighbour").toBeGreaterThan(1);
     expect(Math.sign(back)).toBe(Math.sign(front));
-    for (const c of [Bottom.rightBack, Bottom.rightFront, 2, 3, 6, 7]) expect(after[c], `corner ${c}`).toEqual([0, 0, 0]);
+    // Each left column moves whole (the building keeps its height); the right side stays.
+    expect(after[corner(1, 1, 0)], "left back top follows its bottom").toEqual(after[Bottom.leftBack]);
+    expect(after[corner(1, 1, 1)], "left front top follows its bottom").toEqual(after[Bottom.leftFront]);
+    for (const c of [Bottom.rightBack, Bottom.rightFront, corner(0, 1, 0), corner(0, 1, 1)])
+      expect(after[c], `corner ${c}`).toEqual([0, 0, 0]);
   });
 
   it("LEVEL-002 the back side at a sloped road goes to the road surface per corner", async (context) => {

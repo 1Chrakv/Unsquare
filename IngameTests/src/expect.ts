@@ -65,3 +65,12 @@ export function edge(a: number, b: number): number {
 export const corner = (x: 0 | 1, y: 0 | 1, z: 0 | 1) => x + 2 * y + 4 * z;
 
 const fmt = (v: Vec3) => `(${v.map((n) => n.toFixed(2)).join(", ")})`;
+
+/** Ground areas keep their outline in plan; their heights follow the terrain, so y is not compared. */
+export function expectSamePlan(after: { local: Vec3[] }[], before: { local: Vec3[] }[], tolerance = 0.05) {
+  expect(after.length, "area count").toBe(before.length);
+  before.forEach((area, i) => {
+    expect(after[i].local.length, `points of area ${i}`).toBe(area.local.length);
+    area.local.forEach((p, j) => expect(distanceXZ(after[i].local[j], p), `area ${i} point ${j}`).toBeLessThan(tolerance));
+  });
+}
