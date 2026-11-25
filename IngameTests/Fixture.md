@@ -17,6 +17,7 @@ test; they never save over it (they only save as `UnsquareTest-Run…`).
 Plop growables with a mod like Plop the Growables or Find It, or zone and wait; then remove the mod's
 influence again if possible. Leave at least one empty lot width between unrelated groups unless the entry asks
 for a neighbour.
+Left, right and back are as seen from the street the building faces (standing on the road, looking at it).
 
 | Name | What to build | Used by |
 |---|---|---|
@@ -28,9 +29,9 @@ for a neighbour.
 | `raisedNeighbour` | A house whose left neighbour stands 2 m or more higher (terrain step or slope between them) | LEVEL-001, LEVEL-003 |
 | `slopeHouse` | A house on terrain that falls away from its road by 3 m or more towards the back | FIT-001 to 005, TERRAIN-001 to 005 |
 | `slopedRoad` | A house at a road that climbs along the house's front (one front corner higher than the other) | LEVEL-004, FIT-001 |
-| `backRoad` | A house with a second road running along its back side (a few metres away) | ALIGN-004, LEVEL-002 |
-| `footpathHouse` | A house with a free-standing footpath (built with the path tool, not part of a lot) parallel to its left side, 2–5 m away | ALIGN-009, LEVEL-005 |
-| `pathThroughLot` | A house with a footpath drawn across its lot, parallel to its left side, and a road a few metres beyond the lot on that side | ALIGN-010 |
+| `backRoad` | A building with a second road along its back side (roughly parallel, within about 50 m) that runs **0.5 m or more higher or lower** than the lot (slope, or a raised/lowered road) | ALIGN-004, LEVEL-002 |
+| `footpathHouse` | A building with a free-standing footpath (built with the path tool, not part of a lot) beside its left side, outside the lot, within 45° of parallel and a few metres away | ALIGN-009, LEVEL-005 |
+| `pathThroughLot` | A building with a footpath drawn across its lot and a road beyond the lot on its left side (within 45° of parallel); the path must end at the lot edge or join that road, so no loose piece lies between lot and road | ALIGN-010 |
 | `park` | A park with curved paths and an entrance from a road (e.g. a medium park) | LOT-003 to 005, SEL-007 |
 | `carPark` | A multi-storey car park with the extra storey upgrade installed | UPGRADE-001 to 008, SPLIT-011/015 |
 | `school` | An elementary school with the classroom extension wing installed | UPGRADE-004/005, SEL-008 |
