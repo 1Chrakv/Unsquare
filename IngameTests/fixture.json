@@ -4,6 +4,7 @@
     "slopeHouse": "FR_ResidentialMedium01_L1_3x3@-1215.1,389.9",
     "risingSlopeHouse": "FR_ResidentialMedium01_L1_3x3@-1256.3,380.0",
     "footpathHouse": "WastewaterTreatmentPlant01@-1200.2,67.1",
-    "turnedNeighbour": "GER_ResidentialMedium07_L1_3x6@-894.4,422.2"
+    "turnedNeighbour": "GER_ResidentialMedium07_L1_3x6@-894.4,422.2",
+    "raisedNeighbour": "FR_ResidentialMedium01_L1_3x3@-1313.7,264.5"
   }
 }

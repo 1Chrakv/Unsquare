@@ -22,11 +22,13 @@ describe("LEVEL – level with neighbour", () => {
     reach = undefined;
   });
 
-  it("LEVEL-001 levelling the left side moves only its bottom corners, up to the higher neighbour", async (context) => {
+  it("LEVEL-001 levelling the left side moves only its bottom corners to the neighbour's ground", async (context) => {
     await target(await building(context, "raisedNeighbour"));
     const after = await level("Left");
-    expect(after[Bottom.leftBack][1]).toBeGreaterThan(1);
-    expect(after[Bottom.leftFront][1]).toBeGreaterThan(1);
+    const [back, front] = [after[Bottom.leftBack][1], after[Bottom.leftFront][1]];
+    expect(Math.abs(back), "the left back corner follows the neighbour").toBeGreaterThan(1);
+    expect(Math.abs(front), "the left front corner follows the neighbour").toBeGreaterThan(1);
+    expect(Math.sign(back)).toBe(Math.sign(front));
     for (const c of [Bottom.rightBack, Bottom.rightFront, 2, 3, 6, 7]) expect(after[c], `corner ${c}`).toEqual([0, 0, 0]);
   });
 

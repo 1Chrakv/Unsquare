@@ -26,7 +26,7 @@ Left, right and back are as seen from the street the building faces (standing on
 | `gardenHouse` | A low-density house whose lot has a garden: fence, shed, trees, paving | PROPS-004/005, LOT-002, SPLIT-003/004 |
 | `storefront` | A low-density commercial building with a storefront sign and props on its roof | PROPS-001 to 003 |
 | `turnedNeighbour` | A house whose **left** neighbour (seen from the street) is turned by 10–30°: put the neighbour on a slightly curved road or a corner | ALIGN-001 to 003, ALIGN-006/007 |
-| `raisedNeighbour` | A house whose left neighbour stands 2 m or more higher (terrain step or slope between them) | LEVEL-001, LEVEL-003 |
+| `raisedNeighbour` | A house whose **left** neighbour stands 2 m or more higher or lower (terrain step or slope between them, e.g. a row up a hill) | LEVEL-001 |
 | `slopeHouse` | A house on terrain that falls away from its road by 3 m or more towards the back | FIT-001 to 005, TERRAIN-001 to 005 |
 | `risingSlopeHouse` | A house cut into a hill: the terrain behind it rises by 3 m or more | FIT-006 |
 | `slopedRoad` | A house at a road that climbs along the house's front (one front corner higher than the other) | LEVEL-004, FIT-001 |
