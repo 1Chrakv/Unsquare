@@ -9,6 +9,9 @@
     "hospital": "Hospital01@-1096.5,37.8",
     "school": "ElementarySchool02@-1105.2,622.0",
     "carPark": "ParkingHall03@-1179.2,466.9",
-    "park": "CityPark07@-1070.8,177.5"
+    "park": "CityPark07@-1070.8,177.5",
+    "gardenHouse": "EE_ResidentialLow_L1_4x6@-829.6,340.0",
+    "backRoad": "FR_Hospital@-1065.2,305.4",
+    "pathThroughLot": "FR_Hospital@-1065.2,305.4"
   }
 }
