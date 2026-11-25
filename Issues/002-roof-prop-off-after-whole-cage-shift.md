@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Open, likely a bug: reproduced on a second building, 1.5 m off (run 7) |
+| Status | Open, probably a symptom of issue 005: verify DRAG-010 once 005 is fixed |
 | Found by | In-game test DRAG-010, run 3 (2026-11-24, save `UnsquareTest-Spike`) |
 | Severity | Low to medium: visible offset of roof props on moved buildings |
 | Requirement | DRAG-010 (old checklist row 154) |
@@ -34,6 +34,12 @@ position is 0.36 m away from it in plan.
 On `CN_HighOffice01_L1_4x4` (office tower, fixture `plainHouse`) the same 3 m whole-cage shift left the roof prop
 `RooftopAccess05` **1.545 m** away from its shifted position in plan. Two different buildings and prop types make a
 test mistake (matching the wrong prop) unlikely.
+
+## Update (run 9)
+
+With the test clean-up resetting each building on its own (avoiding issue 005), the roof props landed exactly in run 9;
+only the utility nodes stayed behind (issue 006). The earlier cases all ran right after a clean-up with Reset all,
+which leaves props where the previous variant had them (issue 005), so the "before" snapshot was likely already off.
 
 ## Analysis
 
