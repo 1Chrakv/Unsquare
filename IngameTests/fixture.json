@@ -12,6 +12,10 @@
     "park": "CityPark07@-1070.8,177.5",
     "gardenHouse": "EE_ResidentialLow_L1_4x6@-829.6,340.0",
     "backRoad": "FR_Hospital@-1065.2,305.4",
-    "pathThroughLot": "FR_Hospital@-1065.2,305.4"
+    "pathThroughLot": "FR_Hospital@-1065.2,305.4",
+    "plainHouse": "CN_HighOffice01_L1_4x4@-837.1,539.5",
+    "storefront": "GER_Mixed03_L5_3x6@-863.1,575.8",
+    "sameTypeA": "GER_ResidentialMedium07_L1_3x6@-883.7,619.2",
+    "sameTypeB": "GER_ResidentialMedium07_L1_3x6@-897.3,648.2"
   }
 }
