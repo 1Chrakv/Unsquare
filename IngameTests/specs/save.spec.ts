@@ -5,7 +5,7 @@ import { building, loadFixture } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { move, target, twoOfAKind, useCity } from "../src/setup.js";
 
-const RunSave = "UQTest-Run-Save";
+const RunSave = "UnsquareTest-Run-Save";
 
 /** Saves the city under the test name and loads it again; the fixture is reloaded by the next spec file. */
 async function saveAndReload() {

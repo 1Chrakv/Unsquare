@@ -22,8 +22,8 @@ namespace Unsquare.Automation.Commands
     internal sealed class GameCommands
     {
         /// <summary>Tests save only under this prefix, and never over the fixture they load.</summary>
-        public const string SavePrefix = "UQTest-";
-        public const string FixtureSave = "UQTest-Fixture";
+        public const string SavePrefix = "UnsquareTest-";
+        public const string FixtureSave = "UnsquareTest-Fixture";
 
         // Frames after a load finishes before the bridge reports it: VariantSystem restores saved cages in its first
         // update after OnGameLoaded and swaps them a few frames later.

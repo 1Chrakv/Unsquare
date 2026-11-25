@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Status | Open, suspected bug; reproduced with the same 0.36 m in run 5 |
-| Found by | In-game test DRAG-010, run 3 (2026-11-24, save `UQTest-Spike`) |
+| Found by | In-game test DRAG-010, run 3 (2026-11-24, save `UnsquareTest-Spike`) |
 | Severity | Low to medium: visible offset of roof props on moved buildings |
 | Requirement | DRAG-010 (old checklist row 154) |
 
@@ -15,7 +15,7 @@ every prop by exactly 3 m. A roof prop, `SatelliteDishRoof03`, ended up 0.36 m a
 
 ## Steps
 
-1. Load `UQTest-Spike`, Unsquare mode on, pick a plain low-density house (the suite's `plainHouse` fallback query).
+1. Load `UnsquareTest-Spike`, Unsquare mode on, pick a plain low-density house (the suite's `plainHouse` fallback query).
 2. Pick mode Cage, select the whole cage.
 3. Drag it `[3, 0, 0]` over 10 frames and release; wait until baked.
 4. Compare each prop's building-local position before and after (`GET buildings/{ref}/subobjects`).

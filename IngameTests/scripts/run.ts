@@ -26,7 +26,7 @@ const results = path.join(runDir, "results.json");
 const vitest = spawnSync(process.execPath, [path.join(testsDir, "node_modules", "vitest", "vitest.mjs"), "run", ...vitestArgs], {
   cwd: testsDir,
   stdio: "inherit",
-  env: { ...process.env, UQ_SET: set, UQ_RESULTS: results, UQ_RUN_DIR: runDir },
+  env: { ...process.env, UNSQUARE_SET: set, UNSQUARE_RESULTS: results, UNSQUARE_RUN_DIR: runDir },
 });
 
 if (fs.existsSync(results)) {

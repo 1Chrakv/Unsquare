@@ -9,7 +9,7 @@ import { LogWatch } from "../../src/log.js";
 import { deployedMod, playerLog } from "../../src/paths.js";
 import { move, target } from "../../src/setup.js";
 
-const RunSave = "UQTest-Run-Slow";
+const RunSave = "UnsquareTest-Run-Slow";
 
 /** Deforms the plain house, saves the city under the run name and returns the shape. */
 async function deformAndSave(context: Parameters<typeof building>[0]) {

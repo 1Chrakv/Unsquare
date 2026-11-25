@@ -1,8 +1,8 @@
-# Fixture city `UQTest-Fixture`
+# Fixture city `UnsquareTest-Fixture`
 
 The in-game tests run on one small city that holds a known set of buildings. Build it once, record which building
-is which, and save it as **`UQTest-Fixture`**. Tests load it, change buildings, and put everything back after each
-test; they never save over it (they only save as `UQTest-Run…`).
+is which, and save it as **`UnsquareTest-Fixture`**. Tests load it, change buildings, and put everything back after each
+test; they never save over it (they only save as `UnsquareTest-Run…`).
 
 ## Rules
 
@@ -44,7 +44,7 @@ the game):
 
 1. Turn on Unsquare mode and click a building (no handle needed).
 2. Run `npm run fixture:record <name>` in `IngameTests/`, e.g. `npm run fixture:record gardenHouse`.
-3. Repeat for every name (`npm run fixture:record -- --list` lists them), then save the city as `UQTest-Fixture`.
+3. Repeat for every name (`npm run fixture:record -- --list` lists them), then save the city as `UnsquareTest-Fixture`.
 4. `npm run fixture:check` loads the save and reports anything missing or no longer deformable.
 
 The names and positions go to `IngameTests/fixture.json`, which is committed. Tests find each building by prefab

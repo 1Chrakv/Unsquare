@@ -37,9 +37,9 @@ interface FixtureFile {
 }
 
 export function readFixture(): FixtureFile {
-  const fallback: FixtureFile = { save: "UQTest-Fixture", buildings: {} };
+  const fallback: FixtureFile = { save: "UnsquareTest-Fixture", buildings: {} };
   const file = fs.existsSync(fixtureFile) ? (JSON.parse(fs.readFileSync(fixtureFile, "utf8")) as FixtureFile) : fallback;
-  return { ...file, save: process.env.UQ_SAVE ?? file.save };
+  return { ...file, save: process.env.UNSQUARE_SAVE ?? file.save };
 }
 
 export function writeFixture(file: FixtureFile) {

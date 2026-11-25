@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Status | Open, confirmed |
-| Found by | In-game test UPGRADE-007, run 5 (2026-11-24, save `UQTest-Spike`) |
+| Found by | In-game test UPGRADE-007, run 5 (2026-11-24, save `UnsquareTest-Spike`) |
 | Severity | Medium: a visible nudge without effect, and Ctrl+Z jumping two steps |
 | Requirement | UPGRADE-007 (old checklist row 114) |
 

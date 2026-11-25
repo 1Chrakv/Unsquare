@@ -21,7 +21,7 @@ contain (`Unsquare/Automation/`), and read `Unsquare.Mod.log`.
 | `npm run fixture:check` | What the fixture city lacks |
 | `npm run game:start` / `game:quit` | Start or quit the game |
 
-`UQ_SAVE=<save>` runs on another save (tests needing fixture buildings are then skipped, generic ones pick
+`UNSQUARE_SAVE=<save>` runs on another save (tests needing fixture buildings are then skipped, generic ones pick
 buildings themselves). Results: `.testruns/<timestamp>/report.md` and `results.json` (also copied to
 `.testruns/latest/`).
 
@@ -35,7 +35,7 @@ running. Builds (`dotnet build Unsquare.sln`) need the game closed: `npm run gam
 - Test names start with the requirement ID: `it("UNDO-002 a whole drag is undone in one step", …)`.
   `npm run coverage:req` rejects unknown IDs.
 - `useCity()` loads the fixture and cleans up after every test (no target, nothing deformed, empty history,
-  default modes). Tests must not save over the fixture (`bridge.save` only accepts `UQTest-…` names other than it).
+  default modes). Tests must not save over the fixture (`bridge.save` only accepts `UnsquareTest-…` names other than it).
 - Get buildings with `building(context, "<fixture name>")`: the test is skipped when the fixture lacks it.
 - Wait with `bridge.settled()` (bake done, applied shape = requested), never with sleeps.
 - Check the log with `LogWatch.fromNow()` before the step and `waitFor(/…/)` after it.

@@ -118,7 +118,7 @@ export class BridgeError extends Error {
  */
 export class Bridge {
   constructor(
-    readonly baseUrl = process.env.UQ_BRIDGE ?? "http://127.0.0.1:7337",
+    readonly baseUrl = process.env.UNSQUARE_BRIDGE ?? "http://127.0.0.1:7337",
     private tokenPath = tokenFile,
   ) {}
 

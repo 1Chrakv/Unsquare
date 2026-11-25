@@ -25,7 +25,7 @@ requirement with a stable ID. Most are checked by the automated suite in `Ingame
 The suite drives the game through the automation bridge, a REST endpoint inside Debug builds of the mod
 (`Unsquare/Automation/`, off unless enabled). See `IngameTests/README.md` for details.
 
-1. Once: build the test city from `IngameTests/Fixture.md` and save it as `UQTest-Fixture`; `npm install` in
+1. Once: build the test city from `IngameTests/Fixture.md` and save it as `UnsquareTest-Fixture`; `npm install` in
    `IngameTests/`.
 2. Enable the bridge (creates `ModsData\Unsquare\automation\enabled`), deploy a Debug build and start the game:
 

@@ -19,7 +19,7 @@ This file says what was learned, where things stand, and what comes next. How to
 
 ## State
 
-Last full fast run: run 5 (2026-11-24) on `UQTest-Spike` (no fixture city yet), Debug build of `0696caa`:
+Last full fast run: run 5 (2026-11-24) on `UnsquareTest-Spike` (no fixture city yet), Debug build of `0696caa`:
 **62 passed, 3 failed, 24 skipped** of 89 tests, about 10 minutes.
 
 - **Coverage** (`npm run coverage:req`): 215 requirements; 203 for the suite, 12 Claude charters. 92 of the 203
@@ -43,9 +43,9 @@ Last full fast run: run 5 (2026-11-24) on `UQTest-Spike` (no fixture city yet), 
 
 ## Next steps (in order)
 
-1. **Fixture city.** The user builds `UQTest-Fixture` from [Fixture.md](Fixture.md) and records it
+1. **Fixture city.** The user builds `UnsquareTest-Fixture` from [Fixture.md](Fixture.md) and records it
    (select each building in Unsquare mode, `npm run fixture:record <name>`; see Fixture.md). Then `npm test`
-   without `UQ_SAVE`, and fix what the fixture-dependent specs turn up: they were written against the code but have
+   without `UNSQUARE_SAVE`, and fix what the fixture-dependent specs turn up: they were written against the code but have
    never run on real fixture buildings.
 2. **Slow set and open issues:**
    - Run `npm run test:slow` once; it has never run.
@@ -75,8 +75,8 @@ Last full fast run: run 5 (2026-11-24) on `UQTest-Spike` (no fixture city yet), 
    and variant mesh hash, reused when unchanged), `/ingame-triage <test>` (replays a red test through MCP),
    `/ingame-explore <charter>`.
 11. **Phase 4:** charters for the 12 `claude:` requirements (options, naming, placement, manifest) written into
-    Requirements.md; `needs-mod` specs for Placemaker and FlexIt on their own saves (`UQTest-Placemaker`,
-    `UQTest-FlexIt`), skipped when the mod is absent.
+    Requirements.md; `needs-mod` specs for Placemaker and FlexIt on their own saves (`UnsquareTest-Placemaker`,
+    `UnsquareTest-FlexIt`), skipped when the mod is absent.
 
 ## Open questions and known problems
 

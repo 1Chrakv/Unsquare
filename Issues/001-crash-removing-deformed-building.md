@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Status | Open, not confirmed as an Unsquare bug |
-| Found by | In-game test UNDO-004, run 3 (2026-11-24, save `UQTest-Spike`) |
+| Found by | In-game test UNDO-004, run 3 (2026-11-24, save `UnsquareTest-Spike`) |
 | Severity | High if confirmed: players lose unsaved progress |
 | Requirement | UNDO-004 (old checklist row 52) |
 
@@ -16,7 +16,7 @@ deleting buildings whose lot paths and areas Unsquare has moved.
 
 ## Steps that led to the crash
 
-1. Load `UQTest-Spike`, simulation paused, Unsquare mode on.
+1. Load `UnsquareTest-Spike`, simulation paused, Unsquare mode on.
 2. Select a `FireHouse02` (fire station), select the top face, nudge it up 0.1 m, wait until baked.
    Bake: `FireHouse02__uq8da043ee15b4`; lot sync moved 7 areas and 6 net edges, 4 road ends slid.
 3. Step back twice (no target).
