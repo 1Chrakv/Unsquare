@@ -18,6 +18,7 @@ export const fixtureBuildings = {
   turnedNeighbour: { what: "House whose left neighbour lot is turned by 10–30°", fallback: undefined },
   raisedNeighbour: { what: "House whose left neighbour lot stands 2+ m higher", fallback: undefined },
   slopeHouse: { what: "House on terrain falling away from its road by 3+ m", fallback: undefined },
+  risingSlopeHouse: { what: "House cut into terrain rising behind it by 3+ m", fallback: undefined },
   slopedRoad: { what: "House whose street (front) runs up a slope", fallback: undefined },
   backRoad: { what: "House with a road along its back side", fallback: undefined },
   footpathHouse: { what: "House beside a free-standing footpath (parallel to its left side)", fallback: undefined },

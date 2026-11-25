@@ -28,6 +28,7 @@ Left, right and back are as seen from the street the building faces (standing on
 | `turnedNeighbour` | A house whose **left** neighbour (seen from the street) is turned by 10–30°: put the neighbour on a slightly curved road or a corner | ALIGN-001 to 003, ALIGN-006/007 |
 | `raisedNeighbour` | A house whose left neighbour stands 2 m or more higher (terrain step or slope between them) | LEVEL-001, LEVEL-003 |
 | `slopeHouse` | A house on terrain that falls away from its road by 3 m or more towards the back | FIT-001 to 005, TERRAIN-001 to 005 |
+| `risingSlopeHouse` | A house cut into a hill: the terrain behind it rises by 3 m or more | FIT-006 |
 | `slopedRoad` | A house at a road that climbs along the house's front (one front corner higher than the other) | LEVEL-004, FIT-001 |
 | `backRoad` | A building with a second road along its back side (roughly parallel, within about 50 m) that runs **0.5 m or more higher or lower** than the lot (slope, or a raised/lowered road) | ALIGN-004, LEVEL-002 |
 | `footpathHouse` | A building with a free-standing footpath (built with the path tool, not part of a lot) beside its left side, outside the lot, within 45° of parallel and a few metres away | ALIGN-009, LEVEL-005 |

@@ -180,6 +180,7 @@ features add requirements and tests in the same change.
 | FIT-003 | One Ctrl+Z undoes a fit | 76 | suite |
 | FIT-004 | After a fit, a lifted lot follows the slope and a flat one keeps a level pad | 77 | suite |
 | FIT-005 | Alt+F or the toggle switches back-only/all-corners (`[Edit] Ground fit mode AllCorners`); all corners follow the original ground; back-only brings the street side back to road level; the mode stays when selecting another building | 78 | suite |
+| FIT-006 | On a slope rising behind the lot, a back-only fit lifts the back corners onto the original ground; the street side stays at road level and the building keeps its height | – | suite |
 
 ## ALIGN – Align to neighbour (`specs/align.spec.ts`)
 

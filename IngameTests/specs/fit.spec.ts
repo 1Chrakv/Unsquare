@@ -52,6 +52,16 @@ describe("FIT – fit to ground", () => {
     expect((await bridge.settled()).deformed).toBe(false);
   });
 
+  it("FIT-006 back-only fit lifts the back onto ground rising behind the lot", async (context) => {
+    await target(await building(context, "risingSlopeHouse"));
+    const before = (await bridge.session()).cage!;
+    const after = await fit("BackOnly");
+    const moved = offsets(after.targetOffsets);
+    expect(Back.some((c) => moved[c][1] > 0.5), "the back rises with the slope").toBe(true);
+    for (const c of Front) expect(Math.abs(moved[c][1]), "the street side stays at road level").toBeLessThan(0.5);
+    columns(after).forEach((h, i) => expect(h).toBeCloseTo(columns(before)[i], 1));
+  });
+
   it("FIT-005 all-corners mode fits the street side too, and the mode stays for other buildings", async (context) => {
     const house = await building(context, "slopeHouse");
     await target(house);
