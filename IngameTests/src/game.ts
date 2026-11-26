@@ -29,6 +29,7 @@ export const game = {
   async start(timeoutMs = 400_000) {
     if (this.isRunning()) throw new Error("The game is already running.");
     this.enableBridge();
+    await ensureSteam();
     const started = Date.now();
     this.launch();
     // The log is rewritten at each start; wait for this start's bridge line before talking to it.
@@ -95,6 +96,25 @@ export const game = {
     else await this.waitReady();
   },
 };
+
+const isProcessRunning = (image: string) => {
+  try {
+    return execFileSync("tasklist", ["/NH", "/FI", `IMAGENAME eq ${image}`], { encoding: "utf8" }).toLowerCase().includes(image);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * A direct start needs a running Steam: without it the game comes up broken (no mods, endless OnGUI errors) and
+ * never answers. Starts Steam and gives it time to sign in.
+ */
+async function ensureSteam() {
+  if (isProcessRunning("steam.exe")) return;
+  spawn("cmd", ["/c", "start", "", "steam://open/main"], { detached: true, stdio: "ignore" }).unref();
+  await waitUntil(() => isProcessRunning("steam.exe"), 120_000, "Steam to start");
+  await sleep(30_000);
+}
 
 /** Copies Unsquare's manifest and caches aside; {@link restore} puts them back. Geometry assets are left alone. */
 export class ModDataBackup {

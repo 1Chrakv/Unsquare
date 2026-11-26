@@ -34,6 +34,7 @@ namespace Unsquare.Automation
             new SessionCommands(_context).Register(_routes);
             new WaitCommands(_context).Register(_routes);
             new ProbeCommands(_context).Register(_routes);
+            new CityCommands(_context).Register(_routes);
             try
             {
                 _server = new BridgeServer(config.Port, config.Token);

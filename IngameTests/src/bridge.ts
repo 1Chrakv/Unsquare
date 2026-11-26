@@ -64,8 +64,20 @@ export interface BuildingJson {
   cage?: CageJson;
 }
 
+export interface MeshJson {
+  name: string;
+  asset: string | null;
+  min: Vec3;
+  max: Vec3;
+  vertices: number;
+}
+
 export interface InfoJson {
   prefab: string;
+  /** The name the game shows for the building (label). */
+  name: string;
+  /** Upgrades the building's menu offers (prefab names). */
+  upgradeOptions: string[];
   level: number | null;
   renters: number;
   condemned: boolean;
@@ -159,6 +171,16 @@ export class Bridge {
   quit = () => this.raw("POST", "game/quit", {});
   speed = (speed: number) => this.call("POST", "game/speed", { speed });
   mark = (text: string) => this.call("POST", "log/mark", { text });
+  /** Runs the simulation for `days` (or `frames`) at full speed, then pauses it. */
+  simulate = (span: { days?: number; frames?: number; speed?: number }) =>
+    this.call<{ frames: number }>("POST", "game/simulate", span, 3_600_000);
+  locale = (locale: string) => this.call<{ previous: string; locale: string }>("POST", "game/locale", { locale });
+  /** Zones the cells around points (building space with `building`, else world xz); zone "None" unzones. */
+  paintZone = (body: { zone: string; points: [number, number][]; building?: string; radius?: number; onlyEmpty?: boolean }) =>
+    this.call<{ cells: number; blocks: number }>("POST", "zone/paint", body);
+  /** Starts a level-up of a zoned building through the game's own path; the simulation must run meanwhile. */
+  levelUp = (ref: string, maxFrames?: number) =>
+    this.call<{ underConstruction: boolean }>("POST", `buildings/${encodeURIComponent(ref)}/levelUp`, { maxFrames }, 3_600_000);
 
   // --- buildings --------------------------------------------------------------------------------------------------
   async find(query: {
@@ -234,6 +256,20 @@ export class Bridge {
   /** Terrain heights at building-space ground points, relative to the building's ground (or world with no building). */
   heights = async (points: [number, number][], building?: string) =>
     (await this.call<{ heights: number[] }>("POST", "terrain/heights", { points, building })).result.heights;
+  meshes = async (ref: string) =>
+    (await this.call<{ prefab: string; meshes: (MeshJson & { lods: MeshJson[] })[] }>("GET", `buildings/${encodeURIComponent(ref)}/meshes`))
+      .result;
+  overlay = async () =>
+    (
+      await this.call<{ lineRadius: number; handleDiameter: number; selectedHandleDiameter: number; axisLength: number; gizmoScreenSize: number }>(
+        "GET",
+        "overlay",
+      )
+    ).result;
+  /** Zone cells under the lot and in the one-cell ring around it, counted by zone prefab name ("None" = unzoned). */
+  zone = async (ref: string) =>
+    (await this.call<{ inside: Record<string, number>; ring: Record<string, number> }>("GET", `buildings/${encodeURIComponent(ref)}/zone`))
+      .result;
   settings = async () => (await this.call<Record<string, unknown>>("GET", "settings")).result;
   setSettings = async (values: Record<string, unknown>) => (await this.call<Record<string, unknown>>("POST", "settings", { values })).result;
   defaultSettings = async () => (await this.call<Record<string, unknown>>("POST", "settings/defaults", {})).result;

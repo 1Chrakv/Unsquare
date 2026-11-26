@@ -64,6 +64,22 @@ export function edge(a: number, b: number): number {
 /** Cage corner indices: bit 0 = +X, bit 1 = +Y (top), bit 2 = +Z (street side). */
 export const corner = (x: 0 | 1, y: 0 | 1, z: 0 | 1) => x + 2 * y + 4 * z;
 
+/** A world point in the building space of `owner` (x width, z street side), height relative to its position. */
+export function toLocal(owner: { position: Vec3; yawDegrees: number }, world: Vec3): Vec3 {
+  const yaw = (owner.yawDegrees * Math.PI) / 180;
+  const dx = world[0] - owner.position[0];
+  const dz = world[2] - owner.position[2];
+  return [dx * Math.cos(yaw) - dz * Math.sin(yaw), world[1] - owner.position[1], dx * Math.sin(yaw) + dz * Math.cos(yaw)];
+}
+
+/** Whether two mesh lists have the same bounds (each mesh and LOD within `tolerance` metres). */
+export function sameBounds(a: { min: Vec3; max: Vec3 }[], b: { min: Vec3; max: Vec3 }[], tolerance = 0.02): boolean {
+  return (
+    a.length === b.length &&
+    a.every((m, i) => [0, 1, 2].every((k) => Math.abs(m.min[k] - b[i].min[k]) <= tolerance && Math.abs(m.max[k] - b[i].max[k]) <= tolerance))
+  );
+}
+
 const fmt = (v: Vec3) => `(${v.map((n) => n.toFixed(2)).join(", ")})`;
 
 /** Ground areas keep their outline in plan; their heights follow the terrain, so y is not compared. */

@@ -6,12 +6,14 @@ using Game.Common;
 using Game.Net;
 using Game.Prefabs;
 using Game.Simulation;
+using Game.UI;
 using Newtonsoft.Json.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unsquare.Api;
 using Unsquare.Core.Automation;
 using Unsquare.Integration.Saves;
+using Unsquare.UI.Overlay;
 using AreaNode = Game.Areas.Node;
 using AreaSubArea = Game.Areas.SubArea;
 using NetSubNet = Game.Net.SubNet;
@@ -40,6 +42,57 @@ namespace Unsquare.Automation.Commands
             routes.Add("GET buildings/{ref}/nets", Nets);
             routes.Add("GET buildings/{ref}/lot", Lot);
             routes.Add("POST terrain/heights", TerrainHeights);
+            routes.Add("GET buildings/{ref}/meshes", Meshes);
+            routes.Add("GET overlay", Overlay);
+        }
+
+        /// <summary>
+        /// The render meshes of the building's prefab with their bounds and those of every LOD, so tests can tell
+        /// deformed meshes (baked clones with other bounds) from the base's.
+        /// </summary>
+        private CommandRun Meshes(BridgeArgs args) => WithBuilding(args, building =>
+        {
+            var list = new JArray();
+            if (_context.Prefabs.TryGetPrefab(Entities.GetComponentData<PrefabRef>(building),
+                    out ObjectGeometryPrefab prefab) && prefab != null && prefab.m_Meshes != null)
+                foreach (var info in prefab.m_Meshes)
+                {
+                    if (info == null || !(info.m_Mesh is RenderPrefab render))
+                        continue;
+                    var lods = new JArray();
+                    var lod = render.GetComponent<LodProperties>();
+                    if (lod != null && lod.m_LodMeshes != null)
+                        foreach (var level in lod.m_LodMeshes)
+                            if (level != null)
+                                lods.Add(MeshJson(level));
+                    var json = MeshJson(render);
+                    json["lods"] = lods;
+                    list.Add(json);
+                }
+            return new JObject { ["prefab"] = _context.PrefabName(building), ["meshes"] = list };
+        });
+
+        private static JObject MeshJson(RenderPrefab render) => new()
+        {
+            ["name"] = render.name,
+            ["asset"] = render.geometryAsset != null ? render.geometryAsset.name : null,
+            ["min"] = BridgeContext.Json(render.bounds.min),
+            ["max"] = BridgeContext.Json(render.bounds.max),
+            ["vertices"] = render.vertexCount,
+        };
+
+        /// <summary>Sizes the cage overlay draws with now (from the options).</summary>
+        private CommandRun Overlay(BridgeArgs args)
+        {
+            var style = _context.World.GetOrCreateSystemManaged<CageOverlaySystem>().Style;
+            return CommandRun.Done(new JObject
+            {
+                ["lineRadius"] = style.LineRadius,
+                ["handleDiameter"] = style.HandleDiameter,
+                ["selectedHandleDiameter"] = style.SelectedHandleDiameter,
+                ["axisLength"] = style.AxisLength,
+                ["gizmoScreenSize"] = style.GizmoScreenSize,
+            });
         }
 
         private CommandRun Info(BridgeArgs args) => WithBuilding(args, building =>
@@ -53,9 +106,19 @@ namespace Unsquare.Automation.Commands
                         ["id"] = BridgeContext.Id(upgrade.m_Upgrade),
                         ["prefab"] = _context.PrefabName(upgrade.m_Upgrade),
                     });
+            // Upgrades the building's menu offers: a cloned upgrade must never show up here.
+            var options = new JArray();
+            if (Entities.TryGetBuffer<BuildingUpgradeElement>(prefab, true, out var offered))
+                foreach (var option in offered)
+                    options.Add(_context.Prefabs.TryGetPrefab(option.m_Upgrade, out PrefabBase upgradePrefab) &&
+                                upgradePrefab != null
+                        ? upgradePrefab.name
+                        : BridgeContext.Id(option.m_Upgrade));
             return new JObject
             {
                 ["prefab"] = _context.PrefabName(building),
+                ["name"] = _context.World.GetOrCreateSystemManaged<NameSystem>().GetRenderedLabelName(building),
+                ["upgradeOptions"] = options,
                 ["level"] = Entities.TryGetComponent<SpawnableBuildingData>(prefab, out var spawnable)
                     ? spawnable.m_Level
                     : (int?)null,

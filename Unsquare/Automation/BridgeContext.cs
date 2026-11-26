@@ -76,7 +76,9 @@ namespace Unsquare.Automation
                 if (parts.Length == 2 && int.TryParse(parts[0], out var index) && int.TryParse(parts[1], out var version))
                 {
                     var entity = new Entity { Index = index, Version = version };
-                    if (EntityManager.Exists(entity) && EntityManager.HasComponent<Building>(entity))
+                    // Extensions (a car park's storey) are their own entities without Building; probes read them too.
+                    if (EntityManager.Exists(entity) && (EntityManager.HasComponent<Building>(entity) ||
+                                                         EntityManager.HasComponent<Extension>(entity)))
                     {
                         building = entity;
                         return true;
