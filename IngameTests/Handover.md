@@ -19,27 +19,40 @@ This file says what was learned, where things stand, and what comes next. How to
 
 ## State
 
-Last full fast run: run 9 (2026-11-25) on the fixture city `UnsquareTest-Fixture` (all 18 buildings recorded,
-`npm run fixture:check` complete): **86 passed, 5 failed, 0 skipped** of 91 tests, about 13 minutes. After it, the
-SAVE-003 test was fixed (area order) and has not run again.
+Last full fast run: run 10 (2026-11-26) on `UnsquareTest-Fixture`: **94 passed, 7 failed, 2 skipped** of 103 tests,
+about 16 minutes. Two fixes afterwards (skip clean-up, locale) were rerun on their own: SPLIT-014 and ENV-001 pass.
 
-- **Coverage** (`npm run coverage:req`): 217 requirements; 205 for the suite, 12 Claude charters. 94 of the 205
-  have tests, and every old checklist row is mapped. New since phase 2: FIT-006 (ground rising behind), RESET-004
-  (layout after Reset all).
-- **Failed, all filed in `Issues/`:**
-  - RESET-004: Reset all leaves props where the variant had them (issue 005, confirmed).
-  - BLEND-001: in Building mode without blending, ground areas move with the building (issue 007, confirmed).
-  - DRAG-010: utility connection nodes stay at the building's old place on a whole-cage move (issue 006).
+- **Coverage** (`npm run coverage:req`): 217 requirements; 205 for the suite, 12 Claude charters. **121** of the 205
+  have tests (94 before run 10), and every old checklist row is mapped.
+- **Failing fast tests, all filed in `Issues/`** (they stay red until the fix):
+  - RESET-004: Reset all leaves props where the variant had them (issue 005).
+  - BLEND-001 and ALIGN-011: in Building mode, ground areas move with the building (issue 007; align moved one
+    pavement area 9.5 m).
+  - DRAG-010: utility connection nodes stay behind on a whole-cage move (issue 006).
   - UPGRADE-007: on the raised car-park cage a nudge can do nothing and undo skips a step (issue 004).
-  - SAVE-003: test mistake (areas come back in another order after a load), fixed since.
-- **Open issues:** 001 (crash after a raw delete, not confirmed), 002 (probably a symptom of 005), 004–007.
-- **Never run:** the slow set (`specs/slow/save.spec.ts`: SAVE-001, SAVE-007, SAVE-004). It restarts the game,
-  moves manifest files aside and, for SAVE-004, the deployed mod folder.
-- **Without tests:** 111 suite requirements (`npm run coverage:req` lists them):
-  - input-driven ones (MODE, SEL, PICK, GIZMO, DRAG-004 to 008, KEYS, UNDO-004) wait for phase 3;
-  - slow ones need simulation days, restarts or old saves (LEVELUP, ZONING, LEGACY, CACHE);
-  - `suite+review` ones wait for the review packs;
-  - other mods (FLEXIT, PLACEMAKER, COPY) wait for phase 4.
+  - UPGRADE-014: after a language switch deformed buildings keep their English names (issue 008).
+- **Skipped (fixture gaps, see Fixture.md):** SPLIT-011 and SPLIT-015 check the storey and then skip the flat
+  ground extension part; ALIGN-011 doesn't cover the park neighbour.
+- **Open issues:** 001 (crash after a raw delete, not confirmed), 002 (probably a symptom of 005), 004–008.
+- **Slow set** (`npm run test:slow`, specs in `specs/slow/`), first run 2026-11-26, **stopped after two files**:
+  - `restart.spec.ts` passed: TERRAIN-010, SPLIT-010, SPLIT-012, DRAG-014.
+  - `cache.spec.ts` failed all three: CACHE-002 (after 7 ms, i.e. at its first step), BAKE-007, CACHE-001. The run
+    was stopped before Vitest printed the errors, so the causes are unknown; rerun the file alone first
+    (`npm run test:slow -- cache`). Its clean-up worked: every backed-up asset is back in place.
+  - Not run yet: `bake.spec.ts` (BAKE-004, BAKE-008), `levelup.spec.ts` (LEVELUP-001 to 003), `options.spec.ts`
+    (OPTIONS-004), `save.spec.ts` (SAVE-001, 007, 004), `zoning.spec.ts` (ZONING-001, 002).
+- **Without tests:** 84 suite requirements: input-driven ones (phase 3), `suite+review` ones (review packs), other
+  mods and old saves (phase 4: FLEXIT, PLACEMAKER, COPY, LEGACY, SPLIT-016, SAVE-005/006, CACHE-003, ZONING-003/004).
+
+## Still open from steps 1–3
+
+Finish these before phase 3:
+
+1. Rerun `cache.spec.ts`, fix what is a test problem, file what is a mod bug.
+2. Run the rest of the slow set once (the files listed above) and handle failures the same way. LEVELUP and ZONING
+   use the new test-only commands for the first time (`buildings/{ref}/levelUp`, `zone/paint`, `game/simulate`).
+3. **Issue 001:** the comparison in its file. It needs a throw-away route that adds `Deleted` directly (never
+   committed); a scratch script that runs the three cases, each after a fresh start, was drafted but not run.
 
 ## Next steps (in order)
 
@@ -93,4 +106,12 @@ Issue fixes are not part of this work: each confirmed issue gets its own session
   `-continuelastsave`; if the run is interrupted, `Mods\Unsquare.disabled-by-tests` must be renamed back by hand.
 - **Slow specs** back up `ModsData\Unsquare` (`ModDataBackup`) and move manifest files aside, never delete them.
   Backups are in `ModsData\Unsquare-backups\`.
+- **Steam must run** for a direct start, or the game comes up broken (no mods, endless `OnGUI` errors) and never
+  answers. `game.start()` starts Steam itself now.
+- **A test skipped after it changed the city gets no afterEach clean-up**: use `skipAfterChanges`, not `skip`.
+- **Simulated time:** the game runs at most 8 frames per rendered frame, so an in-game day takes 10–20 minutes even
+  at full speed. ZONING-001 runs a quarter day (`UNSQUARE_DAYS` for more); "a few days" is not covered yet.
+- **Test-only city commands** change data the game's own systems then act on: `zone/paint` writes zone cells and
+  marks their blocks `Updated` (like the zone tool's apply); `levelUp` raises the building's condition and marks its
+  level-up materials delivered, then the game levels it up itself.
 - No CI: the suite needs a desktop with the game. Runs are local, on the user's OK per run.
