@@ -143,8 +143,8 @@ namespace Unsquare.Automation.Commands
 
         /// <summary>
         /// Makes a zoned building level up through the game's own path: its condition is raised to the leveling cost,
-        /// the materials the game then orders count as delivered, and the game's level-up runs. Finishes when the
-        /// building is under construction for the next level (the simulation must run meanwhile). Body: maxFrames.
+        /// the materials the game then orders count as delivered, and the game's level-up runs. Runs the simulation
+        /// until the building is under construction for the next level, then pauses. Body: maxFrames.
         /// </summary>
         private CommandRun LevelUp(BridgeArgs args)
         {
@@ -154,13 +154,18 @@ namespace Unsquare.Automation.Commands
                 return CommandRun.Fail(422, "The building has no condition (not a zoned building).");
             Entities.SetComponentData(building, new BuildingCondition { m_Condition = int.MaxValue / 4 });
             Mod.Log.Info($"[Auto] Levelling up building {building}");
+            var simulation = _context.World.GetExistingSystemManaged<SimulationSystem>();
+            simulation.selectedSpeed = 4f;
             var deadline = UnityEngine.Time.frameCount + args.Int("maxFrames", 36000);
             return CommandRun.Pending(() =>
             {
                 if (!Entities.Exists(building))
                     return CommandRun.Fail(404, "The building is gone.");
                 if (Entities.HasComponent<Game.Objects.UnderConstruction>(building))
+                {
+                    simulation.selectedSpeed = 0f;
                     return CommandRun.Done(new JObject { ["underConstruction"] = true });
+                }
                 if (Entities.TryGetBuffer<ResourceNeeding>(building, false, out var needs))
                     for (int i = 0; i < needs.Length; i++)
                     {
@@ -168,9 +173,10 @@ namespace Unsquare.Automation.Commands
                         need.m_Flags = ResourceNeedingFlags.Delivered;
                         needs[i] = need;
                     }
-                return UnityEngine.Time.frameCount > deadline
-                    ? CommandRun.Fail(504, "The building did not start levelling up.")
-                    : null;
+                if (UnityEngine.Time.frameCount <= deadline)
+                    return null;
+                simulation.selectedSpeed = 0f;
+                return CommandRun.Fail(504, "The building did not start levelling up.");
             });
         }
 

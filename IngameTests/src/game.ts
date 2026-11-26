@@ -132,7 +132,28 @@ export class ModDataBackup {
   /** Puts the saved files back (the game must be closed: it rewrites them). */
   restore() {
     for (const name of fs.readdirSync(this.dir))
-      fs.copyFileSync(path.join(this.dir, name), path.join(modData, name.replace(/\.moved$/, "")));
+      if (fs.statSync(path.join(this.dir, name)).isFile())
+        fs.copyFileSync(path.join(this.dir, name), path.join(modData, name.replace(/\.moved$/, "")));
+  }
+
+  /** Names of the cached geometry assets (files `UQ_<hash>.Geometry` and their `.cid`). */
+  static assetFiles(): string[] {
+    return fs.readdirSync(modData).filter((name) => /^UQ_[0-9a-f]+\.Geometry(\.cid)?$/.test(name));
+  }
+
+  /** Copies every cached geometry asset into the backup, for tests that let the cache evict. */
+  copyAssets() {
+    const dir = path.join(this.dir, "assets");
+    fs.mkdirSync(dir, { recursive: true });
+    for (const name of ModDataBackup.assetFiles()) fs.copyFileSync(path.join(modData, name), path.join(dir, name));
+  }
+
+  /** Puts back copied assets that are missing now (evicted); the game must be closed. */
+  restoreAssets() {
+    const dir = path.join(this.dir, "assets");
+    if (!fs.existsSync(dir)) return;
+    for (const name of fs.readdirSync(dir))
+      if (!fs.existsSync(path.join(modData, name))) fs.copyFileSync(path.join(dir, name), path.join(modData, name));
   }
 
   /** Moves files out of the mod's data folder into the backup (never deletes); restore brings them back. */
