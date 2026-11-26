@@ -1,21 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { bridge } from "../src/bridge.js";
 import { corner, offsets } from "../src/expect.js";
-import { building } from "../src/fixture.js";
+import { building, skip } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
-import { move, target, useCity } from "../src/setup.js";
+import { expectConnected, move, ReloadTimeout, saveAndReload, target, useCity } from "../src/setup.js";
 
 /** Lets the simulation run for about `seconds` of real time at full speed, then pauses it again. */
 async function simulate(seconds: number) {
   await bridge.speed(3);
   await bridge.frames(seconds * 30);
   await bridge.speed(0);
-}
-
-/** Every net node owned by the building still has an edge (nothing came apart). */
-async function expectConnected(ref: string) {
-  const nets = await bridge.nets(ref);
-  for (const node of nets.nodes) expect(node.edges, `node ${node.id} at ${node.local}`).toBeGreaterThan(0);
 }
 
 describe("UPGRADE – upgrades and extensions", () => {
@@ -73,5 +67,76 @@ describe("UPGRADE – upgrades and extensions", () => {
     }
     await bridge.redo();
     expect(offsets((await bridge.settled()).targetOffsets)[7][1]).toBeCloseTo(0.1, 5);
+  });
+
+  it("UPGRADE-003 the deformed storey survives save and reload; the upgrade menu offers no extra entries", async (context) => {
+    const carPark = await building(context, "carPark");
+    const options = (await bridge.info(carPark)).upgradeOptions;
+    await target(carPark);
+    await move("Corner", corner(1, 1, 1), [2, 0, 1]);
+    const spec = (await bridge.settled()).targetSpec;
+    expect((await bridge.info(carPark)).upgradeOptions, "options of the deformed car park").toEqual(options);
+    await saveAndReload();
+    expect((await bridge.settled(carPark)).targetSpec).toBe(spec);
+    const after = await bridge.info(carPark);
+    expect(after.upgrades.length).toBeGreaterThan(0);
+    for (const upgrade of after.upgrades) expect(upgrade.prefab, "the storey is on its variant again").toMatch(/__uq/);
+    expect(after.upgradeOptions, "options after the reload").toEqual(options);
+  }, ReloadTimeout);
+
+  it("UPGRADE-005 a school wing deformed alone keeps its paths; reset, undo and reload restore it", async (context) => {
+    const school = await building(context, "school");
+    const upgrades = (await bridge.info(school)).upgrades;
+    const wing = upgrades.find((u) => /Classroom/i.test(u.prefab)) ?? upgrades[0];
+    if (!wing) skip(context, "the school has no wing");
+    const wingRef = (await bridge.building(wing.id)).ref; // survives the reload, unlike the entity id
+    await target(wingRef);
+    await move("Corner", corner(1, 1, 1), [1.5, 0, 0]);
+    const spec = (await bridge.settled()).targetSpec;
+    await expectConnected(wingRef);
+    await expectConnected(school);
+    expect((await bridge.info(school)).prefab, "the school stays plain").not.toMatch(/__uq/);
+    await bridge.reset();
+    expect((await bridge.settled()).deformed).toBe(false);
+    await bridge.undo();
+    expect((await bridge.settled()).targetSpec).toBe(spec);
+    await saveAndReload();
+    expect((await bridge.settled(wingRef)).targetSpec).toBe(spec);
+    await expectConnected(wingRef);
+  }, ReloadTimeout);
+
+  it("UPGRADE-008 after a reload the car park's cage again reaches the storey's top", async (context) => {
+    const carPark = await building(context, "carPark");
+    await target(carPark);
+    await move("Corner", corner(1, 1, 1), [1, 0, 0]);
+    const cage = (await bridge.session()).cage!;
+    expect(cage.box.max[1], "raised to the storey").toBeGreaterThan(cage.lotBox.max[1] + 1);
+    await saveAndReload();
+    await target(carPark);
+    expect((await bridge.session()).cage!.box.max[1]).toBeCloseTo(cage.box.max[1], 1);
+  }, ReloadTimeout);
+
+  it("UPGRADE-014 after switching the game language and back, deformed buildings keep their names", async (context) => {
+    const carPark = await building(context, "carPark");
+    const plain = (await bridge.info(carPark)).name;
+    await target(carPark);
+    await move("Corner", corner(1, 1, 1), [1, 0, 0]);
+    expect((await bridge.info(carPark)).name).toBe(plain);
+    const reply = await bridge.raw<{ previous: string; supported: string[] }>("POST", "game/locale", { locale: "de-DE" });
+    const previous = reply.result.previous;
+    if (!reply.ok) {
+      const other = reply.result.supported.find((id) => id !== previous && !id.startsWith("en"))!;
+      await bridge.locale(other);
+    }
+    try {
+      await bridge.frames(30);
+      const german = (await bridge.info(carPark)).name;
+      expect(german, "a German name").not.toBe(plain);
+      expect(german).not.toMatch(/__uq|Assets\./);
+    } finally {
+      await bridge.locale(previous);
+      await bridge.frames(30);
+    }
+    expect((await bridge.info(carPark)).name).toBe(plain);
   });
 });

@@ -27,4 +27,13 @@ describe("OPTIONS – settings", () => {
     await bridge.setSettings({ SmallStep: (await bridge.settings()).SmallStep });
     expect(log.matching(/Options: /), "an unchanged apply logs nothing").toHaveLength(1);
   });
+
+  it("OPTIONS-003 line thickness, handle sizes and axis length apply to the overlay at once", async () => {
+    await change({ LineRadius: 0.3, HandleSize: 1.5, SelectedHandleSize: 2.5, AxisLength: 4 });
+    const style = await bridge.overlay();
+    expect(style.lineRadius).toBeCloseTo(0.3, 3);
+    expect(style.handleDiameter).toBeCloseTo(1.5, 3);
+    expect(style.selectedHandleDiameter).toBeCloseTo(2.5, 3);
+    expect(style.axisLength).toBeCloseTo(4, 3);
+  });
 });

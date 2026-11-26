@@ -17,6 +17,14 @@ async function fit(mode: "BackOnly" | "AllCorners"): Promise<CageJson> {
   return bridge.settled();
 }
 
+/** Heights along the lot's centre line from back to front (20–80 %), relative to the building's ground. */
+async function centreLine(ref: string, samples = 5) {
+  const { min, max } = (await bridge.session()).cage!.lotBox;
+  const x = (min[0] + max[0]) / 2;
+  const points = Array.from({ length: samples }, (_, i) => [x, min[2] + (max[2] - min[2]) * (0.2 + (0.6 * i) / (samples - 1))] as [number, number]);
+  return bridge.heights(points, ref);
+}
+
 /** Column heights (top minus bottom) of the four corner columns. */
 const columns = (cage: CageJson) => [0, 1, 4, 5].map((c) => cage.corners[c + 2][1] - cage.corners[c][1]);
 
@@ -73,5 +81,19 @@ describe("FIT – fit to ground", () => {
     await bridge.stepBack();
     await target(await building(context, "plainHouse"));
     expect((await bridge.session()).groundFitMode).toBe("AllCorners");
+  });
+
+  it("FIT-004 after a fit a lifted lot follows the slope and a flat one keeps a level pad", async (context) => {
+    const house = await building(context, "slopeHouse");
+    await target(house);
+    await fit("BackOnly");
+    await bridge.frames(30); // the terrain pass runs a few frames after the swap
+    const lifted = await centreLine(house);
+    expect(lifted.at(-1)! - lifted[0], `the lot falls to the back: ${lifted.join(", ")}`).toBeGreaterThan(1);
+    expect((await bridge.toggleTerrain()).result.result).toBe("Accepted");
+    await bridge.settled();
+    await bridge.frames(30);
+    const flat = await centreLine(house);
+    expect(Math.max(...flat) - Math.min(...flat), `a level pad: ${flat.join(", ")}`).toBeLessThan(0.5);
   });
 });

@@ -37,7 +37,13 @@ Left, right and back are as seen from the street the building faces (standing on
 | `carPark` | A multi-storey car park with the extra storey upgrade installed | UPGRADE-001 to 008, SPLIT-011/015 |
 | `school` | An elementary school with the classroom extension wing installed | UPGRADE-004/005, SEL-008 |
 | `hospital` | A hospital with a ward wing and the helipad installed | SPLIT-014/015 |
-| `growableL1` | A zoned level-1 house with residents (for level-up tests) | LEVELUP-001 to 003 |
+| `growableL1` | A zoned level-1 house with residents (for level-up tests) | LEVELUP-001 to 003, ZONING-001/002, BAKE-008 |
+
+Not in the fixture yet (the tests skip that part and say so):
+
+- A building with a **flat** extension on the ground beside it (a ground-level parking lot or helipad; the hospital's
+  helipad sits on its roof): SPLIT-011, SPLIT-015.
+- A building whose side faces a **park** lot directly next door: the park half of ALIGN-011.
 
 ## Recording the buildings
 

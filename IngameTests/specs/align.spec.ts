@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { bridge } from "../src/bridge.js";
-import { corner, distanceXZ, offsets } from "../src/expect.js";
+import { corner, distanceXZ, expectSamePlan, Face, offsets } from "../src/expect.js";
 import { building } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { move, refused, target, useCity } from "../src/setup.js";
@@ -87,6 +87,19 @@ describe("ALIGN – align to neighbour", () => {
       expect(distanceXZ(after.corners[c], facing.corners[c]), `corner ${c}`).toBeLessThan(0.2);
   });
 
+  it("ALIGN-008 a street side pulled back from the road aligns onto the road edge", async (context) => {
+    await target(await building(context, "plainHouse"));
+    await move("Face", Face.front, [0, 0, -2]);
+    await bridge.alignMode("Flush");
+    const log = LogWatch.fromNow();
+    expect((await bridge.align("Front")).result.result).toBe("Accepted");
+    const after = await bridge.settled();
+    await log.waitFor(/Aligning Front of building .* to road/);
+    // The lot's street side lies on the road edge, so the side goes back to where it started.
+    for (const c of [corner(0, 0, 1), corner(1, 0, 1)])
+      expect(Math.abs(offsets(after.targetOffsets)[c][2]), `corner ${c} on the road edge`).toBeLessThan(0.6);
+  });
+
   it("ALIGN-009 a side next to a free footpath aligns to the path", async (context) => {
     await target(await building(context, "footpathHouse"));
     await bridge.alignMode("Flush");
@@ -102,5 +115,22 @@ describe("ALIGN – align to neighbour", () => {
     const log = LogWatch.fromNow();
     await bridge.align("Left");
     await log.waitFor(/Aligning Left of building .* to .*road/i);
+  });
+
+  it("ALIGN-011 in Building mode a side aligns to the neighbour's building cage; the gardens stay", async (context) => {
+    const house = await building(context, "turnedNeighbour");
+    await target(house);
+    const areas = await bridge.areas(house);
+    await bridge.editMode("Building");
+    await bridge.alignMode("Flush");
+    const log = LogWatch.fromNow();
+    expect((await bridge.align("Left")).result.result).toBe("Accepted");
+    const cage = await bridge.settled();
+    await log.waitFor(/Aligning Left of building .* \(Building\) to lot /);
+    expect(cage.deformed).toBe(true);
+    expect(cage.lotDeformed, "the lot cage stays").toBe(false);
+    await bridge.frames(30);
+    expectSamePlan(await bridge.areas(house), areas);
+    // The park part (a park next door falls back to its lot edge) needs a park beside a building: not in the fixture.
   });
 });

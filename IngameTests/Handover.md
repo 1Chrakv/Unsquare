@@ -43,37 +43,33 @@ SAVE-003 test was fixed (area order) and has not run again.
 
 ## Next steps (in order)
 
-1. **Fix the confirmed issues**, each on its own `fix/…` branch, and rerun its requirement's tests:
-   005 (Reset all, also makes the test clean-up simpler again), 007 (Building mode areas), 004 (raised cage nudge),
-   006 (utility nodes; check the simulation impact first). Then rerun DRAG-010 to close issue 002.
-2. **Slow set and issue 001:**
-   - Run `npm run test:slow` once; it has never run.
-   - Settle issue 001 with the comparison in its file.
-3. **Remaining phase 0 spikes** with a throw-away Debug build: synthetic InputSystem events (`InputSystem.QueueStateEvent`
+Issue fixes are not part of this work: each confirmed issue gets its own session and `fix/…` branch off `develop`
+(005 Reset all first, it also simplifies the test clean-up; then 007, 004, 006; afterwards rerun DRAG-010 to close
+002), and its requirement's test turns green there.
+
+1. **Phase 3 spikes** with a throw-away Debug build: synthetic InputSystem events (`InputSystem.QueueStateEvent`
    on `Mouse.current`/`Keyboard.current`, or the game's `InputManager`), `ScreenCapture.CaptureScreenshotAsTexture`
    with and without UI, and `http://127.0.0.1:9444` in the in-app browser.
-4. **View commands** (`Automation/Commands/ViewCommands.cs`): `POST view/camera {focus: ref, yaw, pitch, distance}`
+2. **View commands** (`Automation/Commands/ViewCommands.cs`): `POST view/camera {focus: ref, yaw, pitch, distance}`
    (the game's `CameraUpdateSystem`/orbit camera controller), `view/ui {visible}`, `view/screenshot {name, crop}`
    writing a JPEG to `.testruns/<run>/shots/`, and `GET view/screenPoint {handle | gizmo}` (world → screen with
    `Camera.main`).
-5. **Input commands** (`InputCommands.cs`): `input/key {binding}` (through the mod's `CageHotkeys` table or real key
+3. **Input commands** (`InputCommands.cs`): `input/key {binding}` (through the mod's `CageHotkeys` table or real key
    events), `input/mouse {move | press | release | click, at: point | handle}`, `ui/trigger {binding, arg}` (calls the
-   `UnsquareUISystem` trigger directly). Then specs for MODE, SEL, PICK, GIZMO, DRAG-004 to 008, KEYS and UI-005/006.
-6. **Test-only game commands:** `zone/paint {cells, zone}` for ZONING, `game/simulate {days, speed}` for LEVELUP and
-   ZONING (slow set), `buildings/{ref}/meshBounds` (per LOD) for LOD-001.
-7. **Slow specs** still missing: BAKE-004/007/008, TERRAIN-010, SPLIT-010/012/016, SAVE-005/006, LEGACY (needs old
-   saves: `needs-save:legacy`), CACHE (geometry cache eviction across restarts), OPTIONS-004.
-8. **Review packs** (`src/review.ts`): a spec calls `review.pack(id, { shots, probe, brief })` after its asserts; the
+   `UnsquareUISystem` trigger directly). Then specs for MODE, SEL, PICK, GIZMO, DRAG-004 to 008, KEYS, UNDO-004 (the
+   game's bulldozer), UPGRADE-006, OPTIONS-005/006 and UI-005/006.
+4. **Review packs** (`src/review.ts`): a spec calls `review.pack(id, { shots, probe, brief })` after its asserts; the
    pack goes to `.testruns/<run>/review/<ID>/` (`brief.md`, `before.jpg`/`after.jpg`, `probe.json`, `log.txt`).
    Packs: mesh, overlay, toolwindow, ground, foreign (see the Check column in Requirements.md).
-9. **MCP shim** (`mcp/server.ts`, stdio, registered in the repo's `.mcp.json`): tools mirror `bridge.ts` groups,
+5. **MCP shim** (`mcp/server.ts`, stdio, registered in the repo's `.mcp.json`): tools mirror `bridge.ts` groups,
    plus `screenshot`/`look_at` returning a downscaled JPEG inline, and `log {since}`.
-10. **Skills** in `.claude/skills/`: `/ingame-review` (judges packs, verdicts keyed by ID + fingerprint of probe JSON
+6. **Skills** in `.claude/skills/`: `/ingame-review` (judges packs, verdicts keyed by ID + fingerprint of probe JSON
    and variant mesh hash, reused when unchanged), `/ingame-triage <test>` (replays a red test through MCP),
    `/ingame-explore <charter>`.
-11. **Phase 4:** charters for the 12 `claude:` requirements (options, naming, placement, manifest) written into
-    Requirements.md; `needs-mod` specs for Placemaker and FlexIt on their own saves (`UnsquareTest-Placemaker`,
-    `UnsquareTest-FlexIt`), skipped when the mod is absent.
+7. **Phase 4:** charters for the 12 `claude:` requirements (options, naming, placement, manifest) written into
+   Requirements.md; `needs-mod` specs for Placemaker, FlexIt and Plop the Growables (ZONING-003) on their own saves,
+   skipped when the mod is absent; `needs-save` specs on the user's old saves (LEGACY, SPLIT-016, SAVE-005,
+   CACHE-003, ZONING-004); SAVE-006 needs a build with a raised `<Version>`.
 
 ## Open questions and known problems
 

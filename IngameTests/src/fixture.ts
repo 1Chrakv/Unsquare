@@ -102,6 +102,15 @@ export async function building(context: TestContext, name: FixtureName): Promise
   return skip(context, `fixture building '${name}' missing (${fixtureBuildings[name].what}); see IngameTests/Fixture.md`);
 }
 
+/**
+ * Puts the city back, then skips: a test skipped after it changed the city gets no afterEach clean-up, which would
+ * leave the next test with a selected building.
+ */
+export async function skipAfterChanges(context: TestContext, reason: string): Promise<never> {
+  await cleanUp();
+  return skip(context, reason);
+}
+
 /** Skips the running test and records why in its meta data, which the report prints. */
 export function skip(context: TestContext, reason: string): never {
   (context.task.meta as Record<string, unknown>).skipReason = reason;

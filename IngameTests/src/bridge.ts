@@ -174,7 +174,8 @@ export class Bridge {
   /** Runs the simulation for `days` (or `frames`) at full speed, then pauses it. */
   simulate = (span: { days?: number; frames?: number; speed?: number }) =>
     this.call<{ frames: number }>("POST", "game/simulate", span, 3_600_000);
-  locale = (locale: string) => this.call<{ previous: string; locale: string }>("POST", "game/locale", { locale });
+  /** Switches the game language; refused (422, with the supported ids) for a locale the game doesn't have. */
+  locale = (locale: string) => this.call<{ previous: string; locale: string; supported: string[] }>("POST", "game/locale", { locale });
   /** Zones the cells around points (building space with `building`, else world xz); zone "None" unzones. */
   paintZone = (body: { zone: string; points: [number, number][]; building?: string; radius?: number; onlyEmpty?: boolean }) =>
     this.call<{ cells: number; blocks: number }>("POST", "zone/paint", body);

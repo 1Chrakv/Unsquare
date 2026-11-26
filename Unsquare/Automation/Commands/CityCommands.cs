@@ -187,8 +187,17 @@ namespace Unsquare.Automation.Commands
             if (localization == null)
                 return CommandRun.Fail(409, "No localization manager.");
             var previous = localization.activeLocaleId;
-            localization.SetActiveLocale(args.String("locale"));
-            return CommandRun.Done(new JObject { ["previous"] = previous, ["locale"] = localization.activeLocaleId });
+            var locale = args.String("locale");
+            localization.SetActiveLocale(locale); // ignores ids it doesn't know
+            var details = new JObject
+            {
+                ["previous"] = previous,
+                ["locale"] = localization.activeLocaleId,
+                ["supported"] = new JArray(localization.GetSupportedLocales()),
+            };
+            return localization.activeLocaleId == locale
+                ? CommandRun.Done(details)
+                : CommandRun.Fail(422, $"Locale {locale} is not available.", details);
         }
 
         // Calls visit for each cell of each zone block with its world position; visit returns true if it changed it.

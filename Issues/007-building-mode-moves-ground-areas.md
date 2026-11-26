@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | Status | Open, confirmed |
-| Found by | In-game test BLEND-001, runs 7–9 (2026-11-25, `UnsquareTest-Fixture`), then by hand |
+| Found by | In-game tests BLEND-001, runs 7–9 (2026-11-25, `UnsquareTest-Fixture`), then by hand; ALIGN-011, run 10 |
 | Severity | Medium: garden areas shift up to 2.6 m although only the building was edited |
-| Requirement | BLEND-001 (old checklist row 140), SPLIT-003/004 |
+| Requirement | BLEND-001 (old checklist row 140), ALIGN-011, SPLIT-003/004 |
 
 ## Summary
 
@@ -37,6 +37,13 @@ Cage after step 2: `lot` all zero (`lotDeformed false`), `blend None`, building 
 | Hangaround Area (area 1) | 3 | 0.08 m |
 
 Several of these points lie in the back garden, outside the building's footprint.
+
+### Also with align (ALIGN-011, run 10, 2026-11-26)
+
+Building mode, align mode Flush, align the left side of `turnedNeighbour` (`GER_ResidentialMedium07_L1_3x6@-894.4,422.2`)
+to its neighbour: the building cage's left corners move 3.6 m (back) and 20.5 m (front), the lot cage stays identity
+(`lotDeformed false`). One area moves with the building: `Pavement Surface 02` (area 12, 4 points), worst point
+**9.49 m**; the other 11 areas stay at 0.00 m. Compared by area entity, so the area order plays no part.
 
 ## Analysis
 

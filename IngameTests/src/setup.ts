@@ -1,4 +1,4 @@
-import { afterEach, beforeAll } from "vitest";
+import { afterEach, beforeAll, expect } from "vitest";
 import { bridge, BridgeError, type BuildingJson, type HandleKind } from "./bridge.js";
 import { cleanUp, loadFixture } from "./fixture.js";
 import { LogWatch } from "./log.js";
@@ -28,6 +28,27 @@ export async function move(kind: HandleKind, index: number, delta: [number, numb
   await bridge.handle(kind, index);
   await bridge.drag({ translate: delta, frames: 3 });
   return bridge.settled();
+}
+
+/** Timeout for tests that save and load the city. */
+export const ReloadTimeout = 600_000;
+
+/**
+ * Saves the city under a test name and loads it again. Later tests of the file run in that copy (the clean-up
+ * resets it); the next spec file loads the fixture again.
+ */
+export async function saveAndReload(name = "UnsquareTest-Run-Save") {
+  for (let i = 0; i < 4 && (await bridge.session()).target; i++) await bridge.stepBack();
+  await bridge.save(name);
+  await bridge.load(name);
+  await bridge.speed(0);
+  await bridge.mode(true);
+}
+
+/** Every net node owned by the building still has an edge (nothing came apart). */
+export async function expectConnected(ref: string) {
+  const nets = await bridge.nets(ref);
+  for (const node of nets.nodes) expect(node.edges, `node ${node.id} at ${node.local}`).toBeGreaterThan(0);
 }
 
 /** Ground points on a grid over the lot box, inset from its edges (building space x, z). */
