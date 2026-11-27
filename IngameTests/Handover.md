@@ -13,9 +13,10 @@ This file says what was learned, where things stand, and what comes next. How to
 | Does the bridge answer while the window is unfocused or in the background? | Yes; the main thread keeps ticking. Not tried minimised. | Keep the window un-minimised to be safe. |
 | Does it answer at the main menu? | Yes, from the `UIUpdate` pump. During boot requests queue until the first update. A load sent before the main menu is reached is overwritten by the game's own start-up: `state.ready` and a 409 on `game/load` guard that. | Always `waitReady()` before loading. |
 | Edit cycle through the session? | Yes: select, handle, nudge (settled in about 0.6 s), undo, drag over frames, cancelled drag, `game/save` (2–3 s), `game/quit`. | — |
-| InputSystem events reach the game? | **Not spiked.** | First task of phase 3 (see below). |
-| `ScreenCapture` includes overlay and UI? | **Not spiked.** | Decides whether review packs need the overlay drawn by the game or a separate capture path. |
-| cohtml inspector on port 9444 with `-uiDeveloperMode`? | **Not spiked.** | If it answers, Claude reads the game UI as DOM in the in-app browser instead of from screenshots. |
+| InputSystem events reach the game? | **Not tried in game yet.** From the game code: the pointer is `Mouse.current.position` (`InputManager.mousePosition`); the tool raycast only runs while `InputManager.controlOverWorld`, which needs `mouseOnScreen` and so the game's focus flag (`InputManager.OnFocusChanged`); using an unpaired device makes the game pair it and unpair the other mouse. | The bridge has a virtual mouse and keyboard (`input/*`, `via` virtual or current, `forceFocus`). The spike decides the defaults; without focus, input specs bring the window to the front (`game.focus()`). |
+| `ScreenCapture` includes overlay and UI? | **Not tried in game yet.** `view/screenshot` reads the finished frame at end of frame; the UI can be hidden through `userInterface.view.enabled` (what the benchmark does). | Decides whether packs show the overlay and the tool window. |
+| Camera from code? | From the game code: `CameraController` (tag `GameplayCamera`) has `pivot`, `angle` (x yaw, y tilt, clamped by zoom) and `zoom`; yaw 0 looks along +Z. Edge scrolling moves the camera while the pointer is near a screen edge. | `view/camera` sets them and waits until `moving` is false. Keep pointer targets away from the screen edges. |
+| cohtml inspector on port 9444 with `-uiDeveloperMode`? | **Not tried yet.** | If it answers, UI specs read the tool window as DOM; otherwise binding values and screenshots, plus a `ui/trigger` fallback (not built yet). |
 
 ## State
 
@@ -51,6 +52,23 @@ about 16 minutes. Two fixes afterwards (skip clean-up, locale) were rerun on the
 ## Still open from steps 1–3
 
 Nothing: steps 1–3 are done. CACHE-001 stays red until issue 009 is fixed.
+
+## Phase 3 progress (branch `feature/ingame-input`)
+
+Built, compiled and unit-tested, **not yet run in game**:
+- Bridge: `view/camera`, `view/ui`, `view/screenshot`, `view/screenPoint`, `view/infoPanel`, `input/devices`,
+  `input/config`, `input/reset`, `input/mouse`, `input/key`, `input/rebind`; session replies carry `hover`,
+  `hoverPart` and `showsRings`. Core helpers `GizmoGrabPoint`, `ScreenCrop`, `HandleName` with NUnit tests.
+- Suite: `src/view.ts`, `src/input.ts`, `src/review.ts` with pack checklists in `review/`, the `input` set
+  (`npm run test:input`), coverage counting review requirements only with a pack, verdicts in the report.
+- Specs: GIZMO-001/004/005, MODE-005, the NUDGE-001 overlay pack.
+- Claude tooling: the `unsquare-game` MCP server (`mcp/server.ts`, `.mcp.json`; checked over stdio without the
+  game), skills `/ingame-review` and `/ingame-triage`.
+
+Still to do: the in-game spikes (input path, screenshots, inspector), then the input specs (`specs/input/`: MODE,
+SEL, PICK, GIZMO-002/003, DRAG-004/005/006/008, KEYS, UI, UNDO-004, UPGRADE-006, OPTIONS-005/006) and the review-pack
+specs (BAKE-003/006, LOT-001/004, SPLIT-003/004, BLEND-002). `npm audit` reports advisories in the dev tooling
+(vitest 2, vite, esbuild, tinypool); the suite only runs locally, but an upgrade to current Vitest is due.
 
 ## Next steps (in order)
 
