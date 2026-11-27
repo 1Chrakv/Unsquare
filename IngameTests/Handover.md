@@ -112,7 +112,9 @@ Issue fixes are not part of this work: each confirmed issue gets its own session
 - **Autosaves:** with the game's autosave on (here every minute, keeping one), a city the tests let run autosaves,
   and the rotation deletes the player's own autosave. `scripts/run.ts` copies the player's autosaves aside before a
   run, puts back missing ones afterwards and moves the run's autosaves to `ModsData\Unsquare-backups\<stamp>-autosaves`.
-  Scratch scripts run outside it: keep the city paused there.
+  The game autosaves even while paused (seen 2026-11-27: one per minute with the fixture loaded at speed 0), so
+  scratch scripts outside `scripts/run.ts` leave autosaves of the test city in the Saves folder: wrap them in
+  `AutosaveGuard` or move them afterwards.
 - **ENV-001** fails while mod sources differ from the commit named in the deployed version: commit, then deploy,
   then run.
 - **Simulation speed:** `UPGRADE-*` run the simulation at speed 3 for a number of frames; with the window in the
