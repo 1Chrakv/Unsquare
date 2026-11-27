@@ -10,7 +10,7 @@ export async function useInput() {
   if (process.env.UNSQUARE_FOCUS === "1") game.focus();
   await bridge.inputConfig({
     via: (process.env.UNSQUARE_INPUT_VIA as "virtual" | "current" | undefined) ?? "virtual",
-    forceFocus: process.env.UNSQUARE_FORCE_FOCUS === "1",
+    forceFocus: process.env.UNSQUARE_FORCE_FOCUS !== "0",
   });
 }
 

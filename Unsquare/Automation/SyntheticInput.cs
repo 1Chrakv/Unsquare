@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.InputSystem.Users;
 using InputManager = Game.Input.InputManager;
 
 namespace Unsquare.Automation
@@ -17,15 +18,18 @@ namespace Unsquare.Automation
     /// a virtual mouse and keyboard of their own (default), or events on the current real devices. Positions are
     /// pixels with the origin top left.
     /// </summary>
-    internal sealed class SyntheticInput : IDisposable
+    internal sealed unsafe class SyntheticInput : IDisposable
     {
         public const string Virtual = "virtual";
         public const string Current = "current";
+        private const string DevicePrefix = "UnsquareTest";
+
+        public SyntheticInput() => InputSystem.onDeviceCommand += RunInBackground;
 
         private Mouse _virtualMouse;
         private Keyboard _virtualKeyboard;
         private Vector2 _position;
-        private bool _left, _right;
+        private bool _left, _right, _middle;
 
         /// <summary>Which devices get the events: <see cref="Virtual"/> or <see cref="Current"/>.</summary>
         public string Via { get; set; } = Virtual;
@@ -36,23 +40,98 @@ namespace Unsquare.Automation
         public float2 Position => new(_position.x, Screen.height - _position.y);
 
         private Mouse TargetMouse =>
-            Via == Current ? Mouse.current : _virtualMouse ??= InputSystem.AddDevice<Mouse>("UnsquareTestMouse");
+            Via == Current ? Mouse.current : _virtualMouse ??= Paired(InputSystem.AddDevice<Mouse>(DevicePrefix + "Mouse"));
 
         private Keyboard TargetKeyboard =>
-            Via == Current ? Keyboard.current : _virtualKeyboard ??= InputSystem.AddDevice<Keyboard>("UnsquareTestKeyboard");
+            Via == Current ? Keyboard.current : _virtualKeyboard ??= Paired(InputSystem.AddDevice<Keyboard>(DevicePrefix + "Keyboard"));
 
-        public void Pointer(float2 topLeft, bool? left = null, bool? right = null)
+        /// <summary>
+        /// Lets our devices run while the game is in the background (the player works in another window); Unity
+        /// otherwise disables them and drops their events. The player's keyboard stays off for the game.
+        /// </summary>
+        private static long? RunInBackground(InputDevice device, InputDeviceCommand* command)
+        {
+            if (command->type != QueryCanRunInBackground.Type || device?.name == null ||
+                !device.name.StartsWith(DevicePrefix, StringComparison.Ordinal))
+                return null;
+            ((QueryCanRunInBackground*)command)->canRunInBackground = true;
+            return InputDeviceCommand.GenericSuccess;
+        }
+
+        /// <summary>
+        /// Pairs a device with the game's input user in place of the player's device of that kind, as the game does when
+        /// a device is first used. Otherwise that first use only pairs it: the press is lost and the UI keeps
+        /// following the player's mouse.
+        /// </summary>
+        private static T Paired<T>(T device) where T : InputDevice
+        {
+            var manager = InputManager.instance;
+            if (manager == null || !manager.inputUser.valid)
+                return device;
+            var user = manager.inputUser;
+            foreach (var paired in user.pairedDevices.ToArray())
+                if (paired is T && paired != device)
+                    user.UnpairDevice(paired);
+            InputUser.PerformPairingWithDevice(device, user);
+            return device;
+        }
+
+        private static bool IsPaired(InputDevice device)
+        {
+            var manager = InputManager.instance;
+            if (manager == null || !manager.inputUser.valid)
+                return true;
+            foreach (var paired in manager.inputUser.pairedDevices)
+                if (paired == device)
+                    return true;
+            return false;
+        }
+
+        // Gives the player's mouse and keyboard back to the game once ours are gone.
+        private static void PairPlayerDevices()
+        {
+            var manager = InputManager.instance;
+            if (manager == null || !manager.inputUser.valid)
+                return;
+            var user = manager.inputUser;
+            bool hasMouse = false, hasKeyboard = false;
+            foreach (var paired in user.pairedDevices)
+            {
+                hasMouse |= paired is Mouse;
+                hasKeyboard |= paired is Keyboard;
+            }
+            foreach (var device in InputSystem.devices)
+            {
+                if (device.name.StartsWith(DevicePrefix, StringComparison.Ordinal))
+                    continue;
+                if (!hasMouse && device is Mouse)
+                {
+                    InputUser.PerformPairingWithDevice(device, user);
+                    hasMouse = true;
+                }
+                else if (!hasKeyboard && device is Keyboard)
+                {
+                    InputUser.PerformPairingWithDevice(device, user);
+                    hasKeyboard = true;
+                }
+            }
+        }
+
+        public void Pointer(float2 topLeft, bool? left = null, bool? right = null, bool? middle = null)
         {
             var position = new Vector2(topLeft.x, Screen.height - topLeft.y);
             var state = new MouseState { position = position, delta = position - _position };
             _position = position;
             _left = left ?? _left;
             _right = right ?? _right;
-            state = state.WithButton(MouseButton.Left, _left).WithButton(MouseButton.Right, _right);
+            _middle = middle ?? _middle;
+            state = state.WithButton(MouseButton.Left, _left).WithButton(MouseButton.Right, _right)
+                .WithButton(MouseButton.Middle, _middle);
             Send(TargetMouse, state);
         }
 
-        public void Buttons(bool? left = null, bool? right = null) => Pointer(Position, left, right);
+        public void Buttons(bool? left = null, bool? right = null, bool? middle = null) =>
+            Pointer(Position, left, right, middle);
 
         public void Keys(IReadOnlyCollection<Key> pressed)
         {
@@ -69,28 +148,53 @@ namespace Unsquare.Automation
                 throw new InvalidOperationException($"No {(Via == Current ? "current" : "virtual")} device.");
             if (ForceFocus)
                 InputManager.instance?.OnFocusChanged(true);
+            // The player's mouse also runs in the background; moving it takes the pairing back from ours.
+            if (Via == Virtual && !IsPaired(device))
+                Paired(device);
             InputSystem.QueueStateEvent(device, state);
             device.MakeCurrent();
         }
 
-        /// <summary>Releases everything and removes the virtual devices, so the player's devices take over again.</summary>
-        public void Reset()
+        /// <summary>Releases every button and key of the devices we drive (seen by the game in the next frame).</summary>
+        public void Release()
         {
             if (_virtualMouse != null || Via == Current)
-                Buttons(false, false);
+                Buttons(false, false, false);
             if (_virtualKeyboard != null || Via == Current)
                 Keys(Array.Empty<Key>());
+            _left = _right = _middle = false;
+        }
+
+        /// <summary>
+        /// Gives the pairing back to the player's mouse and keyboard and the focus flag back to the truth; call a frame
+        /// after <see cref="Release"/>. Our devices stay: removing a paired device shows "Controller disconnected".
+        /// </summary>
+        public void HandBack()
+        {
+            var manager = InputManager.instance;
+            if (manager != null && manager.inputUser.valid)
+            {
+                var user = manager.inputUser;
+                foreach (var paired in user.pairedDevices.ToArray())
+                    if (paired == _virtualMouse || paired == _virtualKeyboard)
+                        user.UnpairDevice(paired);
+                PairPlayerDevices();
+            }
+            if (ForceFocus)
+                manager?.OnFocusChanged(Application.isFocused);
+        }
+
+        public void Dispose()
+        {
+            Release();
             InputSystem.Update();
+            HandBack();
             if (_virtualMouse != null)
                 InputSystem.RemoveDevice(_virtualMouse);
             if (_virtualKeyboard != null)
                 InputSystem.RemoveDevice(_virtualKeyboard);
-            _virtualMouse = null;
-            _virtualKeyboard = null;
-            _left = _right = false;
+            InputSystem.onDeviceCommand -= RunInBackground;
         }
-
-        public void Dispose() => Reset();
 
         /// <summary>
         /// The keys a binding presses now: its key plus its modifiers (left variants), after any rebinding. False if
@@ -138,6 +242,26 @@ namespace Unsquare.Automation
             return Enum.TryParse(name, true, out key) && key != Key.None;
         }
 
+        private static JArray PairedNames(InputManager manager)
+        {
+            var names = new JArray();
+            if (manager != null && manager.inputUser.valid)
+                foreach (var device in manager.inputUser.pairedDevices)
+                    names.Add(device.name);
+            return names;
+        }
+
+        private static JArray PressedKeys(Keyboard keyboard)
+        {
+            var pressed = new JArray();
+            if (keyboard != null)
+                // allKeys has gaps (null entries) for key codes this keyboard layout doesn't have.
+                foreach (var key in keyboard.allKeys)
+                    if (key != null && key.isPressed)
+                        pressed.Add(key.keyCode.ToString());
+            return pressed;
+        }
+
         public JObject Describe()
         {
             var devices = new JArray();
@@ -163,7 +287,12 @@ namespace Unsquare.Automation
                 ["mouseOverUI"] = manager?.mouseOverUI,
                 ["controlOverWorld"] = manager?.controlOverWorld,
                 ["controlScheme"] = manager?.activeControlScheme.ToString(),
+                ["paired"] = PairedNames(manager),
                 ["pointer"] = new JArray(Position.x, Position.y),
+                ["keysDown"] = PressedKeys(Keyboard.current),
+                ["ctrlDown"] = Keyboard.current?.ctrlKey.isPressed,
+                ["buttonsDown"] = Mouse.current == null ? null : new JArray(Mouse.current.leftButton.isPressed,
+                    Mouse.current.rightButton.isPressed, Mouse.current.middleButton.isPressed),
                 ["devices"] = devices,
             };
         }

@@ -7,8 +7,9 @@ import { bridge, type CameraJson } from "./bridge.js";
 export const Presets = {
   front: { yaw: 0, pitch: 30 },
   back: { yaw: 180, pitch: 30 },
-  left: { yaw: -90, pitch: 30 },
-  right: { yaw: 90, pitch: 30 },
+  // Sides as seen from the street, like the align buttons: left is +X in building space.
+  left: { yaw: 90, pitch: 30 },
+  right: { yaw: -90, pitch: 30 },
   top: { yaw: 0, pitch: 80 },
   street: { yaw: 0, pitch: 12 },
 } as const;

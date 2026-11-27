@@ -53,7 +53,10 @@ namespace Unsquare.Automation.Commands
                 if (via != SyntheticInput.Virtual && via != SyntheticInput.Current)
                     return CommandRun.Fail(400, "via must be \"virtual\" or \"current\".");
                 if (via != _input.Via)
-                    _input.Reset();
+                {
+                    _input.Release();
+                    _input.HandBack();
+                }
                 _input.Via = via;
             }
             if (args.Has("forceFocus"))
@@ -61,11 +64,8 @@ namespace Unsquare.Automation.Commands
             return CommandRun.Done(_input.Describe());
         }
 
-        private CommandRun Reset(BridgeArgs args)
-        {
-            _input.Reset();
-            return CommandRun.Done(_input.Describe());
-        }
+        private CommandRun Reset(BridgeArgs args) =>
+            Play(new List<System.Action> { _input.Release, _input.HandBack }, SettleFrames, () => _input.Describe());
 
         /// <summary>
         /// action move | press | release | click | drag; button left | right; at and to: {x, y}, {handle},
@@ -169,6 +169,8 @@ namespace Unsquare.Automation.Commands
             else
             {
                 var names = new List<string>();
+                if (!args.Has("keys"))
+                    return CommandRun.Fail(400, "Give binding or keys.");
                 foreach (var name in args.Strings("keys"))
                 {
                     if (!SyntheticInput.TryKey(name, out var key))
@@ -188,7 +190,9 @@ namespace Unsquare.Automation.Commands
             }
             for (int i = 1; i < hold; i++)
                 steps.Add(() => { });
-            steps.Add(() => _input.Keys(new UnityEngine.InputSystem.Key[0]));
+            // hold: leave the keys down (a later call with no keys releases them).
+            if (!args.Bool("hold", false))
+                steps.Add(() => _input.Keys(new UnityEngine.InputSystem.Key[0]));
             return Play(steps, args.Int("settleFrames", SettleFrames), () => new JObject
             {
                 ["keys"] = text,
