@@ -29,3 +29,5 @@ export const repoDir = path.resolve(testsDir, "..");
 export const requirementsFile = path.join(repoDir, "Unsquare", "Requirements.md");
 export const fixtureFile = path.join(testsDir, "fixture.json");
 export const runsDir = path.join(repoDir, ".testruns");
+/** Autosave backups: outside the game's user folder, where its autosave rotation would delete them. */
+export const autosaveBackupsDir = path.join(runsDir, "autosaves");
