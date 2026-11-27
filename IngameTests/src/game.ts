@@ -90,6 +90,22 @@ export const game = {
     await this.start();
   },
 
+  /**
+   * Brings the game window to the front (restoring it if minimised). Input tests need it when the game ignores
+   * input without focus; it takes the keyboard focus from whatever the player was doing.
+   */
+  focus() {
+    const script = [
+      "$p = Get-Process Cities2 -ErrorAction Stop | Select-Object -First 1",
+      "Add-Type -Name W -Namespace U -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool ShowWindow(System.IntPtr h, int c); [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(System.IntPtr h);'",
+      "[U.W]::ShowWindow($p.MainWindowHandle, 9) | Out-Null",
+      "Add-Type -AssemblyName Microsoft.VisualBasic",
+      "[Microsoft.VisualBasic.Interaction]::AppActivate($p.Id)",
+      "[U.W]::SetForegroundWindow($p.MainWindowHandle) | Out-Null",
+    ].join("; ");
+    execFileSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { stdio: "ignore" });
+  },
+
   /** Starts the game unless it runs; then checks the bridge answers. */
   async ensureRunning() {
     if (!this.isRunning()) await this.start();

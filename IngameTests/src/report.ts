@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import path from "node:path";
+import { runsDir } from "./paths.js";
 import { idOf, readRequirements } from "./requirements.js";
 
 interface AssertionResult {
@@ -45,7 +47,43 @@ export function writeReport(resultsFile: string, reportFile: string, set: string
         );
     }
   }
+  lines.push(...reviewSection(path.dirname(reportFile)));
   if (failures.length > 0) lines.push("", "## Failures", "", ...failures);
   fs.writeFileSync(reportFile, lines.join("\n") + "\n");
   return reportFile;
+}
+
+export interface Verdict {
+  fingerprint: string;
+  verdict: "pass" | "fail";
+  reason: string;
+  evidence: string;
+  date: string;
+}
+
+/** Claude's review verdicts (`/ingame-review`), by requirement ID; kept across runs. */
+export const verdictsFile = path.join(runsDir, "verdicts.json");
+
+export function readVerdicts(): Record<string, Verdict> {
+  return fs.existsSync(verdictsFile) ? (JSON.parse(fs.readFileSync(verdictsFile, "utf8")) as Record<string, Verdict>) : {};
+}
+
+/** The run's review packs with the verdict that matches their fingerprint, or "waiting for review". */
+function reviewSection(runDir: string): string[] {
+  const dir = path.join(runDir, "review");
+  if (!fs.existsSync(dir)) return [];
+  const verdicts = readVerdicts();
+  const lines = ["", "## Review packs", "", "| Requirement | Verdict | Reason |", "|---|---|---|"];
+  for (const id of fs.readdirSync(dir).sort()) {
+    const fingerprintFile = path.join(dir, id, "fingerprint");
+    if (!fs.existsSync(fingerprintFile)) continue;
+    const verdict = verdicts[id];
+    const current = verdict && verdict.fingerprint === fs.readFileSync(fingerprintFile, "utf8").trim();
+    lines.push(
+      current
+        ? `| ${id} | ${verdict.verdict === "pass" ? "pass" : "**FAIL**"} | ${verdict.reason.replace(/\|/g, "/")} |`
+        : `| ${id} | waiting for review | run \`/ingame-review\` |`,
+    );
+  }
+  return lines;
 }
