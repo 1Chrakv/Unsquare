@@ -79,5 +79,22 @@ namespace Unsquare.Tests.Automation
             Assert.That(new BridgeArgs(JObject.Parse("{\"ref\": \"fromBody\"}"), null, query).String("ref"),
                 Is.EqualTo("fromBody"));
         }
+
+        [Test]
+        public void IsObject_NestedObject_TrueAndStringFalse()
+        {
+            var args = new BridgeArgs(JObject.Parse("{\"crop\": {\"x\": 1}, \"name\": \"a\"}"));
+            Assert.That(args.IsObject("crop"), Is.True);
+            Assert.That(args.IsObject("name"), Is.False);
+            Assert.That(args.IsObject("missing"), Is.False);
+        }
+
+        [Test]
+        public void Strings_List_ReturnsItemsAndNonListThrows()
+        {
+            var args = new BridgeArgs(JObject.Parse("{\"keys\": [\"LeftCtrl\", \"Z\"], \"one\": \"Z\"}"));
+            Assert.That(args.Strings("keys"), Is.EqualTo(new[] { "LeftCtrl", "Z" }));
+            Assert.Throws<BridgeArgumentException>(() => args.Strings("one"));
+        }
     }
 }

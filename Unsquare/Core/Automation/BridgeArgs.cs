@@ -27,6 +27,9 @@ namespace Unsquare.Core.Automation
 
         public bool Has(string name) => Raw(name) != null;
 
+        /// <summary>Whether the argument is a nested JSON object (not a string or number).</summary>
+        public bool IsObject(string name) => Raw(name) is JObject;
+
         public string String(string name) =>
             Raw(name)?.ToString() ?? throw new BridgeArgumentException($"Missing '{name}'.");
 
@@ -82,6 +85,17 @@ namespace Unsquare.Core.Automation
                 points.Add(new float2(pair[0].Value<float>(), pair[1].Value<float>()));
             }
             return points;
+        }
+
+        /// <summary>A list of strings, e.g. {"keys": ["LeftCtrl", "Z"]}.</summary>
+        public List<string> Strings(string name)
+        {
+            if (Raw(name) is not JArray array)
+                throw new BridgeArgumentException($"'{name}' must be a list of strings.");
+            var list = new List<string>(array.Count);
+            foreach (var item in array)
+                list.Add(item.ToString());
+            return list;
         }
 
         /// <summary>A nested JSON object, e.g. {"rotate": {"axis": 1, "degrees": 30}}.</summary>
