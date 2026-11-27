@@ -4,6 +4,9 @@ import { corner, distanceXZ, Face, offsets, sameBounds } from "../src/expect.js"
 import { building, readFixture, skip, skipAfterChanges } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { move, refused, ReloadTimeout, saveAndReload, target, useCity } from "../src/setup.js";
+import { pack } from "../src/review.js";
+import { lookAt, shot } from "../src/view.js";
+import { expectSamePlan } from "../src/expect.js";
 
 const isIdentity = (text: string) => offsets(text).every((c) => c.every((v) => v === 0));
 
@@ -190,6 +193,49 @@ describe("SPLIT – edit modes and split cages", () => {
     await move("Face", Face.top, [1, 0, 0]);
     await bridge.frames(10);
     expect(sameBounds((await bridge.meshes(flat.id)).meshes, flat.meshes), "a building lean leaves it").toBe(true);
+  });
+
+  it("SPLIT-003 Building mode hugs the house; a top-corner drag leans only the building (with an overlay review)", async (context) => {
+    const house = await building(context, "gardenHouse");
+    await target(house);
+    const areas = await bridge.areas(house);
+    const nodes = (await bridge.nets(house)).nodes.map((n) => n.local);
+    await bridge.editMode("Building");
+    const cage = (await bridge.session()).cage!;
+    const area = (box: { min: number[]; max: number[] }) => (box.max[0] - box.min[0]) * (box.max[2] - box.min[2]);
+    expect(area(cage.box), "the Building cage hugs the house").toBeLessThan(area(cage.lotBox) - 1);
+    const leaned = await move("Corner", corner(1, 1, 1), [1.5, 0, 0]);
+    expect(leaned.split, "only the building cage moved").toBe(true);
+    expect(leaned.hasGhost, "the lot cage shows as ghost").toBe(true);
+    expectSamePlan(await bridge.areas(house), areas);
+    expect((await bridge.nets(house)).nodes.map((n) => n.local), "paths stay").toEqual(nodes);
+    await bridge.clearHandle();
+    await lookAt(house, "front");
+    await pack("SPLIT-003", {
+      pack: "overlay",
+      shots: { leaned: await shot("SPLIT-003-leaned", { crop: "target" }) },
+      probe: { box: cage.box, lotBox: cage.lotBox, offsets: leaned.targetOffsets },
+      focus: "The bright cage hugs the leaning house; the lot cage around the garden shows as a dimmer ghost; the garden is unchanged.",
+    });
+  });
+
+  it("SPLIT-004 widening the building over its garden keeps door paths connected (with a ground review)", async (context) => {
+    const house = await building(context, "gardenHouse");
+    await target(house);
+    await bridge.editMode("Building");
+    await lookAt(house, "top");
+    const before = await shot("SPLIT-004-before", { crop: "target", ui: false });
+    const log = LogWatch.fromNow();
+    await move("Face", Face.front, [0, 0, 3]);
+    expect(log.matching(/could not be remapped/), "no unmapped path parts").toEqual([]);
+    for (const node of (await bridge.nets(house)).nodes) expect(node.edges, `path node ${node.id} connected`).toBeGreaterThan(0);
+    await bridge.clearHandle();
+    await pack("SPLIT-004", {
+      pack: "ground",
+      shots: { before, after: await shot("SPLIT-004-after", { crop: "target", ui: false }) },
+      log,
+      focus: "The front wall moved 3 m into the garden: paths to the doors bend around the building in a ring, steps and bins moved along, trees further out stayed.",
+    });
   });
 });
 
