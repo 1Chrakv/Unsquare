@@ -30,6 +30,7 @@ namespace Unsquare.Automation
         private Keyboard _virtualKeyboard;
         private Vector2 _position;
         private bool _left, _right, _middle;
+        private readonly List<InputDevice> _silenced = new();
 
         /// <summary>Which devices get the events: <see cref="Virtual"/> or <see cref="Current"/>.</summary>
         public string Via { get; set; } = Virtual;
@@ -60,11 +61,17 @@ namespace Unsquare.Automation
 
         /// <summary>
         /// Pairs a device with the game's input user in place of the player's device of that kind, as the game does when
-        /// a device is first used. Otherwise that first use only pairs it: the press is lost and the UI keeps
-        /// following the player's mouse.
+        /// a device is first used, and silences the player's devices of that kind until <see cref="HandBack"/>: the
+        /// player's mouse runs in the background and would otherwise take the pointer back whenever it moves.
         /// </summary>
-        private static T Paired<T>(T device) where T : InputDevice
+        private T Paired<T>(T device) where T : InputDevice
         {
+            foreach (var other in InputSystem.devices.ToArray())
+                if (other is T && other != device && other.enabled && !IsOurs(other))
+                {
+                    InputSystem.DisableDevice(other);
+                    _silenced.Add(other);
+                }
             var manager = InputManager.instance;
             if (manager == null || !manager.inputUser.valid)
                 return device;
@@ -75,6 +82,9 @@ namespace Unsquare.Automation
             InputUser.PerformPairingWithDevice(device, user);
             return device;
         }
+
+        private static bool IsOurs(InputDevice device) =>
+            device.name != null && device.name.StartsWith(DevicePrefix, StringComparison.Ordinal);
 
         private static bool IsPaired(InputDevice device)
         {
@@ -171,6 +181,10 @@ namespace Unsquare.Automation
         /// </summary>
         public void HandBack()
         {
+            foreach (var device in _silenced)
+                if (device.added)
+                    InputSystem.EnableDevice(device);
+            _silenced.Clear();
             var manager = InputManager.instance;
             if (manager != null && manager.inputUser.valid)
             {

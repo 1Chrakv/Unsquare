@@ -16,7 +16,7 @@ contain (`Unsquare/Automation/`), and read `Unsquare.Mod.log`.
 |---|---|
 | `npm test` | Fast set (`specs/*.spec.ts`); starts the game if needed, loads the fixture once |
 | `npm run test:slow` | Restarts, moved files, simulated days (`specs/slow/`) |
-| `npm run test:input` | Real mouse and keyboard input (`specs/input/`); may need the game window in front |
+| `npm run test:input` | Real mouse and keyboard input and the tool window (`specs/input/`); runs with the game in the background, but keep the mouse off the game |
 | `npm test -- -t UNDO-` | One requirement group (any Vitest filter) |
 | `npm run coverage:req` | Which requirements have tests; checks every old checklist row is mapped |
 | `npm run fixture:check` | What the fixture city lacks |
@@ -53,7 +53,11 @@ running. Builds (`dotnet build Unsquare.sln`) need the game closed: `npm run gam
   `dragGizmo`, `press(binding)`, `tap(keys)`). Targets are pixels (origin top left), cage handles (`Corner3`),
   gizmo parts of the selected handle (`arrowY`, `plane`, `ringX` …) or world points. Environment:
   `UNSQUARE_INPUT_VIA=virtual|current`, `UNSQUARE_FORCE_FOCUS=1`, `UNSQUARE_FOCUS=1` (bring the game to the front).
-  Input specs live in `specs/input/` and call `useInput()` / `releaseInput()`.
+  Input specs live in `specs/input/` and call `useInputCity()`. The virtual devices are paired with the game and
+  run in the background; the player's keyboard never reaches the game.
+- `src/ui.ts`: the game UI as DOM through the cohtml inspector (`-uiDeveloperMode`, port 9444): `button(icon)` (rect,
+  disabled, highlighted), `toolWindow()`, `clickButton(icon)` (the virtual mouse at the button), `evaluate(js)`.
+  Unsquare's buttons are found by their icon file name; CSS class names are hashed per build.
 - `src/review.ts`: `pack(id, { pack, shots, probe, building, focus, log })` writes `review/<ID>/` into the run
   (brief from `review/<pack>.md`, shots, `probe.json`, `fingerprint`). A `suite+review` requirement only counts as
   covered when its test writes the pack. `/ingame-review` judges the packs and keeps verdicts in
