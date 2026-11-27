@@ -99,12 +99,12 @@ DRAG-010 to close 002), and its requirement's test turns green there.
 - **No raw entity changes:** adding `Deleted` to a building directly crashes the game natively, also on a plain
   building (closed issue 001). Test commands that change the city must go through the game's own tools, the
   session's commands, or data the game's systems then act on.
-- **Autosaves:** with the game's autosave on (here every minute, keeping one), a city the tests let run autosaves,
-  and the rotation deletes the player's own autosave. `scripts/run.ts` copies the player's autosaves aside before a
-  run, puts back missing ones afterwards and moves the run's autosaves to `ModsData\Unsquare-backups\<stamp>-autosaves`.
-  The game autosaves even while paused (seen 2026-11-27: one per minute with the fixture loaded at speed 0), so
-  scratch scripts outside `scripts/run.ts` leave autosaves of the test city in the Saves folder: wrap them in
-  `AutosaveGuard` or move them afterwards.
+- **Autosaves:** with the game's autosave on (here every minute, keeping one), a city the tests load autosaves, even
+  while paused, and the rotation deletes older autosaves, also copies of them anywhere in the game's user folder
+  (every backup the guard had written to `ModsData\Unsquare-backups` until 2026-11-27 came out empty).
+  `scripts/run.ts` copies the player's autosaves to `.testruns/autosaves/<stamp>/player` before a run, puts back
+  missing ones afterwards and moves the run's autosaves to `.../run`. Scratch scripts outside `scripts/run.ts` leave
+  test-city autosaves in the Saves folder: move them out afterwards (a later run's guard takes them for the player's).
 - **ENV-001** fails while mod sources differ from the commit named in the deployed version: commit, then deploy,
   then run.
 - **Simulation speed:** `UPGRADE-*` run the simulation at speed 3 for a number of frames; with the window in the
