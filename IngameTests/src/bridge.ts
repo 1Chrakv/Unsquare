@@ -180,7 +180,8 @@ export class Bridge {
       "state",
     );
   load = (save: string) => this.call<{ save: string }>("POST", "game/load", { save }, 900_000);
-  save = (name: string) => this.call("POST", "game/save", { name }, 300_000);
+  /** Saves under a test name; `metadata` is the guid a start without the mod opens with `-startGame=<guid>`. */
+  save = (name: string) => this.call<{ save: string; metadata: string | null }>("POST", "game/save", { name }, 300_000);
   mainMenu = () => this.call("POST", "game/mainMenu", {}, 300_000);
   quit = () => this.raw("POST", "game/quit", {});
   speed = (speed: number) => this.call("POST", "game/speed", { speed });

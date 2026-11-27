@@ -23,8 +23,8 @@ async function deformAndSave(context: Parameters<typeof building>[0]) {
   await move("Face", Face.bottom, [0, 1, 0]);
   const spec = (await bridge.settled()).targetSpec;
   await bridge.stepBack();
-  await bridge.save(RunSave);
-  return { house, spec };
+  const { metadata } = (await bridge.save(RunSave)).result;
+  return { house, spec, metadata };
 }
 
 describe("SAVE – saving and loading across restarts", () => {
@@ -69,14 +69,16 @@ describe("SAVE – saving and loading across restarts", () => {
   }, Timeout);
 
   it("SAVE-004 without Unsquare a save loads with plain buildings and no errors", async (context) => {
-    await deformAndSave(context);
+    const { metadata } = await deformAndSave(context);
+    expect(metadata, "the save's metadata guid").toMatch(/^[0-9a-f]{32}$/);
     await game.quit();
     const aside = `${deployedMod}.disabled-by-tests`;
     fs.renameSync(deployedMod, aside);
     try {
-      // Without the mod there is no bridge: the game continues the last save (ours) and the logs tell the rest.
+      // Without the mod there is no bridge: the game opens our save by its metadata guid and the logs tell the rest.
+      // (-continuelastsave only asks the main menu, which can stop at a prompt about the missing mod.)
       const started = Date.now();
-      game.launch(["-continuelastsave"]);
+      game.launch([`-startGame=${metadata}`]);
       await waitUntil(() => gameLoaded(sceneLog(started)), 600_000, "the save to load");
       // The city runs unpaused without the mod: stop before the game's first autosave (1 minute at the shortest).
       await new Promise((resolve) => setTimeout(resolve, 10_000));

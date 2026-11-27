@@ -129,9 +129,11 @@ namespace Unsquare.Automation.Commands
             {
                 if (saving == null || !saving.IsCompleted)
                     return null;
-                return saving.IsFaulted
-                    ? CommandRun.Fail(500, $"Saving '{name}' failed: {saving.Exception?.GetBaseException().Message}")
-                    : CommandRun.Done(new JObject { ["save"] = name });
+                if (saving.IsFaulted)
+                    return CommandRun.Fail(500, $"Saving '{name}' failed: {saving.Exception?.GetBaseException().Message}");
+                // The metadata's guid lets a start without the mod open this save (-startGame=<guid>).
+                var metadata = TryFindSave(name, out var save) ? ((Colossal.Hash128)save.id).ToString() : null;
+                return CommandRun.Done(new JObject { ["save"] = name, ["metadata"] = metadata });
             });
         }
 
