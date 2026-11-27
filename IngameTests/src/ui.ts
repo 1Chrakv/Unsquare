@@ -51,10 +51,17 @@ export type Icon = string;
 const rectOf = (element: string) =>
   `(() => { const r = ${element}.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; })()`;
 
+// Elements showing an icon: an <img> (tool window) or a CSS mask (the game's floating buttons).
+const iconElements = (icon: Icon) =>
+  `[...document.querySelectorAll('img, [style]')].filter(e => (e.getAttribute('src') || e.getAttribute('style') || '').indexOf('/${icon}.svg') >= 0)`;
+
+/** How many elements show `icon` (a button must never appear twice). */
+export const iconCount = (icon: Icon) => evaluate<number>(`${iconElements(icon)}.length`);
+
 /** The button showing `icon`, or null when it isn't in the UI. */
 export async function button(icon: Icon): Promise<UiButton | null> {
   return evaluate<UiButton | null>(`(() => {
-    const img = document.querySelector('img[src$="/${icon}.svg"]');
+    const img = ${iconElements(icon)}[0];
     const b = img && (img.closest('button') || img.parentElement);
     if (!b) return null;
     const r = b.getBoundingClientRect();
