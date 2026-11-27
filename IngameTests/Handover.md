@@ -39,7 +39,7 @@ about 16 minutes. Two fixes afterwards (skip clean-up, locale) were rerun on the
     BAKE-008), `levelup` (LEVELUP-001 to 003), `options` (OPTIONS-004), `save` SAVE-001 and SAVE-007, `zoning`
     (ZONING-001, ZONING-002 with a quarter day).
   - CACHE-001 fails on a mod bug: housekeeping logs the eviction but no file leaves the disk (issue 009).
-  - SAVE-004 (without Unsquare) is fixed but not rerun yet; see "Still open".
+  - SAVE-004 (without Unsquare) can't open the test save yet; see "Still open".
   - The test fixes on the way: a reset kept-alive socket after the long synchronous asset copy (`bridge.ts` retries
     once), tests that started without Unsquare mode after another test's load, level-ups followed by entity ref (a
     `Prefab@x,z` ref stops resolving when the prefab changes), and missing timeouts in `save.spec.ts`.
@@ -51,11 +51,16 @@ about 16 minutes. Two fixes afterwards (skip clean-up, locale) were rerun on the
 
 ## Still open from steps 1–3
 
-1. **SAVE-004:** rerun it (`npm run test:slow -- save -t SAVE-004`). Without the mod, `-continuelastsave` loads
-   straight into the game (one `Loading completed`, after `Loading mode Game`), and the city runs unpaused. Check
-   which save it opens (the game's `lastSaveGameMetadata` in `UserState.coc`, which `game/save` may not update) and
-   whether the game still logs `Not serializable type …SavedCage` (a probe found it in no log). `-startGame <save
-   cid>` does not open a save; it ends in the main menu.
+1. **SAVE-004** (without Unsquare) still fails: the game must open the test save without the bridge.
+   - `-continuelastsave` opens the save named by `lastSaveGameMetadata` in `UserState.coc`. The bridge's
+     `game/save` apparently doesn't update it (the game's own saves, autosaves included, do). When that save is gone
+     (autosave rotation), the game stays in the main menu: the rerun of 2026-11-27 timed out there.
+   - `-startGame <save cid>` doesn't open a save either; it also ends in the main menu.
+   - Next: make `game/save` set the last-save metadata like the game's save does (read how the game's save menu
+     does it), then rerun (`npm run test:slow -- save -t SAVE-004`). Loads without the mod log one
+     `Loading completed` after `Loading mode Game`, and the city runs unpaused: the test kills it 10 s later.
+   - Also check whether the game still logs `Not serializable type …SavedCage`: a probe that continued a test
+     autosave found it in no log.
 
 ## Next steps (in order)
 
