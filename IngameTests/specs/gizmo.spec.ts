@@ -82,14 +82,17 @@ describe("GIZMO – the move and rotate gizmo", () => {
 
       const house = await building(context, "plainHouse");
       await target(house, "Face", Face.top);
-      // Far away: the vertical arrow covers about 6 % of the screen height (less its foreshortening at 30° pitch).
-      await lookAt(house, "front", 250);
+      // Far away: the arrow length, laid across the view (no foreshortening), covers 6 % of the screen height.
+      const camera = await lookAt(house, "front", 250);
       const arrow = await bridge.screenPoint({ gizmo: "arrowY" });
-      const origin = await bridge.screenPoint({ world: arrow.gizmo!.origin });
-      const tip = await bridge.screenPoint({ world: [origin.world[0], origin.world[1] + arrow.gizmo!.length, origin.world[2]] });
-      const fraction = Math.abs(origin.y! - tip.y!) / origin.screen.height;
-      expect(fraction, "arrow height on screen").toBeGreaterThan(0.045);
-      expect(fraction).toBeLessThan(0.065);
+      const o = arrow.gizmo!.origin;
+      const view = sub(o, camera.position);
+      const across = unit([-view[2], 0, view[0]]);
+      const length = arrow.gizmo!.length;
+      const origin = await bridge.screenPoint({ world: o });
+      const side = await bridge.screenPoint({ world: [o[0] + across[0] * length, o[1], o[2] + across[2] * length] });
+      const fraction = Math.hypot(side.x! - origin.x!, side.y! - origin.y!) / origin.screen.height;
+      expect(fraction, "gizmo length on screen").toBeCloseTo(0.06, 2);
 
       // Close up: never shorter than 1 m.
       await lookAt(house, "front", 12);
