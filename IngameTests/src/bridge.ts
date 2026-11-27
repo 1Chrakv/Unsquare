@@ -117,6 +117,20 @@ export interface Reply<T = unknown> {
   session?: SessionJson;
 }
 
+/**
+ * fetch that retries once when a kept-alive socket was reset: after the event loop was blocked (a long synchronous
+ * file copy), the first request reuses a socket the game closed meanwhile and never reaches it.
+ */
+async function fetchOnce(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (error) {
+    const code = (error as { cause?: { code?: string } }).cause?.code;
+    if (code !== "ECONNRESET" && code !== "EPIPE" && code !== "UND_ERR_SOCKET") throw error;
+    return fetch(url, init);
+  }
+}
+
 /** The mod refused or failed a command; carries the reply for assertions on 422 results. */
 export class BridgeError extends Error {
   constructor(readonly reply: Reply) {
@@ -139,13 +153,13 @@ export class Bridge {
     const token = fs.readFileSync(this.tokenPath, "utf8").trim();
     const headers = { "X-Unsquare-Token": token, "Content-Type": "application/json" };
     const payload = body ? JSON.stringify({ timeoutMs: Math.min(timeoutMs, 60_000), ...body }) : undefined;
-    let response = await fetch(`${this.baseUrl}/v1/${path}`, { method, headers, body: payload });
+    let response = await fetchOnce(`${this.baseUrl}/v1/${path}`, { method, headers, body: payload });
     const deadline = Date.now() + timeoutMs;
     while (response.status === 202) {
       const pending = (await response.json()) as { job: string };
       if (Date.now() > deadline) throw new Error(`${method} ${path} still running after ${timeoutMs} ms`);
       await sleep(250);
-      response = await fetch(`${this.baseUrl}${pending.job}`, { headers });
+      response = await fetchOnce(`${this.baseUrl}${pending.job}`, { headers });
     }
     const json = (await response.json()) as Omit<Reply<T>, "status">;
     return { status: response.status, ...json };

@@ -13,10 +13,12 @@ const RunSave = "UnsquareTest-Run-Cache";
 const Timeout = 1_500_000;
 
 /**
- * Deforms the plain house into a shape whose assets are new (baked now), saves the city and returns the asset
+ * Loads the fixture, deforms the plain house into a shape whose assets are new (baked now), saves the city and returns the asset
  * files the bake wrote.
  */
 async function freshShapeSaved(context: TestContext) {
+  await loadFixture({ fresh: true }); // the previous test left another city loaded, without Unsquare mode
+  await cleanUp();
   const house = await building(context, "plainHouse");
   await target(house, "Corner", corner(1, 1, 1));
   const before = new Set(ModDataBackup.assetFiles());
@@ -74,6 +76,8 @@ describe("CACHE – the geometry asset cache", () => {
     await game.start();
     const log = LogWatch.fromNow();
     await bridge.load(RunSave);
+    await bridge.speed(0);
+    await bridge.mode(true);
     await log.waitFor(/Saved cages: .*\(([1-9]\d*) new assets/, 60_000);
     await log.waitFor(/Released source meshes of \d+ render prefabs/, 60_000);
     const leaving = LogWatch.fromNow();
@@ -91,6 +95,7 @@ describe("CACHE – the geometry asset cache", () => {
     const cap = (await bridge.settings()).GeometryCacheGigabytes;
     await bridge.setSettings({ GeometryCacheGigabytes: 0.5 });
     try {
+      const started = Date.now();
       await game.restart();
       // Housekeeping runs at the first preload, i.e. when a city is loaded.
       await loadFixture({ fresh: true });
@@ -100,8 +105,12 @@ describe("CACHE – the geometry asset cache", () => {
       expect(max, "0.5 GB").toBeGreaterThan(470);
       expect(max).toBeLessThan(530);
       expect(cache, line).toBeLessThanOrEqual(max);
-      const onDisk = ModDataBackup.assetFiles().reduce((sum, name) => sum + fs.statSync(path.join(modData, name)).size, 0);
-      expect(onDisk / 2 ** 20, `${evicted} evicted; on disk: the cap plus legacy-claimed assets`).toBeLessThan(max + claimed + 64);
+      // Shapes the fixture load rebaked after the eviction are new files; only the older ones had to fit.
+      const kept = ModDataBackup.assetFiles()
+        .map((name) => fs.statSync(path.join(modData, name)))
+        .filter((file) => file.mtimeMs < started);
+      const onDisk = kept.reduce((sum, file) => sum + file.size, 0);
+      expect(onDisk / 2 ** 20, `${evicted} evicted; kept on disk: the cap plus legacy-claimed assets`).toBeLessThan(max + claimed + 64);
     } finally {
       await bridge.setSettings({ GeometryCacheGigabytes: cap });
     }
