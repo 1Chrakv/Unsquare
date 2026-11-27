@@ -42,6 +42,7 @@ namespace Unsquare.Automation.Commands
             routes.Add("POST view/ui", SetUi);
             routes.Add("POST view/screenshot", Screenshot);
             routes.Add("GET view/screenPoint", ScreenPoint);
+            routes.Add("POST view/infoPanel", InfoPanel);
         }
 
         private static bool TryController(out CameraController controller) =>
@@ -212,6 +213,21 @@ namespace Unsquare.Automation.Commands
                     error = "crop must be \"screen\", \"target\" or {x, y, width, height}.";
                     return false;
             }
+        }
+
+        /// <summary>Selects a building in the game's info panel (as a click outside Unsquare mode does), or none.</summary>
+        private CommandRun InfoPanel(BridgeArgs args)
+        {
+            if (!BridgeContext.InGame)
+                return CommandRun.Fail(409, "Not in a loaded city.");
+            var building = Unity.Entities.Entity.Null;
+            if (args.Has("building") && !_context.TryResolve(args.String("building"), out building, out var error))
+                return CommandRun.Fail(404, error);
+            _context.World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>().SetSelection(building);
+            int until = Time.frameCount + UiToggleFrames;
+            return CommandRun.Pending(() => Time.frameCount < until
+                ? null
+                : CommandRun.Done(new JObject { ["selected"] = building == Unity.Entities.Entity.Null ? null : BridgeContext.Id(building) }));
         }
 
         /// <summary>

@@ -21,4 +21,20 @@ describe("MODE – Unsquare mode", () => {
     expect((await bridge.settled(house)).deformed, "the drag's shape is dropped").toBe(false);
     await bridge.mode(true);
   });
+
+  it("MODE-005 a building selected in the info panel before entering the mode becomes the target", async (context) => {
+    const house = await building(context, "plainHouse");
+    const id = (await bridge.building(house)).id;
+    await bridge.mode(false);
+    try {
+      await bridge.infoPanel(house);
+      const log = LogWatch.fromNow();
+      await bridge.mode(true);
+      expect((await bridge.session()).target?.id).toBe(id);
+      await log.waitFor(/\[Edit\] Target /);
+    } finally {
+      await bridge.infoPanel();
+      await bridge.mode(true);
+    }
+  });
 });

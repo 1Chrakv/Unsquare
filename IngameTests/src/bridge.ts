@@ -342,6 +342,9 @@ export class Bridge {
     return (await this.call<ScreenPointJson>("GET", `view/screenPoint?${params}`)).result;
   };
 
+  /** Selects a building in the game's info panel (no building: clears it), like a click outside Unsquare mode. */
+  infoPanel = (building?: string) => this.call<{ selected: string | null }>("POST", "view/infoPanel", building ? { building } : {});
+
   // --- input ------------------------------------------------------------------------------------------------------
   inputDevices = async () => (await this.call<Record<string, unknown>>("GET", "input/devices")).result;
   /** via "virtual" (own test devices, default) or "current" (the real ones); forceFocus tells the game it has focus. */
