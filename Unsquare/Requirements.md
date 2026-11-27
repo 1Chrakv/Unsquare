@@ -300,7 +300,7 @@ features add requirements and tests in the same change.
 | SAVE-001 | Deformed buildings and their lot areas and paths stay deformed after save + reload and after a restart; logs `Saved cages: N buildings on M variants …, 0 failed` | 10, 19 | suite-slow |
 | SAVE-002 | Saving logs `Save: N deformed buildings as base + cage …` and `Save: N buildings back on their variants`; linked, split-with-blend and flat-terrain shapes come back; no `Unknown prefab ID` for `__uq` names | 188 | suite |
 | SAVE-003 | Five save + reload cycles don't move paths, areas or lot props | 189 | suite |
-| SAVE-004 | Without Unsquare, a save with deformed buildings loads with plain buildings and the deformed lot layout; the game log shows `Not serializable type …SavedCage` and no errors | 191 | suite-slow |
+| SAVE-004 | Without Unsquare, a save with deformed buildings loads with plain buildings and the deformed lot layout: the game logs no missing prefabs (`Unknown prefab ID`) and no errors | 191 | suite-slow |
 | SAVE-005 | A 1.1 save saved again loads its shapes from the save even with the manifest files moved aside | 192 | suite-slow, needs-save:1.1 |
 | SAVE-006 | After raising `<Version>` and rebuilding, a save still restores its shapes | 197 | suite-slow, needs-build |
 | SAVE-007 | With the manifest files moved aside, a new-format save loads without crash: `Restored 0 variants`, `Saved cages: …, 0 failed`, no `has no instance archetype` or `Not swapping to …` | 198 | suite-slow |

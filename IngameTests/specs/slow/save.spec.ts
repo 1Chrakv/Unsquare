@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bridge } from "../../src/bridge.js";
@@ -77,30 +78,47 @@ describe("SAVE – saving and loading across restarts", () => {
     try {
       // Without the mod there is no bridge: the game opens our save by its metadata guid and the logs tell the rest.
       // (-continuelastsave only asks the main menu, which can stop at a prompt about the missing mod.)
-      const started = Date.now();
       game.launch([`-startGame=${metadata}`]);
-      await waitUntil(() => gameLoaded(sceneLog(started)), 600_000, "the save to load");
+      await waitUntil(() => gameLoaded(sceneLog(metadata!)), 420_000, "the save to load");
       // The city runs unpaused without the mod: stop before the game's first autosave (1 minute at the shortest).
       await new Promise((resolve) => setTimeout(resolve, 10_000));
       const player = fs.readFileSync(playerLog, "utf8");
-      expect(player).toMatch(/Not serializable type .*SavedCage/);
+      expect(player, "no missing prefabs (variants are not in the save)").not.toMatch(/Unknown prefab ID/);
+      // The game skips the unknown SavedCage component through Debug.LogWarning, which this build doesn't log.
       expect(player).not.toMatch(/Exception[^\n]*\n[^\n]*Unsquare/);
     } finally {
+      keepLogs("save-004"); // the next start overwrites them
       await game.kill();
       if (fs.existsSync(aside)) fs.renameSync(aside, deployedMod);
     }
   }, Timeout);
 });
 
+const gameLogs = () => {
+  const dir = path.join(path.dirname(playerLog), "Logs");
+  return fs.readdirSync(dir).filter((name) => name.endsWith(".log")).map((name) => path.join(dir, name));
+};
+
+/** Copies the game's logs into the run's folder. */
+function keepLogs(label: string) {
+  const dir = path.join(process.env.UNSQUARE_RUN_DIR ?? os.tmpdir(), label);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const file of [playerLog, ...gameLogs()]) fs.copyFileSync(file, path.join(dir, path.basename(file)));
+}
+
 /** The game (not the main menu, which a start may load first) finished loading. */
 function gameLoaded(lines: string[]) {
-  const game = lines.findIndex((line) => /Loading mode Game/.test(line));
+  const game = lines.findIndex((line) => /Loading mode Game\b/.test(line));
   return game >= 0 && lines.slice(game).some((line) => /Loading completed/.test(line));
 }
 
-/** Lines of SceneFlow.log written after `since` (ms since epoch). */
-function sceneLog(since: number): string[] {
+/**
+ * Lines of SceneFlow.log of the start that opened `metadata` (its configuration line names it). Windows doesn't
+ * update the modified time of a log the game holds open, so that can't tell the starts apart.
+ */
+function sceneLog(metadata: string): string[] {
   const file = path.join(path.dirname(playerLog), "Logs", "SceneFlow.log");
-  if (!fs.existsSync(file) || fs.statSync(file).mtimeMs < since) return [];
-  return fs.readFileSync(file, "utf8").split(/\r?\n/);
+  if (!fs.existsSync(file)) return [];
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  return lines.some((line) => line.includes(`"startGame":"${metadata}"`)) ? lines : [];
 }
