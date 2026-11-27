@@ -10,7 +10,9 @@
     "test": "tsx scripts/run.ts fast",
     "test:slow": "tsx scripts/run.ts slow",
     "test:all": "tsx scripts/run.ts all",
+    "test:input": "tsx scripts/run.ts input",
     "coverage:req": "tsx scripts/coverage.ts",
+    "mcp": "tsx mcp/server.ts",
     "fixture:check": "tsx scripts/fixture.ts check",
     "fixture:record": "tsx scripts/fixture.ts record",
     "bridge:enable": "tsx scripts/game.ts enable",
@@ -19,9 +21,11 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@types/node": "22.10.2",
     "tsx": "4.19.2",
     "typescript": "5.7.2",
-    "vitest": "2.1.8"
+    "vitest": "2.1.8",
+    "zod": "4.6.7"
   }
 }

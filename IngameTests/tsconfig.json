@@ -10,5 +10,5 @@
     "resolveJsonModule": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "specs", "scripts", "vitest.config.ts"]
+  "include": ["src", "specs", "scripts", "mcp", "vitest.config.ts"]
 }
