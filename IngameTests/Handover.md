@@ -13,10 +13,10 @@ This file says what was learned, where things stand, and what comes next. How to
 | Does the bridge answer while the window is unfocused or in the background? | Yes; the main thread keeps ticking. Not tried minimised. | Keep the window un-minimised to be safe. |
 | Does it answer at the main menu? | Yes, from the `UIUpdate` pump. During boot requests queue until the first update. A load sent before the main menu is reached is overwritten by the game's own start-up: `state.ready` and a 409 on `game/load` guard that. | Always `waitReady()` before loading. |
 | Edit cycle through the session? | Yes: select, handle, nudge (settled in about 0.6 s), undo, drag over frames, cancelled drag, `game/save` (2–3 s), `game/quit`. | — |
-| InputSystem events reach the game? | **Not tried in game yet.** From the game code: the pointer is `Mouse.current.position` (`InputManager.mousePosition`); the tool raycast only runs while `InputManager.controlOverWorld`, which needs `mouseOnScreen` and so the game's focus flag (`InputManager.OnFocusChanged`); using an unpaired device makes the game pair it and unpair the other mouse. | The bridge has a virtual mouse and keyboard (`input/*`, `via` virtual or current, `forceFocus`). The spike decides the defaults; without focus, input specs bring the window to the front (`game.focus()`). |
-| `ScreenCapture` includes overlay and UI? | **Not tried in game yet.** `view/screenshot` reads the finished frame at end of frame; the UI can be hidden through `userInterface.view.enabled` (what the benchmark does). | Decides whether packs show the overlay and the tool window. |
-| Camera from code? | From the game code: `CameraController` (tag `GameplayCamera`) has `pivot`, `angle` (x yaw, y tilt, clamped by zoom) and `zoom`; yaw 0 looks along +Z. Edge scrolling moves the camera while the pointer is near a screen edge. | `view/camera` sets them and waits until `moving` is false. Keep pointer targets away from the screen edges. |
-| cohtml inspector on port 9444 with `-uiDeveloperMode`? | **Not tried yet.** | If it answers, UI specs read the tool window as DOM; otherwise binding values and screenshots, plus a `ui/trigger` fallback (not built yet). |
+| InputSystem events reach the game? | **Yes, through the bridge's virtual mouse and keyboard** (2026-11-27, game in front): hover, clicks on handles, a 12-frame drag of the Y arrow (3 m), hotkeys by binding name, undo by hotkey and Esc all work. Three traps, all handled in `SyntheticInput`: the game pairs one mouse and keyboard with its input user and spends the first button press of an unpaired device on pairing (so ours are paired at once, and again after the player's mouse took over); removing a paired device shows a full-screen **\"Controller disconnected\"** overlay that blocks the world (so a reset hands the pairing back and keeps our devices); Unity disables devices that can't run in the background (so ours answer the run-in-background query; the player's keyboard stays off for the game). The tool raycast needs the game's focus flag: `forceFocus` (default in `useInput`). **Not yet verified with the game in the background** (it kept focus after each restart). | Input specs run without bringing the game to the front if the background check passes; otherwise `UNSQUARE_FOCUS=1`. Moving the real mouse during input tests can still steal a frame: keep it off the game. Every game start takes the focus. |
+| `ScreenCapture` includes overlay and UI? | **Yes**: `view/screenshot` shows cage, gizmo and tool window; `ui: false` hides the game UI (`userInterface.view.enabled`); about 0.3 s per shot at 3840×2160. | Review packs use the game's own picture. |
+| Camera from code? | **Yes**: `CameraController` (tag `GameplayCamera`) `pivot`, `angle` (x yaw, y tilt) and `zoom`; `view/camera` waits until `moving` is false. Presets checked in building space: front +Z, back −Z, left +X, right −X (as seen from the street), top, street. Edge scrolling moves the camera while the pointer is near a screen edge. | Keep pointer targets away from the screen edges. |
+| cohtml inspector on port 9444 with `-uiDeveloperMode`? | **Yes**: `/json` lists a DevTools target; Node evaluates `Runtime.evaluate` over `ws://127.0.0.1:9444/devtools/page/0` (UI 3840×2160, DPR 1). CSS class names are hashed (`window_xV3`); buttons are found by their icon (`coui://ui-mods/images/<name>.svg`). | UI specs read the tool window as DOM (rects, highlight classes) and click its buttons with the virtual mouse at the element's rect. |
 
 ## State
 
@@ -34,7 +34,7 @@ about 16 minutes. Two fixes afterwards (skip clean-up, locale) were rerun on the
   - UPGRADE-014: after a language switch deformed buildings keep their English names (issue 008).
 - **Skipped (fixture gaps, see Fixture.md):** SPLIT-011 and SPLIT-015 check the storey and then skip the flat
   ground extension part; ALIGN-011 doesn't cover the park neighbour.
-- **Open issues:** 002 (probably a symptom of 005), 004–009. 001 is closed (see below).
+- **Open issues:** 002 (probably a symptom of 005), 004–011. 001 is closed (see below).
 - **Slow set** (`npm run test:slow`, specs in `specs/slow/`), runs of 2026-11-26/27: **17 of 18 pass**.
   - Pass: `restart` (TERRAIN-010, SPLIT-010, SPLIT-012, DRAG-014), `cache` CACHE-002 and BAKE-007, `bake` (BAKE-004,
     BAKE-008), `levelup` (LEVELUP-001 to 003), `options` (OPTIONS-004), `save` (SAVE-001, SAVE-007, SAVE-004), `zoning`
@@ -65,7 +65,8 @@ Built, compiled and unit-tested, **not yet run in game**:
 - Claude tooling: the `unsquare-game` MCP server (`mcp/server.ts`, `.mcp.json`; checked over stdio without the
   game), skills `/ingame-review` and `/ingame-triage`.
 
-Still to do: the in-game spikes (input path, screenshots, inspector), then the input specs (`specs/input/`: MODE,
+Spikes done except the background check of input (see the table). Found on the way: issue 010 (a Ctrl tap never
+switches the gizmo) and issue 011 (screen sizes use the wrong field of view; GIZMO-005 red). Still to do: the input specs (`specs/input/`: MODE,
 SEL, PICK, GIZMO-002/003, DRAG-004/005/006/008, KEYS, UI, UNDO-004, UPGRADE-006, OPTIONS-005/006) and the review-pack
 specs (BAKE-003/006, LOT-001/004, SPLIT-003/004, BLEND-002). `npm audit` reports advisories in the dev tooling
 (vitest 2, vite, esbuild, tinypool); the suite only runs locally, but an upgrade to current Vitest is due.
