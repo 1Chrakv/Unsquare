@@ -33,31 +33,34 @@ about 16 minutes. Two fixes afterwards (skip clean-up, locale) were rerun on the
   - UPGRADE-014: after a language switch deformed buildings keep their English names (issue 008).
 - **Skipped (fixture gaps, see Fixture.md):** SPLIT-011 and SPLIT-015 check the storey and then skip the flat
   ground extension part; ALIGN-011 doesn't cover the park neighbour.
-- **Open issues:** 001 (crash after a raw delete, not confirmed), 002 (probably a symptom of 005), 004–008.
-- **Slow set** (`npm run test:slow`, specs in `specs/slow/`), first run 2026-11-26, **stopped after two files**:
-  - `restart.spec.ts` passed: TERRAIN-010, SPLIT-010, SPLIT-012, DRAG-014.
-  - `cache.spec.ts` failed all three: CACHE-002 (after 7 ms, i.e. at its first step), BAKE-007, CACHE-001. The run
-    was stopped before Vitest printed the errors, so the causes are unknown; rerun the file alone first
-    (`npm run test:slow -- cache`). Its clean-up worked: every backed-up asset is back in place.
-  - Not run yet: `bake.spec.ts` (BAKE-004, BAKE-008), `levelup.spec.ts` (LEVELUP-001 to 003), `options.spec.ts`
-    (OPTIONS-004), `save.spec.ts` (SAVE-001, 007, 004), `zoning.spec.ts` (ZONING-001, 002).
+- **Open issues:** 002 (probably a symptom of 005), 004–009. 001 is closed (see below).
+- **Slow set** (`npm run test:slow`, specs in `specs/slow/`), runs of 2026-11-26/27: **16 of 18 pass**.
+  - Pass: `restart` (TERRAIN-010, SPLIT-010, SPLIT-012, DRAG-014), `cache` CACHE-002 and BAKE-007, `bake` (BAKE-004,
+    BAKE-008), `levelup` (LEVELUP-001 to 003), `options` (OPTIONS-004), `save` SAVE-001 and SAVE-007, `zoning`
+    (ZONING-001, ZONING-002 with a quarter day).
+  - CACHE-001 fails on a mod bug: housekeeping logs the eviction but no file leaves the disk (issue 009).
+  - SAVE-004 (without Unsquare) is fixed but not rerun yet; see "Still open".
+  - The test fixes on the way: a reset kept-alive socket after the long synchronous asset copy (`bridge.ts` retries
+    once), tests that started without Unsquare mode after another test's load, level-ups followed by entity ref (a
+    `Prefab@x,z` ref stops resolving when the prefab changes), and missing timeouts in `save.spec.ts`.
+- **Issue 001 closed:** the raw `Deleted` shortcut crashes on `UnsquareTest-Spike`'s `FireHouse02` whether the
+  station is plain, deformed or deformed-then-reset, and never on the fixture's `FireHouse01`; so the shortcut, not
+  Unsquare, causes it. The player's case (the game's bulldozer on a deformed building) is UNDO-004, phase 3.
 - **Without tests:** 84 suite requirements: input-driven ones (phase 3), `suite+review` ones (review packs), other
   mods and old saves (phase 4: FLEXIT, PLACEMAKER, COPY, LEGACY, SPLIT-016, SAVE-005/006, CACHE-003, ZONING-003/004).
 
 ## Still open from steps 1–3
 
-Finish these before phase 3:
-
-1. Rerun `cache.spec.ts`, fix what is a test problem, file what is a mod bug.
-2. Run the rest of the slow set once (the files listed above) and handle failures the same way. LEVELUP and ZONING
-   use the new test-only commands for the first time (`buildings/{ref}/levelUp`, `zone/paint`, `game/simulate`).
-3. **Issue 001:** the comparison in its file. It needs a throw-away route that adds `Deleted` directly (never
-   committed); a scratch script that runs the three cases, each after a fresh start, was drafted but not run.
+1. **SAVE-004:** rerun it (`npm run test:slow -- save -t SAVE-004`). Without the mod, `-continuelastsave` loads
+   straight into the game (one `Loading completed`, after `Loading mode Game`), and the city runs unpaused. Check
+   which save it opens (the game's `lastSaveGameMetadata` in `UserState.coc`, which `game/save` may not update) and
+   whether the game still logs `Not serializable type …SavedCage` (a probe found it in no log). `-startGame <save
+   cid>` does not open a save; it ends in the main menu.
 
 ## Next steps (in order)
 
 Issue fixes are not part of this work: each confirmed issue gets its own session and `fix/…` branch off `develop`
-(005 Reset all first, it also simplifies the test clean-up; then 007, 004, 006; afterwards rerun DRAG-010 to close
+(005 Reset all first, it also simplifies the test clean-up; then 007, 004, 006, 009, 008; afterwards rerun DRAG-010 to close
 002), and its requirement's test turns green there.
 
 1. **Phase 3 spikes** with a throw-away Debug build: synthetic InputSystem events (`InputSystem.QueueStateEvent`
@@ -89,8 +92,13 @@ Issue fixes are not part of this work: each confirmed issue gets its own session
 - **One run at a time:** two runs on one game reset each other's buildings and selections (runs 3 and 4 overlapped
   after a crash, run 4's results were garbage). `scripts/run.ts` now holds `.testruns/run.lock` with its pid.
   A run whose game crashes restarts the game in the next spec file and goes on; stop it before starting another.
-- **No raw entity changes:** adding `Deleted` to a building directly crashed the game (issue 001). Test commands
-  that change the city must go through the game's own tools or the session's commands.
+- **No raw entity changes:** adding `Deleted` to a building directly crashes the game natively, also on a plain
+  building (closed issue 001). Test commands that change the city must go through the game's own tools, the
+  session's commands, or data the game's systems then act on.
+- **Autosaves:** with the game's autosave on (here every minute, keeping one), a city the tests let run autosaves,
+  and the rotation deletes the player's own autosave. `scripts/run.ts` copies the player's autosaves aside before a
+  run, puts back missing ones afterwards and moves the run's autosaves to `ModsData\Unsquare-backups\<stamp>-autosaves`.
+  Scratch scripts run outside it: keep the city paused there.
 - **ENV-001** fails while mod sources differ from the commit named in the deployed version: commit, then deploy,
   then run.
 - **Simulation speed:** `UPGRADE-*` run the simulation at speed 3 for a number of frames; with the window in the
@@ -103,7 +111,7 @@ Issue fixes are not part of this work: each confirmed issue gets its own session
 - **ENV-003** needs a Release build (`dotnet msbuild Unsquare/Unsquare.csproj -t:Compile -p:Configuration=Release`)
   and `ilspycmd`; otherwise it is skipped.
 - **SAVE-004** (without Unsquare) moves the deployed mod folder aside and continues the last save with
-  `-continuelastsave`; if the run is interrupted, `Mods\Unsquare.disabled-by-tests` must be renamed back by hand.
+  `-continuelastsave`, and kills the game 10 s after the load, before its first autosave; if the run is interrupted, `Mods\Unsquare.disabled-by-tests` must be renamed back by hand.
 - **Slow specs** back up `ModsData\Unsquare` (`ModDataBackup`) and move manifest files aside, never delete them.
   Backups are in `ModsData\Unsquare-backups\`.
 - **Steam must run** for a direct start, or the game comes up broken (no mods, endless `OnGUI` errors) and never
