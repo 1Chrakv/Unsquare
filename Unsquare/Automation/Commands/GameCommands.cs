@@ -9,6 +9,7 @@ using Game.Assets;
 using Game.Prefabs.Modes;
 using Game.SceneFlow;
 using Game.Simulation;
+using Game.Tools;
 using Game.UI;
 using Game.UI.Menu;
 using Newtonsoft.Json.Linq;
@@ -43,6 +44,7 @@ namespace Unsquare.Automation.Commands
             routes.Add("POST game/mainMenu", MainMenu);
             routes.Add("POST game/quit", Quit);
             routes.Add("POST game/speed", Speed);
+            routes.Add("POST game/tool", Tool);
             routes.Add("POST log/mark", Mark);
         }
 
@@ -73,6 +75,8 @@ namespace Unsquare.Automation.Commands
                 ["frame"] = Time.frameCount,
                 ["simulationFrame"] = simulation?.frameIndex,
                 ["speed"] = simulation?.selectedSpeed,
+                ["tool"] = ActiveTool(),
+                ["selected"] = SelectedEntity(),
             });
         }
 
@@ -183,6 +187,38 @@ namespace Unsquare.Automation.Commands
                 return CommandRun.Fail(409, "Not in a loaded city.");
             simulation.selectedSpeed = args.Float("speed");
             return CommandRun.Done(new JObject { ["speed"] = simulation.selectedSpeed });
+        }
+
+        private string ActiveTool() =>
+            BridgeContext.InGame ? _context.World.GetOrCreateSystemManaged<ToolSystem>().activeTool?.toolID : null;
+
+        // What the info panel shows (the game's selection), e.g. after a click outside Unsquare mode.
+        private string SelectedEntity()
+        {
+            if (!BridgeContext.InGame)
+                return null;
+            var selected = _context.World.GetOrCreateSystemManaged<ToolSystem>().selected;
+            return selected == Unity.Entities.Entity.Null ? null : BridgeContext.Id(selected);
+        }
+
+        /// <summary>Switches the game's tool: "bulldoze" (the game's bulldozer) or "default" (selection).</summary>
+        private CommandRun Tool(BridgeArgs args)
+        {
+            if (!BridgeContext.InGame)
+                return CommandRun.Fail(409, "Not in a loaded city.");
+            var tools = _context.World.GetOrCreateSystemManaged<ToolSystem>();
+            ToolBaseSystem tool = args.String("tool") switch
+            {
+                "bulldoze" => _context.World.GetOrCreateSystemManaged<BulldozeToolSystem>(),
+                "default" => _context.World.GetOrCreateSystemManaged<DefaultToolSystem>(),
+                _ => null,
+            };
+            if (tool == null)
+                return CommandRun.Fail(400, "tool must be \"bulldoze\" or \"default\".");
+            tools.activeTool = tool;
+            int until = Time.frameCount + 3;
+            return CommandRun.Pending(() =>
+                Time.frameCount < until ? null : CommandRun.Done(new JObject { ["tool"] = ActiveTool() }));
         }
 
         private static CommandRun Mark(BridgeArgs args)

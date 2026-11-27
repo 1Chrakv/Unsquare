@@ -1,10 +1,12 @@
+import { afterAll, beforeAll } from "vitest";
 import { bridge, type GizmoPart, type PointerTarget, type Vec3 } from "./bridge.js";
 import { game } from "./game.js";
+import { useCity } from "./setup.js";
 
 /**
- * Real mouse and keyboard input through the bridge's synthetic devices. Settings from the environment (the phase 3
- * spike decides the defaults): UNSQUARE_INPUT_VIA virtual|current, UNSQUARE_FORCE_FOCUS=1, UNSQUARE_FOCUS=1 (bring
- * the game window to the front before input).
+ * Real mouse and keyboard input through the bridge's own virtual devices; works with the game in the background.
+ * Environment: UNSQUARE_INPUT_VIA virtual|current, UNSQUARE_FORCE_FOCUS=0 (don't tell the game it has focus),
+ * UNSQUARE_FOCUS=1 (bring the game window to the front first).
  */
 export async function useInput() {
   if (process.env.UNSQUARE_FOCUS === "1") game.focus();
@@ -44,3 +46,37 @@ export const press = (binding: string) => bridge.key({ binding });
 
 /** Presses raw keys together (Unity key names: LeftCtrl, Escape, Z). */
 export const tap = (...keys: string[]) => bridge.key({ keys });
+
+/** `useCity()` plus the input devices for a spec file of `specs/input/`. */
+export function useInputCity() {
+  useCity();
+  beforeAll(useInput);
+  afterAll(releaseInput);
+}
+
+/** A building-space point of `owner` (x width, y up, z street side) in world space; the inverse of `toLocal`. */
+export function toWorld(owner: { position: Vec3; yawDegrees: number }, local: Vec3): Vec3 {
+  const yaw = (owner.yawDegrees * Math.PI) / 180;
+  const [x, y, z] = local;
+  return [owner.position[0] + x * Math.cos(yaw) + z * Math.sin(yaw), owner.position[1] + y, owner.position[2] - x * Math.sin(yaw) + z * Math.cos(yaw)];
+}
+
+type Box = { min: Vec3; max: Vec3 };
+
+/**
+ * A point of a building given in its cage box (building space), as a pointer target. `place` gets the box and the
+ * lot box and returns the local point; the building need not be selected.
+ */
+export async function pointOf(ref: string, place: (box: Box, lotBox: Box) => Vec3): Promise<{ world: Vec3 }> {
+  const found = await bridge.building(ref);
+  if (!found.cage) throw new Error(`${ref} has no cage (not deformable).`);
+  return { world: toWorld(found, place(found.cage.box, found.cage.lotBox)) };
+}
+
+/** The middle of the building's box: a ray there hits the building first from any side. */
+export const centreOf = (ref: string) =>
+  pointOf(ref, (box) => [(box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2]);
+
+/** Ground `metres` in front of the lot (street side), off every building. */
+export const groundBefore = (ref: string, metres = 12) =>
+  pointOf(ref, (_, lot) => [(lot.min[0] + lot.max[0]) / 2, 0, lot.max[2] + metres]);

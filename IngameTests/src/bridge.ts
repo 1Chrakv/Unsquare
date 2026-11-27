@@ -213,10 +213,23 @@ export class Bridge {
   // --- game -------------------------------------------------------------------------------------------------------
   ping = () => this.call<{ version: string; configuration: string; builtUtc: string }>("GET", "ping");
   state = () =>
-    this.call<{ gameMode: string; loading: boolean; ready: boolean; inGame: boolean; save: string | null; frame: number; speed: number }>(
+    this.call<{
+      gameMode: string;
+      loading: boolean;
+      ready: boolean;
+      inGame: boolean;
+      save: string | null;
+      frame: number;
+      speed: number;
+      /** The game's active tool (its toolID) and what its info panel shows (entity id). */
+      tool: string | null;
+      selected: string | null;
+    }>(
       "GET",
       "state",
     );
+  /** Switches the game's own tool: the bulldozer, or the default selection tool. */
+  tool = (tool: "bulldoze" | "default") => this.call<{ tool: string }>("POST", "game/tool", { tool });
   load = (save: string) => this.call<{ save: string }>("POST", "game/load", { save }, 900_000);
   /** Saves under a test name; `metadata` is the guid a start without the mod opens with `-startGame=<guid>`. */
   save = (name: string) => this.call<{ save: string; metadata: string | null }>("POST", "game/save", { name }, 300_000);
