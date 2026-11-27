@@ -18,6 +18,7 @@ namespace Unsquare.Automation
         private BridgeContext _context;
         private BridgeCall _current;
         private CommandRun _currentRun;
+        private readonly SyntheticInput _input = new();
 
         protected override void OnCreate()
         {
@@ -35,6 +36,7 @@ namespace Unsquare.Automation
             new WaitCommands(_context).Register(_routes);
             new ProbeCommands(_context).Register(_routes);
             new CityCommands(_context).Register(_routes);
+            new ViewCommands(_context).Register(_routes);
             try
             {
                 _server = new BridgeServer(config.Port, config.Token);
@@ -52,13 +54,16 @@ namespace Unsquare.Automation
         /// <summary>Gives the bridge the options page's settings (they are created after the systems).</summary>
         internal void Bind(UI.Input.UnsquareSettings settings)
         {
-            if (_context != null)
-                new SettingsCommands(settings).Register(_routes);
+            if (_context == null)
+                return;
+            new SettingsCommands(settings).Register(_routes);
+            new InputCommands(_context, settings, _input).Register(_routes);
         }
 
         protected override void OnDestroy()
         {
             _server?.Dispose();
+            _input.Dispose();
             base.OnDestroy();
         }
 

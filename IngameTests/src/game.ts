@@ -2,7 +2,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { bridge, sleep } from "./bridge.js";
-import { automationDir, backupsDir, gameDir, gameExe, modData, modLog, savesDir } from "./paths.js";
+import { automationDir, autosaveBackupsDir, backupsDir, gameDir, gameExe, modData, modLog, savesDir } from "./paths.js";
 
 /**
  * Starting, stopping and restarting Cities: Skylines II for the tests. The game is started directly (not through
@@ -88,6 +88,22 @@ export const game = {
   async restart() {
     await this.quit();
     await this.start();
+  },
+
+  /**
+   * Brings the game window to the front (restoring it if minimised). Input tests need it when the game ignores
+   * input without focus; it takes the keyboard focus from whatever the player was doing.
+   */
+  focus() {
+    const script = [
+      "$p = Get-Process Cities2 -ErrorAction Stop | Select-Object -First 1",
+      "Add-Type -Name W -Namespace U -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool ShowWindow(System.IntPtr h, int c); [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(System.IntPtr h);'",
+      "[U.W]::ShowWindow($p.MainWindowHandle, 9) | Out-Null",
+      "Add-Type -AssemblyName Microsoft.VisualBasic",
+      "[Microsoft.VisualBasic.Interaction]::AppActivate($p.Id)",
+      "[U.W]::SetForegroundWindow($p.MainWindowHandle) | Out-Null",
+    ].join("; ");
+    execFileSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { stdio: "ignore" });
   },
 
   /** Starts the game unless it runs; then checks the bridge answers. */
@@ -176,7 +192,8 @@ export async function waitUntil(condition: () => boolean, timeoutMs: number, wha
 /**
  * Protects the player's autosaves (`<day>-<month>-<hh>-<mm>-<ss>.cok`). With autosave on, a city the tests let run
  * autosaves, and the game's rotation deletes the player's older autosaves. {@link start} copies them aside;
- * {@link finish} puts back missing ones and moves the run's own autosaves into the backup.
+ * {@link finish} puts back missing ones and moves the run's own autosaves into the backup. The backup lives in
+ * `.testruns/autosaves`: the rotation also deletes autosave copies anywhere in the game's user folder (ModsData).
  */
 export class AutosaveGuard {
   private static readonly Pattern = /^\d{1,2}-[^-.]+-\d{2}-\d{2}-\d{2}\.cok(\.cid)?$/;
@@ -187,7 +204,7 @@ export class AutosaveGuard {
 
   static start(): AutosaveGuard {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const dir = path.join(backupsDir, `${stamp}-autosaves`);
+    const dir = path.join(autosaveBackupsDir, stamp);
     for (const file of AutosaveGuard.files()) {
       const target = path.join(dir, "player", path.relative(savesDir, file));
       fs.mkdirSync(path.dirname(target), { recursive: true });

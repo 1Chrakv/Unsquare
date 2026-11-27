@@ -94,6 +94,18 @@
     <ItemGroup Condition="'$(Configuration)' != 'Debug'">
         <Compile Remove="Automation\**" />
     </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <!--Screenshots and the UI's visibility (view commands).-->
+        <Reference Include="Colossal.UI">
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="UnityEngine.ScreenCaptureModule">
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="UnityEngine.ImageConversionModule">
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
 
     <ItemGroup>
         <Reference Update="System">

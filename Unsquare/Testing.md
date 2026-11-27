@@ -40,6 +40,7 @@ The suite drives the game through the automation bridge, a REST endpoint inside 
    ```
 
    - `npm run test:slow`: tests that restart the game, move files or simulate days.
+   - `npm run test:input`: tests with real mouse and keyboard input; don't use the PC while they run.
    - `npm test -- -t UNDO-`: one requirement group.
    - `npm run fixture:check`: what the fixture city is missing.
    - `npm run coverage:req`: which requirements have tests, and that every old checklist row is mapped.

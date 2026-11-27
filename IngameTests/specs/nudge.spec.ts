@@ -3,7 +3,9 @@ import { bridge } from "../src/bridge.js";
 import { expectApplied, Face, offsets } from "../src/expect.js";
 import { building } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
+import { pack } from "../src/review.js";
 import { bakes, target, useCity } from "../src/setup.js";
+import { lookAt, shot } from "../src/view.js";
 
 const Top = [2, 3, 6, 7];
 
@@ -13,11 +15,13 @@ describe("NUDGE – hotkey nudges", () => {
   it("NUDGE-001 four nudges of the top face pend, then bake once", async (context) => {
     const house = await building(context, "plainHouse");
     await target(house, "Face", Face.top);
+    await lookAt(house, "front");
     const log = LogWatch.fromNow();
     let reply = await bridge.nudge([0, 1, 0]);
     expect(reply.session?.cage?.status).toBe("Pending");
     for (let i = 0; i < 3; i++) reply = await bridge.nudge([0, 1, 0]);
     expect(reply.result.result).toBe("Accepted");
+    const pending = await shot("NUDGE-001-pending", { crop: "target" });
 
     const cage = await bridge.settled();
     expectApplied(cage);
@@ -25,6 +29,14 @@ describe("NUDGE – hotkey nudges", () => {
     for (const corner of Top) expect(corners[corner][1], `corner ${corner} raised`).toBeCloseTo(0.4, 5);
     for (const corner of [0, 1, 4, 5]) expect(corners[corner]).toEqual([0, 0, 0]);
     expect(bakes(log), "one bake after the last nudge (rebake delay)").toHaveLength(1);
+    await pack("NUDGE-001", {
+      pack: "overlay",
+      shots: { pending, applied: await shot("NUDGE-001-applied", { crop: "target" }) },
+      probe: { status: cage.status, targetOffsets: cage.targetOffsets },
+      building: house,
+      focus: "The first shot (taken right after the nudges, maybe already baked) shows the cage raised 0.4 m above the roof; the second shows the roof risen to the cage.",
+      log,
+    });
   });
 
   it("NUDGE-002 the step cycles through the three sizes", async (context) => {

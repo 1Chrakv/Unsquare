@@ -36,6 +36,11 @@ export interface SessionJson {
   locked: boolean;
   step: number;
   gizmo: "Move" | "Rotate";
+  /** The gizmo shows rings (Rotate mode on a handle that can turn). */
+  showsRings: boolean;
+  /** Handle under the mouse (set by the mouse tool), and the gizmo part under it (-1: none). */
+  hover: string | null;
+  hoverPart: number;
   alignMode: "Angle" | "Flush" | "Full";
   groundFitMode: "BackOnly" | "AllCorners";
   dragging: boolean;
@@ -45,6 +50,39 @@ export interface SessionJson {
   canRedo: boolean;
   decisionOpen: boolean;
   cage?: CageJson;
+}
+
+/** A point on screen in pixels (origin top left) with the world point it shows. */
+export interface ScreenPointJson {
+  world: Vec3;
+  x?: number;
+  y?: number;
+  onScreen: boolean;
+  screen: { width: number; height: number };
+  /** For gizmo parts: the gizmo's world origin and arrow length (metres). */
+  gizmo?: { origin: Vec3; length: number; rings: boolean };
+  part?: number;
+}
+
+export interface CameraJson {
+  pivot: Vec3;
+  yaw: number;
+  pitch: number;
+  distance: number;
+  position: Vec3;
+  moving: boolean;
+}
+
+/** Where the mouse goes: pixels, a cage handle of the target, a gizmo part of the selected handle or a world point. */
+export type PointerTarget = { x: number; y: number } | { handle: string } | { gizmo: GizmoPart } | { world: Vec3 };
+export type GizmoPart = "arrowX" | "arrowY" | "arrowZ" | "plane" | "ringX" | "ringY" | "ringZ";
+
+export interface ShotJson {
+  path: string;
+  width: number;
+  height: number;
+  screen: { width: number; height: number };
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 export type HandleKind = "Corner" | "Edge" | "Face" | "Cage";
@@ -175,10 +213,23 @@ export class Bridge {
   // --- game -------------------------------------------------------------------------------------------------------
   ping = () => this.call<{ version: string; configuration: string; builtUtc: string }>("GET", "ping");
   state = () =>
-    this.call<{ gameMode: string; loading: boolean; ready: boolean; inGame: boolean; save: string | null; frame: number; speed: number }>(
+    this.call<{
+      gameMode: string;
+      loading: boolean;
+      ready: boolean;
+      inGame: boolean;
+      save: string | null;
+      frame: number;
+      speed: number;
+      /** The game's active tool (its toolID) and what its info panel shows (entity id). */
+      tool: string | null;
+      selected: string | null;
+    }>(
       "GET",
       "state",
     );
+  /** Switches the game's own tool: the bulldozer, or the default selection tool. */
+  tool = (tool: "bulldoze" | "default") => this.call<{ tool: string }>("POST", "game/tool", { tool });
   load = (save: string) => this.call<{ save: string }>("POST", "game/load", { save }, 900_000);
   /** Saves under a test name; `metadata` is the guid a start without the mod opens with `-startGame=<guid>`. */
   save = (name: string) => this.call<{ save: string; metadata: string | null }>("POST", "game/save", { name }, 300_000);
@@ -289,6 +340,38 @@ export class Bridge {
   settings = async () => (await this.call<Record<string, unknown>>("GET", "settings")).result;
   setSettings = async (values: Record<string, unknown>) => (await this.call<Record<string, unknown>>("POST", "settings", { values })).result;
   defaultSettings = async () => (await this.call<Record<string, unknown>>("POST", "settings/defaults", {})).result;
+
+  // --- view -------------------------------------------------------------------------------------------------------
+  camera = async () => (await this.call<CameraJson>("GET", "view/camera")).result;
+  /** Orbits the camera; with focus, yaw 0 looks at the building's street front. Waits until it stops moving. */
+  setCamera = async (view: { focus?: string; point?: Vec3; yaw?: number; pitch?: number; distance?: number }) =>
+    (await this.call<CameraJson>("POST", "view/camera", view)).result;
+  showUi = (visible: boolean) => this.call("POST", "view/ui", { visible });
+  /** A JPEG of the next frame into the mod's automation\shots folder; see `view.shot` for the run copy. */
+  screenshot = async (name: string, options: { crop?: "screen" | "target" | { x: number; y: number; width: number; height: number }; maxPx?: number; ui?: boolean } = {}) =>
+    (await this.call<ShotJson>("POST", "view/screenshot", { name, ...options })).result;
+  screenPoint = async (query: { handle: string } | { gizmo: GizmoPart } | { world: Vec3 }) => {
+    const params = "handle" in query ? `handle=${query.handle}` : "gizmo" in query ? `gizmo=${query.gizmo}` : `world=${query.world.join(",")}`;
+    return (await this.call<ScreenPointJson>("GET", `view/screenPoint?${params}`)).result;
+  };
+
+  /** Selects a building in the game's info panel (no building: clears it), like a click outside Unsquare mode. */
+  infoPanel = (building?: string) => this.call<{ selected: string | null }>("POST", "view/infoPanel", building ? { building } : {});
+
+  // --- input ------------------------------------------------------------------------------------------------------
+  inputDevices = async () => (await this.call<Record<string, unknown>>("GET", "input/devices")).result;
+  /** via "virtual" (own test devices, default) or "current" (the real ones); forceFocus tells the game it has focus. */
+  inputConfig = async (config: { via?: "virtual" | "current"; forceFocus?: boolean }) =>
+    (await this.call<Record<string, unknown>>("POST", "input/config", config)).result;
+  inputReset = () => this.call("POST", "input/reset", {});
+  mouse = async (action: "move" | "press" | "release" | "click" | "drag", options: { at?: PointerTarget; to?: PointerTarget; button?: "left" | "right"; frames?: number; holdFrames?: number; hold?: boolean; settleFrames?: number } = {}) =>
+    (await this.call<{ pointer: [number, number]; target: ScreenPointJson | null; hover: { handle: string | null; part: number } }>("POST", "input/mouse", { action, ...options })).result;
+  /** Presses a binding (e.g. "UnsquareUndo", after any rebinding) or raw Unity keys (["LeftCtrl"]). */
+  key = async (keys: { binding: string } | { keys: string[] }, options: { holdFrames?: number; settleFrames?: number } = {}) =>
+    (await this.call<{ keys: string }>("POST", "input/key", { ...keys, ...options })).result;
+  /** Rebinds a binding's key to a control path such as "<Keyboard>/k"; returns the previous path. */
+  rebind = async (binding: string, path: string) =>
+    (await this.call<{ binding: string; previous: string; path: string }>("POST", "input/rebind", { binding, path })).result;
 
   // --- waiting ----------------------------------------------------------------------------------------------------
   frames = (frames: number) => this.call("POST", "wait/frames", { frames });

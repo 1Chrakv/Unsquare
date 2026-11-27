@@ -1,5 +1,5 @@
 // Runs a test set against the running game (starting it if needed) and writes .testruns/<stamp>/report.md.
-// Usage: tsx scripts/run.ts fast|slow|all [vitest args, e.g. -t UNDO-]
+// Usage: tsx scripts/run.ts fast|slow|input|all [vitest args, e.g. -t UNDO-]
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";

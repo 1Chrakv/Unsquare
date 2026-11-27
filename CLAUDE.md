@@ -16,7 +16,7 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `*/PlacemakerCompatibility/` | Everything for buildings the Placemaker mod has bent, per layer (see Placemaker compatibility) | as its layer |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
 | `Unsquare/Automation/` | Debug-only REST bridge for in-game tests (`UNSQUARE_AUTOMATION`, compiled out of Release); off unless `ModsData\Unsquare\automation\enabled` exists. Edits only through `CageEditSession` commands | UI + Api + game systems |
-| `IngameTests/` | TypeScript/Vitest suite run against the live game through the bridge (README, Fixture.md, Handover.md) | the bridge |
+| `IngameTests/` | TypeScript/Vitest suite run against the live game through the bridge (README, Fixture.md, Handover.md); `mcp/` is the `unsquare-game` MCP server (`.mcp.json`) behind the skills `/ingame-review` and `/ingame-triage` (`.claude/skills/`) | the bridge |
 
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
 Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageEditSession` commands; views only

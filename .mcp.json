@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "unsquare-game": {
+      "command": "node",
+      "args": ["IngameTests/node_modules/tsx/dist/cli.mjs", "IngameTests/mcp/server.ts"]
+    }
+  }
+}

@@ -4,6 +4,8 @@ import { corner, edge } from "../src/expect.js";
 import { building } from "../src/fixture.js";
 import { LogWatch } from "../src/log.js";
 import { move, target, useCity } from "../src/setup.js";
+import { pack } from "../src/review.js";
+import { lookAt, shot } from "../src/view.js";
 
 const round = (points: Vec3[]) => points.map((p) => p.map((v) => Math.round(v * 20) / 20).join(",")).sort();
 
@@ -56,5 +58,55 @@ describe("LOT – lot deformation", () => {
     await bridge.reset();
     await bridge.settled();
     expect((await layout(park)).nets).toEqual(before.nets);
+  });
+
+  it("LOT-001 a bottom corner outside the plot turns the cage magenta and warns once; the edit applies", async (context) => {
+    const house = await building(context, "plainHouse");
+    await target(house);
+    const log = LogWatch.fromNow();
+    const cage = await move("Corner", corner(1, 0, 1), [3, 0, 0]);
+    expect(cage.exceedsLot, "the lot outline leaves its plot").toBe(true);
+    expect(cage.status, "the edit still applies").toBe("Applied");
+    await move("Corner", corner(1, 0, 1), [0.5, 0, 0]);
+    expect(log.matching(/Lot outline leaves its plot/), "warned once").toHaveLength(1);
+    await bridge.clearHandle();
+    await lookAt(house, "top");
+    await pack("LOT-001", {
+      pack: "overlay",
+      shots: { outside: await shot("LOT-001-outside", { crop: "target" }) },
+      probe: { exceedsLot: cage.exceedsLot, offsets: cage.targetOffsets },
+      focus: "The cage is drawn magenta because one bottom corner sticks out of the plot.",
+    });
+  });
+
+  it("LOT-004 curved park paths stay connected through two deformations; reset restores the park (with a ground review)", async (context) => {
+    const park = await building(context, "park");
+    await target(park);
+    const before = await layout(park);
+    await lookAt(park, "top");
+    const original = await shot("LOT-004-original", { crop: "target", ui: false });
+    const log = LogWatch.fromNow();
+    await move("Corner", corner(1, 0, 1), [2, 0, 1]);
+    await move("Corner", corner(0, 0, 0), [-1.5, 0, -1]);
+    const syncs = log.matching(/Lot sync for building .*\d+ net edges moved/);
+    expect(syncs.length, "the paths were synced").toBeGreaterThan(0);
+    expect(log.matching(/could not be remapped/), "no unmapped parts").toEqual([]);
+    for (const node of (await bridge.nets(park)).nodes) expect(node.edges, `path node ${node.id} connected`).toBeGreaterThan(0);
+    await bridge.clearHandle();
+    const deformed = await shot("LOT-004-deformed", { crop: "target", ui: false });
+    await bridge.reset();
+    await bridge.settled();
+    await bridge.frames(60); // the lot sync of the reset lands a few frames after the swap
+    // In plan: ground items are projected onto the terrain again, which can move their height by a rounding step.
+    const plan = (l: Awaited<ReturnType<typeof layout>>) =>
+      Object.fromEntries(Object.entries(l).map(([k, points]) => [k, points.map((p) => p.split(",").filter((_, i) => i !== 1).join(",")).sort()]));
+    expect(plan(await layout(park)), "reset gives the original layout").toEqual(plan(before));
+    await pack("LOT-004", {
+      pack: "ground",
+      shots: { original, deformed },
+      probe: { syncs },
+      log,
+      focus: "The park's curved paths in the deformed shot bend smoothly with the new outline; the road entrance stays attached.",
+    });
   });
 });
