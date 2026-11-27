@@ -15,6 +15,8 @@ their bounding cuboid (trilinear cage deformation). Deformed geometry is baked i
 | `UiModule/` | React UI module (game template): mode button (next to the underground toggle, or top left/right by option `ButtonPosition`), the tool window above the edited building (pick mode, resets) and the old-saves popup; talks to `UnsquareUISystem` via bindings | `cs2/*` UI API |
 | `*/PlacemakerCompatibility/` | Everything for buildings the Placemaker mod has bent, per layer (see Placemaker compatibility) | as its layer |
 | `Unsquare.Tests/` | NUnit tests; compiles `Core/**` by source link, no game DLLs at runtime | Core |
+| `Unsquare/Automation/` | Debug-only REST bridge for in-game tests (`UNSQUARE_AUTOMATION`, compiled out of Release); off unless `ModsData\Unsquare\automation\enabled` exists. Edits only through `CageEditSession` commands | UI + Api + game systems |
+| `IngameTests/` | TypeScript/Vitest suite run against the live game through the bridge (README, Fixture.md, Handover.md) | the bridge |
 
 UI code gets the service via `UnsquareApi.GetDeformService(World)`; cage data is in building space (`BuildingSpace`).
 Inputs (`UnsquareToolSystem` mouse tool, hotkeys, later panels) only call `CageEditSession` commands; views only
@@ -33,7 +35,7 @@ resets, and undo makes the edited building the target. Selection changes are not
 
 Dependencies only point downwards (UI → Api → Integration → Core); `UI/` never references `Integration/`.
 Never reference `Game`, `Colossal.*`, `UnityEngine` or `Unity.Entities` from `Core/`; the test project would stop
-building. In-game testing: `Unsquare/Testing.md`.
+building. In-game testing: `Unsquare/Testing.md`; requirements with IDs: `Unsquare/Requirements.md`.
 
 ## Commands
 
@@ -298,7 +300,7 @@ All Placemaker code lives in `PlacemakerCompatibility/` folders, one per layer (
   `PlacemakerBridge` and checked at load with `ReflectionContract`. One log line gives the version (`TestedWith`) and
   the features detect, convert and rows; a missing member or a runtime exception turns off only its feature.
   Read shapes must be `PlacemakerCage.IsPlausible`, and a base that is an Unsquare variant is refused (that would
-  mean Placemaker no longer skips ours). After a Placemaker update: check that line, run Testing rows 165–177, then
+  mean Placemaker no longer skips ours). After a Placemaker update: check that line, run the PLACEMAKER requirements' tests, then
   raise `TestedWith`.
 
 ## Props: rigid placement, full deformation later
@@ -331,6 +333,10 @@ All Placemaker code lives in `PlacemakerCompatibility/` folders, one per layer (
 
 - Comments: max 2 lines inside code; XML doc summaries max 3 lines. Explain *why*, not *what*.
 - Add NUnit tests for all Core logic; name them `Method_Condition_Expectation`.
+- Behaviour visible in game gets a requirement in `Unsquare/Requirements.md` (a new ID, never a reused one) and a
+  test in `IngameTests/specs/` named after it, or a Claude review pack or charter where the suite can't judge.
+- Bugs found by testing get a file in `Issues/` (workflow in `Issues/README.md`): committed while open, deleted
+  by the commit that resolves them.
 - Commit messages: one header line, one blank line, 1–3 summary lines. Keep commits well scoped.
 - `README.md` and the `LongDescription` in `Unsquare/Properties/PublishConfiguration.xml` describe the mod to
   players: keep them consistent in content, not identical. The long description is short and plain, without

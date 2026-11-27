@@ -214,7 +214,7 @@ Cause (verified in the game code):
 
 Fix (commit 56c620b): `UnsquareToolSystem.InitializeRaycast` adds `RaycastFlags.SubBuildings`.
 
-To check in game (`Testing.md` rows 117–119):
+To check in game (`Requirements.md` SEL-008, UPGRADE-005):
 - Hovering (dim cage) and clicking now pick the wing.
 - The school is still picked when clicking the school, its lot or an on-lot extension like the car park storey.
   Extensions have no `Building`, so the walk goes on to the owner.
@@ -284,7 +284,7 @@ New on-lot extensions on a deformed building are baked at once:
     (language switch).
   - Prefabs with their own `Localization` component keep it in the clone.
 
-**To check in game (`Testing.md` rows 120–125):**
+**To check in game (`Requirements.md` UPGRADE-009 to UPGRADE-014):**
 - The deformed school shows its normal name and the Upgrades section, with all wings (deformed or not) under their
   names and named upkeep lines. Same for the hospital's and car park's deformed extensions.
 - No variant appears in build menus, the upgrade menu, Find It or milestone screens.
@@ -319,11 +319,11 @@ deletes fine. Won't fix for now; 1.0.1 lists it as a known issue.
 ## 6. Test notes
 - Logs: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Unsquare.Mod.log` and
   `Player.log`. No crash dump is written.
-- `Testing.md` rows:
-  - 106–108: car park storey;
-  - 109–112: school wing and the hover crash;
-  - 113–116: combined cage;
-  - 117–119: picking upgrade buildings;
-  - 120–125: info panel, menus and new upgrades.
+- Requirements (`Requirements.md`, old checklist rows in brackets):
+  - UPGRADE-001 to 003 (106–108): car park storey;
+  - UPGRADE-004 to 006 (109–112): school wing and the hover crash;
+  - CAGE-003, UPGRADE-007/008 (113–116): combined cage;
+  - SEL-008, UPGRADE-005 (117–119): picking upgrade buildings;
+  - UPGRADE-009 to 014 (120–125): info panel, menus and new upgrades.
 - Build: compile-check from PowerShell (`dotnet msbuild Unsquare/Unsquare.csproj -t:Restore,Compile`; Git Bash broke
   the mscorlib path). Deploy (`dotnet build Unsquare.sln`) only when the user asks.

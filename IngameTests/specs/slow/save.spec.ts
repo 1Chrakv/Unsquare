@@ -1,0 +1,124 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { bridge } from "../../src/bridge.js";
+import { corner, Face } from "../../src/expect.js";
+import { building, cleanUp, loadFixture } from "../../src/fixture.js";
+import { game, ModDataBackup, waitUntil } from "../../src/game.js";
+import { LogWatch } from "../../src/log.js";
+import { deployedMod, playerLog } from "../../src/paths.js";
+import { move, target } from "../../src/setup.js";
+
+const RunSave = "UnsquareTest-Run-Slow";
+/** Each test loads the city several times and restarts the game. */
+const Timeout = 1_500_000;
+
+/** Loads the fixture, deforms the plain house, saves the city under the run name and returns the shape. */
+async function deformAndSave(context: Parameters<typeof building>[0]) {
+  await loadFixture({ fresh: true }); // the previous test left another city loaded, without Unsquare mode
+  await cleanUp();
+  const house = await building(context, "plainHouse");
+  await target(house);
+  await move("Corner", corner(1, 1, 1), [1.5, 1, 0]);
+  await move("Face", Face.bottom, [0, 1, 0]);
+  const spec = (await bridge.settled()).targetSpec;
+  await bridge.stepBack();
+  const { metadata } = (await bridge.save(RunSave)).result;
+  return { house, spec, metadata };
+}
+
+describe("SAVE – saving and loading across restarts", () => {
+  let backup: ModDataBackup;
+  beforeAll(async () => {
+    await loadFixture({ fresh: true });
+    await cleanUp();
+  });
+  afterAll(async () => {
+    await game.ensureRunning();
+  });
+
+  it("SAVE-001 deformed buildings survive reload and a restart", async (context) => {
+    const { house, spec } = await deformAndSave(context);
+    await bridge.load(RunSave);
+    expect((await bridge.settled(house)).targetSpec).toBe(spec);
+    await game.restart();
+    const log = LogWatch.fromStart();
+    await bridge.load(RunSave);
+    expect((await bridge.settled(house)).targetSpec).toBe(spec);
+    await log.waitFor(/Saved cages: \d+ buildings on \d+ variants .*, 0 failed/);
+  }, Timeout);
+
+  it("SAVE-007 without the manifest files a new-format save loads its shapes from the save", async (context) => {
+    const { house, spec } = await deformAndSave(context);
+    await game.quit();
+    backup = ModDataBackup.create("save-007");
+    backup.moveAside("variants.json", "variants.json.bak", "variants.archive.json", "variants.archive.json.bak");
+    try {
+      await game.start();
+      const log = LogWatch.fromStart();
+      await bridge.load(RunSave);
+      expect((await bridge.settled(house)).targetSpec).toBe(spec);
+      await log.waitFor(/Restored 0 variants/);
+      await log.waitFor(/Saved cages: .*, 0 failed/);
+      expect(log.matching(/has no instance archetype|Not swapping to/)).toHaveLength(0);
+    } finally {
+      await game.quit();
+      backup.restore();
+      await game.start();
+    }
+  }, Timeout);
+
+  it("SAVE-004 without Unsquare a save loads with plain buildings and no errors", async (context) => {
+    const { metadata } = await deformAndSave(context);
+    expect(metadata, "the save's metadata guid").toMatch(/^[0-9a-f]{32}$/);
+    await game.quit();
+    const aside = `${deployedMod}.disabled-by-tests`;
+    fs.renameSync(deployedMod, aside);
+    try {
+      // Without the mod there is no bridge: the game opens our save by its metadata guid and the logs tell the rest.
+      // (-continuelastsave only asks the main menu, which can stop at a prompt about the missing mod.)
+      game.launch([`-startGame=${metadata}`]);
+      await waitUntil(() => gameLoaded(sceneLog(metadata!)), 420_000, "the save to load");
+      // The city runs unpaused without the mod: stop before the game's first autosave (1 minute at the shortest).
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      const player = fs.readFileSync(playerLog, "utf8");
+      expect(player, "no missing prefabs (variants are not in the save)").not.toMatch(/Unknown prefab ID/);
+      // The game skips the unknown SavedCage component through Debug.LogWarning, which this build doesn't log.
+      expect(player).not.toMatch(/Exception[^\n]*\n[^\n]*Unsquare/);
+    } finally {
+      keepLogs("save-004"); // the next start overwrites them
+      await game.kill();
+      if (fs.existsSync(aside)) fs.renameSync(aside, deployedMod);
+    }
+  }, Timeout);
+});
+
+const gameLogs = () => {
+  const dir = path.join(path.dirname(playerLog), "Logs");
+  return fs.readdirSync(dir).filter((name) => name.endsWith(".log")).map((name) => path.join(dir, name));
+};
+
+/** Copies the game's logs into the run's folder. */
+function keepLogs(label: string) {
+  const dir = path.join(process.env.UNSQUARE_RUN_DIR ?? os.tmpdir(), label);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const file of [playerLog, ...gameLogs()]) fs.copyFileSync(file, path.join(dir, path.basename(file)));
+}
+
+/** The game (not the main menu, which a start may load first) finished loading. */
+function gameLoaded(lines: string[]) {
+  const game = lines.findIndex((line) => /Loading mode Game\b/.test(line));
+  return game >= 0 && lines.slice(game).some((line) => /Loading completed/.test(line));
+}
+
+/**
+ * Lines of SceneFlow.log of the start that opened `metadata` (its configuration line names it). Windows doesn't
+ * update the modified time of a log the game holds open, so that can't tell the starts apart.
+ */
+function sceneLog(metadata: string): string[] {
+  const file = path.join(path.dirname(playerLog), "Logs", "SceneFlow.log");
+  if (!fs.existsSync(file)) return [];
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  return lines.some((line) => line.includes(`"startGame":"${metadata}"`)) ? lines : [];
+}

@@ -61,9 +61,16 @@ namespace Unsquare
             updateSystem.UpdateAt<UnsquareUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<PlacemakerUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<LegacySavesUISystem>(SystemUpdatePhase.UIUpdate);
+#if UNSQUARE_AUTOMATION
+            // UI update also runs in the main menu, where tests load their fixture save.
+            updateSystem.UpdateAt<Automation.AutomationBridgeSystem>(SystemUpdatePhase.UIUpdate);
+#endif
             var world = updateSystem.World;
             world.GetOrCreateSystemManaged<CageHotkeySystem>().Bind(_settings);
             world.GetOrCreateSystemManaged<UnsquareUISystem>().Bind(_settings);
+#if UNSQUARE_AUTOMATION
+            world.GetOrCreateSystemManaged<Automation.AutomationBridgeSystem>().Bind(_settings);
+#endif
             var session = world.GetOrCreateSystemManaged<CageEditorSystem>().Session;
             _settings.BindFlexItImport(() => session.ImportFlexIt().ToString());
             var deformService = UnsquareApi.GetDeformService(world);

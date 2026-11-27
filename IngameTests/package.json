@@ -1,0 +1,27 @@
+{
+  "name": "unsquare-ingame-tests",
+  "private": true,
+  "type": "module",
+  "description": "Automated in-game tests for Unsquare, run against a live Cities: Skylines II through the mod's automation bridge.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "tsx scripts/run.ts fast",
+    "test:slow": "tsx scripts/run.ts slow",
+    "test:all": "tsx scripts/run.ts all",
+    "coverage:req": "tsx scripts/coverage.ts",
+    "fixture:check": "tsx scripts/fixture.ts check",
+    "fixture:record": "tsx scripts/fixture.ts record",
+    "bridge:enable": "tsx scripts/game.ts enable",
+    "game:start": "tsx scripts/game.ts start",
+    "game:quit": "tsx scripts/game.ts quit",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}
