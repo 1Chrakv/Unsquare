@@ -2,7 +2,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { bridge, sleep } from "./bridge.js";
-import { automationDir, backupsDir, gameDir, gameExe, modData, modLog } from "./paths.js";
+import { automationDir, backupsDir, gameDir, gameExe, modData, modLog, savesDir } from "./paths.js";
 
 /**
  * Starting, stopping and restarting Cities: Skylines II for the tests. The game is started directly (not through
@@ -170,5 +170,58 @@ export async function waitUntil(condition: () => boolean, timeoutMs: number, wha
   while (!condition()) {
     if (Date.now() > deadline) throw new Error(`Timed out after ${timeoutMs} ms waiting for ${what}.`);
     await sleep(1000);
+  }
+}
+
+/**
+ * Protects the player's autosaves (`<day>-<month>-<hh>-<mm>-<ss>.cok`). With autosave on, a city the tests let run
+ * autosaves, and the game's rotation deletes the player's older autosaves. {@link start} copies them aside;
+ * {@link finish} puts back missing ones and moves the run's own autosaves into the backup.
+ */
+export class AutosaveGuard {
+  private static readonly Pattern = /^\d{1,2}-[^-.]+-\d{2}-\d{2}-\d{2}\.cok(\.cid)?$/;
+  private constructor(
+    readonly dir: string,
+    private readonly started: number,
+  ) {}
+
+  static start(): AutosaveGuard {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const dir = path.join(backupsDir, `${stamp}-autosaves`);
+    for (const file of AutosaveGuard.files()) {
+      const target = path.join(dir, "player", path.relative(savesDir, file));
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(file, target);
+    }
+    return new AutosaveGuard(dir, Date.now());
+  }
+
+  finish() {
+    for (const file of AutosaveGuard.files())
+      if (fs.statSync(file).mtimeMs >= this.started) {
+        const target = path.join(this.dir, "run", path.relative(savesDir, file));
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.renameSync(file, target);
+      }
+    const player = path.join(this.dir, "player");
+    if (!fs.existsSync(player)) return;
+    for (const relative of fs.readdirSync(player, { recursive: true }) as string[]) {
+      const source = path.join(player, relative);
+      const target = path.join(savesDir, relative);
+      if (fs.statSync(source).isFile() && !fs.existsSync(target)) fs.copyFileSync(source, target);
+    }
+  }
+
+  private static files(): string[] {
+    if (!fs.existsSync(savesDir)) return [];
+    return fs
+      .readdirSync(savesDir, { withFileTypes: true })
+      .filter((account) => account.isDirectory())
+      .flatMap((account) =>
+        fs
+          .readdirSync(path.join(savesDir, account.name))
+          .filter((name) => AutosaveGuard.Pattern.test(name))
+          .map((name) => path.join(savesDir, account.name, name)),
+      );
   }
 }

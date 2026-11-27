@@ -9,6 +9,17 @@ const RunSave = "UnsquareTest-Run-LevelUp";
 const Timeout = 2_400_000;
 const Bottom = [0, 1, 4, 5];
 
+/**
+ * The entity ref (`#index:version`) of the building at the fixture ref's position. A `Prefab@x,z` ref names the
+ * level-1 prefab and stops resolving once the level-up swaps it; entity refs change with every load.
+ */
+async function entityAt(ref: string) {
+  const [x, z] = ref.slice(ref.lastIndexOf("@") + 1).split(",").map(Number);
+  const [found] = await bridge.find({ near: [x, z], radius: 2, limit: 1 });
+  if (!found) throw new Error(`No building at ${ref}.`);
+  return found.id;
+}
+
 /** Starts the game's level-up of the building and lets the city run until the new level stands. */
 async function levelUp(ref: string) {
   const level = (await bridge.info(ref)).level!;
@@ -37,7 +48,7 @@ const expectSameOutline = (after: CageJson, before: CageJson) =>
 
 describe("LEVELUP – deformed growables levelling up", () => {
   let keep: unknown;
-  let carried: { ref: string; spec: string } | undefined;
+  let carried: { at: string; spec: string } | undefined;
   beforeAll(async () => {
     await loadFixture({ fresh: true });
     await cleanUp();
@@ -49,7 +60,8 @@ describe("LEVELUP – deformed growables levelling up", () => {
   });
 
   it("LEVELUP-001 a deformed level-1 growable that levels up keeps its lot outline and lean", async (context) => {
-    const growable = await building(context, "growableL1");
+    const at = await building(context, "growableL1");
+    const growable = await entityAt(at);
     const before = await deform(growable);
     const log = LogWatch.fromNow();
     const info = await levelUp(growable);
@@ -61,7 +73,7 @@ describe("LEVELUP – deformed growables levelling up", () => {
     expect(Math.sign(lean(after)), "still leaning the same way").toBe(Math.sign(lean(before)));
     expect(Math.abs(lean(after)), "still leaning").toBeGreaterThan(0.2);
     await expectConnected(growable);
-    carried = { ref: growable, spec: after.targetSpec };
+    carried = { at, spec: after.targetSpec };
   }, Timeout);
 
   it("LEVELUP-002 the carried shape survives a reload; with Keep shape on level-up off the next one is plain", async (context) => {
@@ -70,23 +82,26 @@ describe("LEVELUP – deformed growables levelling up", () => {
     await bridge.load(RunSave);
     await bridge.speed(0);
     await bridge.mode(true);
-    expect((await bridge.settled(carried.ref)).targetSpec).toBe(carried.spec);
+    const growable = await entityAt(carried.at);
+    expect((await bridge.settled(growable)).targetSpec).toBe(carried.spec);
     await bridge.setSettings({ KeepOnLevelUp: false });
-    const info = await levelUp(carried.ref);
+    const info = await levelUp(growable);
     expect(info.prefab, "comes back undeformed").not.toMatch(/__uq/);
-    expect((await bridge.settled(carried.ref)).deformed).toBe(false);
+    expect((await bridge.settled(growable)).deformed).toBe(false);
     await bridge.setSettings({ KeepOnLevelUp: true });
   }, Timeout);
 
   it("LEVELUP-003 a growable saved while levelling up keeps its shape when the level-up finishes after a load", async (context) => {
     await loadFixture({ fresh: true });
-    const growable = await building(context, "growableL1");
+    const at = await building(context, "growableL1");
+    let growable = await entityAt(at);
     const before = await deform(growable);
     await bridge.levelUp(growable); // under construction now
     await bridge.save(RunSave);
     await bridge.load(RunSave);
     await bridge.speed(0);
     await bridge.mode(true);
+    growable = await entityAt(at);
     for (let i = 0; i < 60 && (await bridge.info(growable)).underConstruction; i++) await bridge.simulate({ frames: 2048 });
     const info = await bridge.info(growable);
     expect(info.underConstruction).toBe(false);

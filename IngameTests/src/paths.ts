@@ -20,6 +20,8 @@ export const tokenFile = path.join(automationDir, "token");
 export const modLog = path.join(userData, "Logs", "Unsquare.Mod.log");
 export const playerLog = path.join(userData, "Player.log");
 export const deployedMod = path.join(userData, "Mods", "Unsquare");
+/** The player's saves, one folder per platform account. */
+export const savesDir = path.join(userData, "Saves");
 export const backupsDir = path.join(userData, "ModsData", "Unsquare-backups");
 
 export const testsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { AutosaveGuard } from "../src/game.js";
 import { runsDir, testsDir } from "../src/paths.js";
 import { writeReport } from "../src/report.js";
 
@@ -23,12 +24,15 @@ const runDir = path.join(runsDir, stamp);
 fs.mkdirSync(runDir, { recursive: true });
 const results = path.join(runDir, "results.json");
 
+const autosaves = AutosaveGuard.start();
 const vitest = spawnSync(process.execPath, [path.join(testsDir, "node_modules", "vitest", "vitest.mjs"), "run", ...vitestArgs], {
   cwd: testsDir,
   stdio: "inherit",
   env: { ...process.env, UNSQUARE_SET: set, UNSQUARE_RESULTS: results, UNSQUARE_RUN_DIR: runDir },
 });
 
+autosaves.finish();
+console.log(`Autosaves: the player's are kept, the run's are moved to ${autosaves.dir}`);
 if (fs.existsSync(results)) {
   const report = writeReport(results, path.join(runDir, "report.md"), set);
   console.log(`\nReport: ${report}`);

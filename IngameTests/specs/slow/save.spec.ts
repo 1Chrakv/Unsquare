@@ -10,9 +10,13 @@ import { deployedMod, playerLog } from "../../src/paths.js";
 import { move, target } from "../../src/setup.js";
 
 const RunSave = "UnsquareTest-Run-Slow";
+/** Each test loads the city several times and restarts the game. */
+const Timeout = 1_500_000;
 
-/** Deforms the plain house, saves the city under the run name and returns the shape. */
+/** Loads the fixture, deforms the plain house, saves the city under the run name and returns the shape. */
 async function deformAndSave(context: Parameters<typeof building>[0]) {
+  await loadFixture({ fresh: true }); // the previous test left another city loaded, without Unsquare mode
+  await cleanUp();
   const house = await building(context, "plainHouse");
   await target(house);
   await move("Corner", corner(1, 1, 1), [1.5, 1, 0]);
@@ -42,7 +46,7 @@ describe("SAVE – saving and loading across restarts", () => {
     await bridge.load(RunSave);
     expect((await bridge.settled(house)).targetSpec).toBe(spec);
     await log.waitFor(/Saved cages: \d+ buildings on \d+ variants .*, 0 failed/);
-  });
+  }, Timeout);
 
   it("SAVE-007 without the manifest files a new-format save loads its shapes from the save", async (context) => {
     const { house, spec } = await deformAndSave(context);
@@ -62,7 +66,7 @@ describe("SAVE – saving and loading across restarts", () => {
       backup.restore();
       await game.start();
     }
-  });
+  }, Timeout);
 
   it("SAVE-004 without Unsquare a save loads with plain buildings and no errors", async (context) => {
     await deformAndSave(context);
@@ -73,8 +77,9 @@ describe("SAVE – saving and loading across restarts", () => {
       // Without the mod there is no bridge: the game continues the last save (ours) and the logs tell the rest.
       const started = Date.now();
       game.launch(["-continuelastsave"]);
-      await waitUntil(() => sceneLog(started).filter((l) => /Loading completed/.test(l)).length >= 2, 600_000, "the save to load");
-      await new Promise((resolve) => setTimeout(resolve, 20_000));
+      await waitUntil(() => gameLoaded(sceneLog(started)), 600_000, "the save to load");
+      // The city runs unpaused without the mod: stop before the game's first autosave (1 minute at the shortest).
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
       const player = fs.readFileSync(playerLog, "utf8");
       expect(player).toMatch(/Not serializable type .*SavedCage/);
       expect(player).not.toMatch(/Exception[^\n]*\n[^\n]*Unsquare/);
@@ -82,8 +87,14 @@ describe("SAVE – saving and loading across restarts", () => {
       await game.kill();
       if (fs.existsSync(aside)) fs.renameSync(aside, deployedMod);
     }
-  });
+  }, Timeout);
 });
+
+/** The game (not the main menu, which a start may load first) finished loading. */
+function gameLoaded(lines: string[]) {
+  const game = lines.findIndex((line) => /Loading mode Game/.test(line));
+  return game >= 0 && lines.slice(game).some((line) => /Loading completed/.test(line));
+}
 
 /** Lines of SceneFlow.log written after `since` (ms since epoch). */
 function sceneLog(since: number): string[] {
